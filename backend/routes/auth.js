@@ -17,12 +17,7 @@ router.post('/google', async (req, res) => {
 
     let user = await User.findOne({ email });
     if (!user) {
-      user = new User({
-        username: name,
-        email,
-        googleId
-      });
-      await user.save();
+      return res.json({ isNewUser: true });
     }
 
     const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -31,6 +26,37 @@ router.post('/google', async (req, res) => {
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ message: 'Authentication failed', error: error.message });
+  }
+});
+
+router.post('/google/complete-profile', async (req, res) => {
+  const { googleId, email, name, username, country } = req.body;
+
+  try {
+    if (!googleId || !email || !username || !country) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    let user = await User.findOne({ username });
+    if (user) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    user = new User({
+      username,
+      email,
+      googleId,
+      country,
+      name
+    });
+    await user.save();
+
+    const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ token: jwtToken, user: { id: user._id, username: user.username, email: user.email } });
+  } catch (error) {
+    console.error('Complete profile error:', error);
+    res.status(500).json({ message: 'Failed to complete profile', error: error.message });
   }
 });
 

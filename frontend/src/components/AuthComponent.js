@@ -4,13 +4,14 @@ import axios from 'axios';
 import api from '../api';
 
 const AuthComponent = () => {
-       console.log('AuthComponent rendering');
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState('');
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [isFirstTimeGoogleUser, setIsFirstTimeGoogleUser] = useState(false);
+  const [googleUserInfo, setGoogleUserInfo] = useState(null);
 
   const countries = ['USA', 'UK', 'France', 'Germany', 'Spain', 'Italy']; // Add more countries as needed
 
@@ -25,7 +26,7 @@ const AuthComponent = () => {
       });
       console.log('Response:', response.data);
       setLoggedInUser(username);
-      localStorage.setItem('token', response.data.token); // Store the token
+      localStorage.setItem('token', response.data.token);
     } catch (error) {
       console.error('Error:', error.response ? error.response.data : error.message);
     }
@@ -34,12 +35,10 @@ const AuthComponent = () => {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        // Get user info using the access token
         const userInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
         });
 
-        // Send user info to your backend
         const response = await api.post('/api/auth/google', {
           googleId: userInfo.data.sub,
           email: userInfo.data.email,
@@ -47,8 +46,14 @@ const AuthComponent = () => {
         });
 
         console.log('Google login response:', response.data);
-        setLoggedInUser(response.data.user.username);
-        localStorage.setItem('token', response.data.token);
+
+        if (response.data.isNewUser) {
+          setIsFirstTimeGoogleUser(true);
+          setGoogleUserInfo(userInfo.data);
+        } else {
+          setLoggedInUser(response.data.user.username);
+          localStorage.setItem('token', response.data.token);
+        }
       } catch (error) {
         console.error('Google login error:', error.response?.data || error.message);
       }
@@ -56,14 +61,59 @@ const AuthComponent = () => {
     onError: (error) => console.log('Login Failed:', error)
   });
 
-  if (loggedInUser) {
-    return <div>Welcome, {loggedInUser}!</div>;
-  }
-  
   const handleLogout = () => {
-    localStorage.removeItem('token');
     setLoggedInUser(null);
+    localStorage.removeItem('token');
   };
+
+  const handleFirstTimeGoogleUser = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.post('/api/auth/google/complete-profile', {
+        googleId: googleUserInfo.sub,
+        email: googleUserInfo.email,
+        name: googleUserInfo.name,
+        username,
+        country
+      });
+
+      setLoggedInUser(response.data.user.username);
+      localStorage.setItem('token', response.data.token);
+      setIsFirstTimeGoogleUser(false);
+    } catch (error) {
+      console.error('Error completing profile:', error.response?.data || error.message);
+    }
+  };
+
+  if (isFirstTimeGoogleUser) {
+    return (
+      <div className="auth-container">
+        <h2>Complete Your Profile</h2>
+        <form onSubmit={handleFirstTimeGoogleUser}>
+          <input
+            type="text"
+            placeholder="Choose a username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            required
+          >
+            <option value="">Select a country</option>
+            {countries.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <button type="submit">Complete Profile</button>
+        </form>
+      </div>
+    );
+  }
 
   if (loggedInUser) {
     return (
