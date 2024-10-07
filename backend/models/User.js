@@ -16,7 +16,8 @@ const UserSchema = new mongoose.Schema({
     required: function() { return !this.googleId; }
   },
   country: {
-    type: String
+    type: String,
+    required: true
   },
   googleId: {
     type: String,

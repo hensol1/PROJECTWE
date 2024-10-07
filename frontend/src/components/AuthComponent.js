@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import api from '../api';
+import Select from 'react-select';
+import countryList from 'react-select-country-list';
 
 const AuthComponent = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,7 +15,7 @@ const AuthComponent = () => {
   const [isFirstTimeGoogleUser, setIsFirstTimeGoogleUser] = useState(false);
   const [googleUserInfo, setGoogleUserInfo] = useState(null);
 
-  const countries = ['USA', 'UK', 'France', 'Germany', 'Spain', 'Italy']; // Add more countries as needed
+  const countries = useMemo(() => countryList().getData(), []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +24,7 @@ const AuthComponent = () => {
         username,
         password,
         email,
-        country
+        country: country.value // We now send the country code
       });
       console.log('Response:', response.data);
       setLoggedInUser(username);
@@ -31,6 +33,7 @@ const AuthComponent = () => {
       console.error('Error:', error.response ? error.response.data : error.message);
     }
   };
+
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -74,7 +77,7 @@ const AuthComponent = () => {
         email: googleUserInfo.email,
         name: googleUserInfo.name,
         username,
-        country
+        country: country.value // We now send the country code
       });
 
       setLoggedInUser(response.data.user.username);
@@ -97,18 +100,12 @@ const AuthComponent = () => {
             onChange={(e) => setUsername(e.target.value)}
             required
           />
-          <select
+          <Select
+            options={countries}
             value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            required
-          >
-            <option value="">Select a country</option>
-            {countries.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setCountry(value)}
+            placeholder="Select a country"
+          />
           <button type="submit">Complete Profile</button>
         </form>
       </div>
@@ -123,7 +120,6 @@ const AuthComponent = () => {
       </div>
     );
   }
-
 
   return (
     <div className="auth-container">
@@ -147,22 +143,17 @@ const AuthComponent = () => {
           <>
             <input
               type="email"
-              placeholder="Email (optional)"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-            />
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
               required
-            >
-              <option value="">Select a country</option>
-              {countries.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            />
+            <Select
+              options={countries}
+              value={country}
+              onChange={(value) => setCountry(value)}
+              placeholder="Select a country"
+            />
           </>
         )}
         <button type="submit">{isLogin ? 'Login' : 'Register'}</button>

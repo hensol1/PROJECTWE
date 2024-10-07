@@ -1,0 +1,119 @@
+Project Overview:
+"We Know Better" is a web application for football (soccer) match predictions. It allows users to view upcoming matches, make predictions, and tracks the accuracy of both user (fans) and AI predictions.
+Project Structure:
+Copywe-know-better/
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── AuthComponent.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── config.js
+│   │   └── api.js
+│   ├── package.json
+│   └── .env
+├── backend/
+│   ├── routes/
+│   │   └── auth.js
+│   ├── models/
+│   │   └── User.js
+│   ├── config
+│   │   └── database.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+└── README.md
+Frontend (React.js):
+
+AuthComponent.js: Handles user authentication (login, register, Google sign-in).
+App.js: Main component that renders the AuthComponent.
+config.js: Contains configuration variables like API URL.
+api.js: Axios instance for making API calls with authentication.
+
+Backend (Node.js with Express.js):
+
+server.js: Main entry point for the backend, sets up Express and middleware.
+routes/auth.js: Handles authentication routes (register, login, Google auth).
+models/User.js: Mongoose schema for the User model.
+
+Key Features Implemented:
+
+User Registration: Users can register with a username, email, password, and country.
+User Login: Registered users can log in with their credentials.
+Google Sign-In: Users can sign in using their Google accounts.
+JWT Authentication: JSON Web Tokens are used for maintaining user sessions.
+CORS Configuration: Allows the frontend to communicate with the backend.
+
+Database:
+
+MongoDB: Used for storing user information.
+
+Deployment:
+
+Frontend: Deployed on Vercel
+Backend: Deployed on Render
+
+Next Steps:
+
+Implement match prediction functionality:
+
+Create a model for football matches
+Add routes for fetching upcoming matches
+Create a component for displaying matches and allowing predictions
+
+
+Implement user profile:
+
+Add a profile page where users can view and edit their information
+Show user's prediction history and accuracy
+
+
+Implement AI predictions:
+
+Integrate an AI model or algorithm for match predictions
+Compare AI predictions with user predictions
+
+
+Create a leaderboard:
+
+Rank users based on their prediction accuracy
+Display top predictors
+
+
+Add admin functionality:
+
+Create an admin panel for managing matches and users
+Allow admins to input match results and calculate prediction accuracy
+
+
+Enhance UI/UX:
+
+Improve the overall design and user experience
+Add responsive design for mobile devices
+
+
+Implement real-time updates:
+
+Use WebSockets or server-sent events to update match scores and predictions in real-time
+
+
+Add social features:
+
+Allow users to follow other predictors
+Implement a commenting system for matches
+
+
+
+To continue building this project:
+
+Focus on implementing one feature at a time.
+Create new components in the frontend for each major feature (e.g., MatchList, Prediction, Leaderboard).
+Add corresponding routes and controllers in the backend to handle new features.
+Update the database schema as needed to support new features.
+Regularly test your application and fix any bugs or issues that arise.
+Consider adding unit tests and integration tests to ensure the reliability of your application.
+
+Remember to keep your authentication mechanism (JWT) consistent across new features and protect routes that require authentication in the backend.
