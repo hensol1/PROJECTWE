@@ -4,6 +4,7 @@ import axios from 'axios';
 import config from '../config';
 
 const AuthComponent = () => {
+       console.log('AuthComponent rendering');
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
