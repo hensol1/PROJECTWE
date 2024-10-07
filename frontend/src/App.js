@@ -6,9 +6,13 @@ import config from './config';
 function App() {
   return (
     <GoogleOAuthProvider clientId={config.googleClientId}>
-      <div className="App">
-        <h1>We Know Better</h1>
-        <AuthComponent />
+      <div className="App min-h-screen bg-gray-100">
+        <header className="bg-white shadow-md p-4">
+          <h1 className="text-2xl font-bold text-center">We Know Better</h1>
+        </header>
+        <main>
+          <AuthComponent />
+        </main>
       </div>
     </GoogleOAuthProvider>
   );
