@@ -14,6 +14,7 @@ const Matches = () => {
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       const response = await api.get(`/api/matches?date=${formattedDate}`);
+          console.log('Fetched matches:', response.data);
       setMatches(response.data);
     } catch (error) {
       console.error('Error fetching matches:', error);
