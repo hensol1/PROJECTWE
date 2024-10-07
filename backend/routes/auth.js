@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const cors = require('cors');  // Add this line
 const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -8,7 +9,7 @@ const User = require('../models/User');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Handle preflight requests
-router.options('*', cors());
+router.use(cors());  // Use this instead of router.options('*', cors());
 
 // Google authentication
 router.post('/google', async (req, res) => {

@@ -1,26 +1,21 @@
 {
-  "name": "we-know-better-backend",
+  "name": "projectwe-backend",
   "version": "1.0.0",
-  "description": "Backend for We Know Better football prediction app",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "npm install",
     "dev": "nodemon server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^8.2.0",
+    "dotenv": "^10.0.0",
     "express": "^4.17.1",
-    "google-auth-library": "^9.14.1",
+    "google-auth-library": "^7.10.0",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.12.3"
+    "mongoose": "^6.0.12"
   },
   "devDependencies": {
-    "nodemon": "^2.0.7"
+    "nodemon": "^2.0.14"
   }
 }
