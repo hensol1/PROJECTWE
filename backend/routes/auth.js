@@ -1,10 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// CORS options
+const corsOptions = {
+  origin: ['https://projectwe-tau.vercel.app', 'http://localhost:3000'],
+  optionsSuccessStatus: 204
+};
+
 router.use(cors());
+
+// Apply CORS to all routes in this file
+router.use(cors(corsOptions));
+
+// Handle OPTIONS requests
+router.options('*', cors(corsOptions));
+
 
 router.post('/google', async (req, res) => {
   console.log('Received Google auth request');
@@ -63,6 +77,7 @@ router.post('/google/complete-profile', async (req, res) => {
 
 // Register
 router.post('/register', async (req, res) => {
+  console.log('Received register request:', req.body);
   try {
     const { username, email, password, country } = req.body;
 
@@ -99,7 +114,7 @@ router.post('/register', async (req, res) => {
       }
     );
   } catch (err) {
-    console.error(err.message);
+    console.error('Register error:', err.message);
     res.status(500).send('Server error');
   }
 });

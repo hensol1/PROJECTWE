@@ -2,7 +2,11 @@ import axios from 'axios';
 import config from './config';
 
 const api = axios.create({
-  baseURL: config.apiUrl
+  baseURL: config.apiUrl,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 api.interceptors.request.use(
