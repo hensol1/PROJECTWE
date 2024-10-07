@@ -1,8 +1,41 @@
 const express = require('express');
 const router = express.Router();
+const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+
+   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+   router.post('/google', async (req, res) => {
+     const { token } = req.body;
+     try {
+       const ticket = await client.verifyIdToken({
+         idToken: token,
+         audience: process.env.GOOGLE_CLIENT_ID
+       });
+       const { name, email, sub } = ticket.getPayload();
+       
+       let user = await User.findOne({ email });
+       if (!user) {
+         user = new User({
+           username: name,
+           email,
+           googleId: sub
+         });
+         await user.save();
+       }
+
+       // Generate JWT token here
+       const jwtToken = generateToken(user);
+
+       res.json({ token: jwtToken, user: { id: user._id, username: user.username, email: user.email } });
+     } catch (error) {
+       console.error('Google auth error:', error);
+       res.status(500).json({ message: 'Authentication failed' });
+     }
+   });
+
 
 // Register
 router.post('/register', async (req, res) => {

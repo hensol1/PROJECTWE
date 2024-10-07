@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
-import config from '../config';
+import api from '../api';  // Import the new api utility
+import axios from 'axios'; // Keep this for non-authenticated requests
 
 const AuthComponent = () => {
        console.log('AuthComponent rendering');
@@ -17,7 +17,7 @@ const AuthComponent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${config.apiUrl}/api/auth/${isLogin ? 'login' : 'register'}`, {
+      const response = await api.post(`/api/auth/${isLogin ? 'login' : 'register'}`, {
         username,
         password,
         email,
@@ -25,19 +25,28 @@ const AuthComponent = () => {
       });
       console.log('Response:', response.data);
       setLoggedInUser(username);
+      localStorage.setItem('token', response.data.token); // Store the token
     } catch (error) {
       console.error('Error:', error.response ? error.response.data : error.message);
     }
   };
 
   const googleLogin = useGoogleLogin({
-    onSuccess: async (codeResponse) => {
+    onSuccess: async (tokenResponse) => {
       try {
-        const response = await axios.post(`${config.apiUrl}/api/auth/google`, {
-          code: codeResponse.code
+        const googleUserInfo = await axios.get(
+          'https://www.googleapis.com/oauth2/v3/userinfo',
+          { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
+        );
+
+        const response = await api.post('/api/auth/google', {
+          token: tokenResponse.access_token,
+          userInfo: googleUserInfo.data
         });
+
         console.log('Google login response:', response.data);
-        setLoggedInUser(response.data.username);
+        setLoggedInUser(response.data.user.username);
+        localStorage.setItem('token', response.data.token); // Store the token
       } catch (error) {
         console.error('Google login error:', error.response ? error.response.data : error.message);
       }
@@ -48,6 +57,21 @@ const AuthComponent = () => {
   if (loggedInUser) {
     return <div>Welcome, {loggedInUser}!</div>;
   }
+  
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setLoggedInUser(null);
+  };
+
+  if (loggedInUser) {
+    return (
+      <div>
+        <p>Welcome, {loggedInUser}!</p>
+        <button onClick={handleLogout}>Logout</button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="auth-container">
