@@ -1,18 +1,25 @@
+const cors = require('cors');
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+
+app.use(cors({
+  origin: [
+    'https://projectwe-n8xtglvmo-hensol1s-projects.vercel.app',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: ['https://projectwe-tau.vercel.app', 'http://localhost:3000'],
-  credentials: true
-}));
+
 app.use(express.json());
 
 // Connect to MongoDB
