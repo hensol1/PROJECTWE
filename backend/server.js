@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const matchesRoutes = require('./routes/matches');
 
 dotenv.config();
 
@@ -19,6 +20,9 @@ app.use(cors({
 
 // Middleware
 app.use(express.json());
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/matches', matchesRoutes);
+
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {

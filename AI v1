@@ -11,33 +11,35 @@ Copywe-know-better/
 │   │   │   └── AuthComponent.js
 │   │   ├── App.js
 │   │   ├── index.js
+│   │   ├── index.css
 │   │   ├── config.js
 │   │   └── api.js
 │   ├── package.json
+│   ├── tailwind.config.js
 │   └── .env
 ├── backend/
 │   ├── routes/
 │   │   └── auth.js
 │   ├── models/
 │   │   └── User.js
-│   ├── config
-│   │   └── database.js
 │   ├── server.js
 │   ├── package.json
 │   └── .env
 └── README.md
 Frontend (React.js):
 
-AuthComponent.js: Handles user authentication (login, register, Google sign-in).
-App.js: Main component that renders the AuthComponent.
-config.js: Contains configuration variables like API URL.
+AuthComponent.js: Handles user authentication (login, register, Google sign-in) with a modal interface.
+App.js: Main component that renders the AuthComponent and provides overall layout.
+config.js: Contains configuration variables like API URL and Google Client ID.
 api.js: Axios instance for making API calls with authentication.
+index.css: Contains Tailwind CSS imports and any custom styles.
+tailwind.config.js: Configuration file for Tailwind CSS.
 
 Backend (Node.js with Express.js):
 
-server.js: Main entry point for the backend, sets up Express and middleware.
+server.js: Main entry point for the backend, sets up Express, middleware, and CORS.
 routes/auth.js: Handles authentication routes (register, login, Google auth).
-models/User.js: Mongoose schema for the User model.
+models/User.js: Mongoose schema for the User model, including country field.
 
 Key Features Implemented:
 
@@ -45,75 +47,30 @@ User Registration: Users can register with a username, email, password, and coun
 User Login: Registered users can log in with their credentials.
 Google Sign-In: Users can sign in using their Google accounts.
 JWT Authentication: JSON Web Tokens are used for maintaining user sessions.
-CORS Configuration: Allows the frontend to communicate with the backend.
+CORS Configuration: Allows the frontend to communicate with the backend securely.
+Country Selection: Uses react-select-country-list for a comprehensive list of countries with flags.
+Modal Interface: Sign-in/Register form appears in a modal for better user experience.
+Responsive Design: Uses Tailwind CSS for a mobile-friendly, modern UI.
 
 Database:
 
-MongoDB: Used for storing user information.
+MongoDB: Used for storing user information, including country data.
 
 Deployment:
 
 Frontend: Deployed on Vercel
 Backend: Deployed on Render
 
-Next Steps:
+Authentication Flow:
 
-Implement match prediction functionality:
+User clicks "Sign In" button, opening a modal.
+User can choose to log in, register, or use Google Sign-In.
+For regular login/register, credentials are sent to the backend for verification/creation.
+For Google Sign-In, OAuth flow is initiated, and user info is sent to the backend.
+Upon successful authentication, a JWT is stored in localStorage for session management.
 
-Create a model for football matches
-Add routes for fetching upcoming matches
-Create a component for displaying matches and allowing predictions
+Styling:
 
-
-Implement user profile:
-
-Add a profile page where users can view and edit their information
-Show user's prediction history and accuracy
-
-
-Implement AI predictions:
-
-Integrate an AI model or algorithm for match predictions
-Compare AI predictions with user predictions
-
-
-Create a leaderboard:
-
-Rank users based on their prediction accuracy
-Display top predictors
-
-
-Add admin functionality:
-
-Create an admin panel for managing matches and users
-Allow admins to input match results and calculate prediction accuracy
-
-
-Enhance UI/UX:
-
-Improve the overall design and user experience
-Add responsive design for mobile devices
-
-
-Implement real-time updates:
-
-Use WebSockets or server-sent events to update match scores and predictions in real-time
-
-
-Add social features:
-
-Allow users to follow other predictors
-Implement a commenting system for matches
-
-
-
-To continue building this project:
-
-Focus on implementing one feature at a time.
-Create new components in the frontend for each major feature (e.g., MatchList, Prediction, Leaderboard).
-Add corresponding routes and controllers in the backend to handle new features.
-Update the database schema as needed to support new features.
-Regularly test your application and fix any bugs or issues that arise.
-Consider adding unit tests and integration tests to ensure the reliability of your application.
-
-Remember to keep your authentication mechanism (JWT) consistent across new features and protect routes that require authentication in the backend.
+Tailwind CSS is used for styling, providing a clean and responsive design.
+The authentication modal is centered on the screen with a clean white background.
+Buttons are styled with appropriate colors (blue for primary actions, red for Google Sign-In).
