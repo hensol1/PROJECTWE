@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import api from '../api';  // Import the new api utility
-import axios from 'axios'; // Keep this for non-authenticated requests
+import axios from 'axios';
+import api from '../api';
 
 const AuthComponent = () => {
        console.log('AuthComponent rendering');
@@ -34,21 +34,23 @@ const AuthComponent = () => {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const googleUserInfo = await axios.get(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
-        );
+        // Get user info using the access token
+        const userInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+        });
 
+        // Send user info to your backend
         const response = await api.post('/api/auth/google', {
-          token: tokenResponse.access_token,
-          userInfo: googleUserInfo.data
+          googleId: userInfo.data.sub,
+          email: userInfo.data.email,
+          name: userInfo.data.name
         });
 
         console.log('Google login response:', response.data);
         setLoggedInUser(response.data.user.username);
-        localStorage.setItem('token', response.data.token); // Store the token
+        localStorage.setItem('token', response.data.token);
       } catch (error) {
-        console.error('Google login error:', error.response ? error.response.data : error.message);
+        console.error('Google login error:', error.response?.data || error.message);
       }
     },
     onError: (error) => console.log('Login Failed:', error)

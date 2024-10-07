@@ -1,42 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const cors = require('cors');  // Add this line
-const { OAuth2Client } = require('google-auth-library');
-const bcrypt = require('bcryptjs');
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+router.use(cors());
 
-// Handle preflight requests
-router.use(cors());  // Use this instead of router.options('*', cors());
-
-// Google authentication
 router.post('/google', async (req, res) => {
-    console.log('Received Google auth request');
+  console.log('Received Google auth request');
+  const { googleId, email, name } = req.body;
 
-  const { token } = req.body;
   try {
-        console.log('Verifying token');
-
-    if (!token) {
-      return res.status(400).json({ message: 'Token is missing' });
+    if (!googleId || !email) {
+      return res.status(400).json({ message: 'Google ID and email are required' });
     }
 
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
-        console.log('Token verified');
-
-    const { name, email, sub } = ticket.getPayload();
-    
     let user = await User.findOne({ email });
     if (!user) {
       user = new User({
         username: name,
         email,
-        googleId: sub
+        googleId
       });
       await user.save();
     }

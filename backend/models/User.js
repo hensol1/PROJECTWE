@@ -8,23 +8,20 @@ const UserSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: false,
-    unique: true,
-    sparse: true
+    required: true,
+    unique: true
   },
   password: {
     type: String,
     required: function() { return !this.googleId; }
   },
   country: {
-    type: String,
-    required: true
+    type: String
   },
   googleId: {
     type: String,
-    unique: true,
     sparse: true
   }
-}, { timestamps: true });
+});
 
 module.exports = mongoose.model('User', UserSchema);
