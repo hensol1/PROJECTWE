@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
+import config from '../config';
 
 const AuthComponent = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,20 +15,31 @@ const AuthComponent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send a request to your backend
-    console.log('Form submitted:', { username, password, email, country });
-    // For demonstration, we'll just set the logged in user
-    setLoggedInUser(username);
+    try {
+      const response = await axios.post(`${config.apiUrl}/api/auth/${isLogin ? 'login' : 'register'}`, {
+        username,
+        password,
+        email,
+        country
+      });
+      console.log('Response:', response.data);
+      setLoggedInUser(username);
+    } catch (error) {
+      console.error('Error:', error.response ? error.response.data : error.message);
+    }
   };
 
   const googleLogin = useGoogleLogin({
-    onSuccess: (codeResponse) => {
-      console.log(codeResponse);
-      // Here you would typically send the code to your backend
-      // For now, we'll just prompt for a username and country
-      const googleUsername = prompt('Please choose a username:');
-      const googleCountry = prompt('Please choose a country:');
-      setLoggedInUser(googleUsername);
+    onSuccess: async (codeResponse) => {
+      try {
+        const response = await axios.post(`${config.apiUrl}/api/auth/google`, {
+          code: codeResponse.code
+        });
+        console.log('Google login response:', response.data);
+        setLoggedInUser(response.data.username);
+      } catch (error) {
+        console.error('Google login error:', error.response ? error.response.data : error.message);
+      }
     },
     onError: (error) => console.log('Login Failed:', error)
   });
