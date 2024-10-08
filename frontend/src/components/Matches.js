@@ -64,6 +64,14 @@ const Matches = () => {
     }
   };
 
+  const groupedMatches = matches.reduce((acc, match) => {
+    if (!acc[match.competition.name]) {
+      acc[match.competition.name] = [];
+    }
+    acc[match.competition.name].push(match);
+    return acc;
+  }, {});
+
   return (
     <div className="container mx-auto px-4">
       <div className="flex justify-between items-center my-4">
@@ -79,19 +87,13 @@ const Matches = () => {
         Fetch All Matches
       </button>
 
-      {matches.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
-        }
-        acc[match.competition.name].push(match);
-        return acc;
-      }, {}).map((competition, matches) => (
+      {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-6">
           <h3 className="text-lg font-semibold mb-2 flex items-center">
-            <img src={matches[0].competition.emblem} alt={competition} className="w-6 h-6 mr-2" />
+            <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-6 h-6 mr-2" />
             {competition}
           </h3>
-          {matches.map(match => (
+          {competitionMatches.map(match => (
             <div key={match.id} className="bg-white shadow rounded-lg p-4 mb-4 flex items-center justify-between">
               <div className="flex items-center w-1/3">
                 <span className="font-semibold">{match.homeTeam.name}</span>
