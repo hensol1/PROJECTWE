@@ -3,7 +3,7 @@ import api from '../api';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 
 const Matches = () => {
-  const [matches, setMatches] = useState({});
+  const [matches, setMatches] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedLeagues, setExpandedLeagues] = useState({});
 
@@ -17,20 +17,10 @@ const Matches = () => {
       console.log('Fetching matches for date:', formattedDate);
       const response = await api.get(`/api/matches?date=${formattedDate}`);
       console.log('Fetched matches:', response.data);
-      
-      // Group matches by competition
-      const groupedMatches = response.data.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
-        }
-        acc[match.competition.name].push(match);
-        return acc;
-      }, {});
-
-      setMatches(groupedMatches);
+      setMatches(response.data);
     } catch (error) {
       console.error('Error fetching matches:', error.response ? error.response.data : error.message);
-      setMatches({});
+      setMatches([]);
     }
   };
 
@@ -39,20 +29,10 @@ const Matches = () => {
       console.log('Fetching all matches');
       const response = await api.get('/api/matches/all');
       console.log('Fetched all matches:', response.data);
-      
-      // Group matches by competition
-      const groupedMatches = response.data.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
-        }
-        acc[match.competition.name].push(match);
-        return acc;
-      }, {});
-
-      setMatches(groupedMatches);
+      setMatches(response.data);
     } catch (error) {
       console.error('Error fetching all matches:', error.response ? error.response.data : error.message);
-      setMatches({});
+      setMatches([]);
     }
   };
 
@@ -107,6 +87,14 @@ const Matches = () => {
     }));
   };
 
+  const groupedMatches = matches.reduce((acc, match) => {
+    if (!acc[match.competition.name]) {
+      acc[match.competition.name] = [];
+    }
+    acc[match.competition.name].push(match);
+    return acc;
+  }, {});
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-4">
@@ -122,7 +110,7 @@ const Matches = () => {
         Fetch All Matches
       </button>
 
-      {Object.entries(matches).map(([competition, competitionMatches]) => (
+      {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-4">
           <button 
             className="w-full text-left text-xl font-semibold mb-2 flex items-center bg-gray-200 p-2 rounded-lg hover:bg-gray-300 transition duration-200"
