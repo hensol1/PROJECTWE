@@ -10,16 +10,17 @@ const Matches = () => {
     fetchMatches(currentDate);
   }, [currentDate]);
 
-  const fetchMatches = async (date) => {
-    try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      const response = await api.get(`/api/matches?date=${formattedDate}`);
-          console.log('Fetched matches:', response.data);
-      setMatches(response.data);
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-    }
-  };
+const fetchMatches = async (date) => {
+  try {
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    console.log('Fetching matches for date:', formattedDate);
+    const response = await api.get(`/api/matches?date=${formattedDate}`);
+    console.log('Fetched matches:', response.data);
+    setMatches(response.data);
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+  }
+};
 
   const handleDateChange = (days) => {
     setCurrentDate(prevDate => days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days)));
