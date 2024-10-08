@@ -5,7 +5,7 @@ import { format, addDays, subDays, parseISO } from 'date-fns';
 const Matches = () => {
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [expandedLeagues, setExpandedLeagues] = useState({});
+  const [collapsedLeagues, setCollapsedLeagues] = useState({});
 
   useEffect(() => {
     fetchMatches(currentDate);
@@ -27,6 +27,8 @@ const Matches = () => {
       }, {});
 
       setMatches(groupedMatches);
+      // Reset collapsed state when fetching new matches
+      setCollapsedLeagues({});
     } catch (error) {
       console.error('Error fetching matches:', error.response ? error.response.data : error.message);
       setMatches({});
@@ -48,6 +50,8 @@ const Matches = () => {
       }, {});
 
       setMatches(groupedMatches);
+      // Reset collapsed state when fetching all matches
+      setCollapsedLeagues({});
     } catch (error) {
       console.error('Error fetching all matches:', error.response ? error.response.data : error.message);
       setMatches({});
@@ -99,7 +103,7 @@ const Matches = () => {
   };
 
   const toggleLeague = (competition) => {
-    setExpandedLeagues(prev => ({
+    setCollapsedLeagues(prev => ({
       ...prev,
       [competition]: !prev[competition]
     }));
@@ -128,9 +132,9 @@ const Matches = () => {
           >
             <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-8 h-8 mr-2" />
             {competition}
-            <span className="ml-auto">{expandedLeagues[competition] ? '▲' : '▼'}</span>
+            <span className="ml-auto">{collapsedLeagues[competition] ? '▼' : '▲'}</span>
           </button>
-          {expandedLeagues[competition] && (
+          {!collapsedLeagues[competition] && (
             <div className="space-y-2">
               {competitionMatches.map(match => (
                 <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
