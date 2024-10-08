@@ -154,16 +154,16 @@ const AuthComponent = () => {
 
   return (
     <div className="absolute top-0 right-0"> {/* Added absolute top-0 right-0 */}
-       loggedInUser ? (
-         <div className="text-center flex justify-between items-center"> {/* Added flexbox styles */}
-           <p className="text-xl mb-4">Welcome, {loggedInUser}!</p>
-           <button
-             onClick={handleLogout}
-             className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-           >
-             Logout
-            </button>
-         </div>
+      {loggedInUser ? (
+        <div className="text-center flex justify-between items-center">
+          <p className="text-xl mb-4">Welcome, {loggedInUser}!</p>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+          >
+            Logout
+          </button>
+        </div>
       ) : (
         <>
           <button
