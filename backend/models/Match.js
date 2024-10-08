@@ -32,7 +32,7 @@ const MatchSchema = new mongoose.Schema({
   },
   source: String,
   status: String,
-  utcDate: Date
-});
+  utcDate: String  // Change this to String to match your MongoDB document
+}, { collection: 'matches' });  // Specify the collection name
 
-module.exports = mongoose.model('Match', MatchSchema, 'matches');
+module.exports = mongoose.model('Match', MatchSchema);

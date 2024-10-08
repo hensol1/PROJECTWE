@@ -18,7 +18,8 @@ const fetchMatches = async (date) => {
     console.log('Fetched matches:', response.data);
     setMatches(response.data);
   } catch (error) {
-    console.error('Error fetching matches:', error);
+    console.error('Error fetching matches:', error.response ? error.response.data : error.message);
+    setMatches([]);  // Set matches to an empty array in case of error
   }
 };
 

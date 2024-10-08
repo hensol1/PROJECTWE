@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const matchesRoutes = require('./routes/matches');
 
 dotenv.config();
 
@@ -14,15 +13,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204
 }));
 
 // Middleware
 app.use(express.json());
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/matches', matchesRoutes);
-
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
@@ -30,16 +24,11 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true,
 })
 .then(() => console.log('MongoDB connected'))
-.catch(err => console.log('MongoDB connection error:', err));
-
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});
-
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/matches', require('./routes/matches'));
 
 const PORT = process.env.PORT || 5000;
 
