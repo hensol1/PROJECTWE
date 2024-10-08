@@ -10,18 +10,30 @@ const Matches = () => {
     fetchMatches(currentDate);
   }, [currentDate]);
 
-const fetchMatches = async (date) => {
-  try {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    console.log('Fetching matches for date:', formattedDate);
-    const response = await api.get(`/api/matches?date=${formattedDate}`);
-    console.log('Fetched matches:', response.data);
-    setMatches(response.data);
-  } catch (error) {
-    console.error('Error fetching matches:', error.response ? error.response.data : error.message);
-    setMatches([]);  // Set matches to an empty array in case of error
-  }
-};
+  const fetchMatches = async (date) => {
+    try {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      console.log('Fetching matches for date:', formattedDate);
+      const response = await api.get(`/api/matches?date=${formattedDate}`);
+      console.log('Fetched matches:', response.data);
+      setMatches(response.data);
+    } catch (error) {
+      console.error('Error fetching matches:', error.response ? error.response.data : error.message);
+      setMatches([]);
+    }
+  };
+
+  const fetchAllMatches = async () => {
+    try {
+      console.log('Fetching all matches');
+      const response = await api.get('/api/matches/all');
+      console.log('Fetched all matches:', response.data);
+      setMatches(response.data);
+    } catch (error) {
+      console.error('Error fetching all matches:', error.response ? error.response.data : error.message);
+      setMatches([]);
+    }
+  };
 
   const handleDateChange = (days) => {
     setCurrentDate(prevDate => days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days)));
@@ -63,6 +75,9 @@ const fetchMatches = async (date) => {
           Next Day
         </button>
       </div>
+      <button onClick={fetchAllMatches} className="bg-green-500 text-white px-4 py-2 rounded mb-4">
+        Fetch All Matches
+      </button>
 
       {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-6">
