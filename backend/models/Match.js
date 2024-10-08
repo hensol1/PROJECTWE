@@ -33,9 +33,9 @@ const MatchSchema = new mongoose.Schema({
   source: String,
   status: String,
   utcDate: {
-    type: Date,
-    get: (v) => v.toISOString(),
-    set: (v) => new Date(v)
+    type: String,
+    get: (v) => v,
+    set: (v) => v
   }
 }, { 
   collection: 'matches',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, parseISO } from 'date-fns';
 
 const Matches = () => {
   const [matches, setMatches] = useState([]);
@@ -41,6 +41,11 @@ const Matches = () => {
       console.log('New date:', format(newDate, 'yyyy-MM-dd'));
       return newDate;
     });
+  };
+
+  const formatMatchDate = (dateString) => {
+    const date = parseISO(dateString);
+    return format(date, 'HH:mm');
   };
 
   const renderMatchStatus = (match) => {
@@ -95,9 +100,9 @@ const Matches = () => {
                 <span className="font-semibold">{match.homeTeam.name}</span>
                 <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8 mx-2" />
               </div>
-              <div className="text-center w-1/3">
-                {renderMatchStatus(match)}
-              </div>
+          <div className="text-center w-1/3">
+            {match.status === 'SCHEDULED' ? formatMatchDate(match.utcDate) : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
+          </div>
               <div className="flex items-center justify-end w-1/3">
                 <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8 mx-2" />
                 <span className="font-semibold">{match.awayTeam.name}</span>

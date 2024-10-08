@@ -9,15 +9,18 @@ router.get('/', async (req, res) => {
   const nextDay = new Date(queryDate);
   nextDay.setUTCDate(queryDate.getUTCDate() + 1);
 
+  const queryDateString = queryDate.toISOString().split('T')[0];
+  const nextDayString = nextDay.toISOString().split('T')[0];
+
   try {
     console.log('Fetching matches for date:', date);
-    console.log('Query start:', queryDate.toISOString());
-    console.log('Query end:', nextDay.toISOString());
+    console.log('Query start:', queryDateString);
+    console.log('Query end:', nextDayString);
 
     const matches = await Match.find({
       utcDate: {
-        $gte: queryDate.toISOString(),
-        $lt: nextDay.toISOString()
+        $gte: queryDateString,
+        $lt: nextDayString
       }
     }).sort({ 'competition.name': 1, utcDate: 1 });
 
