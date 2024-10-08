@@ -5,6 +5,7 @@ import { format, addDays, subDays, parseISO } from 'date-fns';
 const Matches = () => {
   const [matches, setMatches] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [expandedLeagues, setExpandedLeagues] = useState({});
 
   useEffect(() => {
     fetchMatches(currentDate);
@@ -65,7 +66,7 @@ const Matches = () => {
       }
     };
 
-        return (
+    return (
       <div className="flex flex-col items-center">
         <span className="text-lg font-bold mb-1">
           {match.status === 'SCHEDULED' || match.status === 'TIMED'
@@ -79,6 +80,12 @@ const Matches = () => {
     );
   };
 
+  const toggleLeague = (competition) => {
+    setExpandedLeagues(prev => ({
+      ...prev,
+      [competition]: !prev[competition]
+    }));
+  };
 
   const groupedMatches = matches.reduce((acc, match) => {
     if (!acc[match.competition.name]) {
@@ -90,7 +97,7 @@ const Matches = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-4">
         <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
           Previous Day
         </button>
@@ -99,15 +106,22 @@ const Matches = () => {
           Next Day
         </button>
       </div>
+      <button onClick={fetchAllMatches} className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg mb-4 transition duration-200">
+        Fetch All Matches
+      </button>
 
       {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
-        <div key={competition} className="mb-8">
-          <h3 className="text-xl font-semibold mb-4 flex items-center bg-gray-200 p-2 rounded-lg">
+        <div key={competition} className="mb-4">
+          <button 
+            className="w-full text-left text-xl font-semibold mb-2 flex items-center bg-gray-200 p-2 rounded-lg hover:bg-gray-300 transition duration-200"
+            onClick={() => toggleLeague(competition)}
+          >
             <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-8 h-8 mr-2" />
             {competition}
-          </h3>
-          {competitionMatches.map(match => (
-            <div key={match.id} className="bg-white shadow-md rounded-lg p-4 mb-4">
+            <span className="ml-auto">{expandedLeagues[competition] ? '▲' : '▼'}</span>
+          </button>
+          {expandedLeagues[competition] && competitionMatches.map(match => (
+            <div key={match.id} className="bg-white shadow-md rounded-lg p-4 mb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center w-2/5 justify-end">
                   <span className="font-semibold mr-2">{match.homeTeam.name}</span>
