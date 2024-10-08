@@ -49,20 +49,36 @@ const Matches = () => {
   };
 
   const renderMatchStatus = (match) => {
-    switch (match.status) {
-      case 'SCHEDULED':
-      case 'TIMED':
-        return `${formatMatchDate(match.utcDate)} - ${match.status}`;
-      case 'IN_PLAY':
-      case 'PAUSED':
-      case 'LIVE':
-        return `${match.score.fullTime.home} - ${match.score.fullTime.away} (${match.status})`;
-      case 'FINISHED':
-        return `${match.score.fullTime.home} - ${match.score.fullTime.away} (Finished)`;
-      default:
-        return match.status;
-    }
+    const statusStyle = (status) => {
+      switch (status) {
+        case 'FINISHED':
+          return 'bg-gray-500 text-white';
+        case 'IN_PLAY':
+        case 'PAUSED':
+        case 'LIVE':
+          return 'bg-green-500 text-white';
+        case 'TIMED':
+        case 'SCHEDULED':
+          return 'bg-blue-500 text-white';
+        default:
+          return 'bg-gray-200 text-gray-800';
+      }
+    };
+
+        return (
+      <div className="flex flex-col items-center">
+        <span className="text-lg font-bold mb-1">
+          {match.status === 'SCHEDULED' || match.status === 'TIMED'
+            ? formatMatchDate(match.utcDate)
+            : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
+        </span>
+        <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
+          {match.status}
+        </span>
+      </div>
+    );
   };
+
 
   const groupedMatches = matches.reduce((acc, match) => {
     if (!acc[match.competition.name]) {
@@ -101,9 +117,7 @@ const Matches = () => {
                   <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
                 </div>
                 <div className="text-center w-1/5">
-                  <span className="px-2 py-1 bg-gray-200 rounded text-sm font-medium">
-                    {renderMatchStatus(match)}
-                  </span>
+                  {renderMatchStatus(match)}
                 </div>
                 <div className="flex items-center w-2/5">
                   <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
