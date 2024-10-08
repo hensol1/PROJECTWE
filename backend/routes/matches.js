@@ -4,25 +4,27 @@ const Match = require('../models/Match');
 
 router.get('/', async (req, res) => {
   const { date } = req.query;
-  const startOfDay = new Date(date);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date(date);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const queryDate = new Date(date);
+  queryDate.setUTCHours(0, 0, 0, 0);
+  const nextDay = new Date(queryDate);
+  nextDay.setUTCDate(queryDate.getUTCDate() + 1);
 
   try {
     console.log('Fetching matches for date:', date);
-    console.log('Start of day:', startOfDay.toISOString());
-    console.log('End of day:', endOfDay.toISOString());
+    console.log('Query start:', queryDate.toISOString());
+    console.log('Query end:', nextDay.toISOString());
 
     const matches = await Match.find({
       utcDate: {
-        $gte: startOfDay.toISOString(),
-        $lte: endOfDay.toISOString()
+        $gte: queryDate.toISOString(),
+        $lt: nextDay.toISOString()
       }
     }).sort({ 'competition.name': 1, utcDate: 1 });
 
     console.log('Matches found:', matches.length);
-    console.log('Sample match:', matches[0]);
+    if (matches.length > 0) {
+      console.log('Sample match date:', matches[0].utcDate);
+    }
 
     res.json(matches);
   } catch (error) {
@@ -31,13 +33,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Add a new route to fetch all matches
-router.get('/all', async (req, 
-res) => {
+router.get('/all', async (req, res) => {
   try {
     const matches = await Match.find().limit(10);
     console.log('All matches found:', matches.length);
-    console.log('Sample match:', matches[0]);
+    if (matches.length > 0) {
+      console.log('Sample match date:', matches[0].utcDate);
+    }
     res.json(matches);
   } catch (error) {
     console.error('Error fetching all matches:', error);

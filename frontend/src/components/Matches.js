@@ -36,7 +36,11 @@ const Matches = () => {
   };
 
   const handleDateChange = (days) => {
-    setCurrentDate(prevDate => days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days)));
+    setCurrentDate(prevDate => {
+      const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
+      console.log('New date:', format(newDate, 'yyyy-MM-dd'));
+      return newDate;
+    });
   };
 
   const renderMatchStatus = (match) => {
