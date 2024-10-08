@@ -73,38 +73,42 @@ const Matches = () => {
   }, {});
 
   return (
-    <div className="container mx-auto px-4">
-      <div className="flex justify-between items-center my-4">
-        <button onClick={() => handleDateChange(-1)} className="bg-blue-500 text-white px-4 py-2 rounded">
+    <div className="max-w-3xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
           Previous Day
         </button>
-        <h2 className="text-xl font-bold">{format(currentDate, 'dd MMM yyyy')}</h2>
-        <button onClick={() => handleDateChange(1)} className="bg-blue-500 text-white px-4 py-2 rounded">
+        <h2 className="text-2xl font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
+        <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
           Next Day
         </button>
       </div>
-      <button onClick={fetchAllMatches} className="bg-green-500 text-white px-4 py-2 rounded mb-4">
+      <button onClick={fetchAllMatches} className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg mb-8 transition duration-200">
         Fetch All Matches
       </button>
 
       {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
-        <div key={competition} className="mb-6">
-          <h3 className="text-lg font-semibold mb-2 flex items-center">
-            <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-6 h-6 mr-2" />
+        <div key={competition} className="mb-8">
+          <h3 className="text-xl font-semibold mb-4 flex items-center bg-gray-200 p-2 rounded-lg">
+            <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-8 h-8 mr-2" />
             {competition}
           </h3>
           {competitionMatches.map(match => (
-            <div key={match.id} className="bg-white shadow rounded-lg p-4 mb-4 flex items-center justify-between">
-              <div className="flex items-center w-1/3">
-                <span className="font-semibold">{match.homeTeam.name}</span>
-                <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8 mx-2" />
-              </div>
-              <div className="text-center w-1/3">
-                {renderMatchStatus(match)}
-              </div>
-              <div className="flex items-center justify-end w-1/3">
-                <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8 mx-2" />
-                <span className="font-semibold">{match.awayTeam.name}</span>
+            <div key={match.id} className="bg-white shadow-md rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center w-2/5 justify-end">
+                  <span className="font-semibold mr-2">{match.homeTeam.name}</span>
+                  <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
+                </div>
+                <div className="text-center w-1/5">
+                  <span className="px-2 py-1 bg-gray-200 rounded text-sm font-medium">
+                    {renderMatchStatus(match)}
+                  </span>
+                </div>
+                <div className="flex items-center w-2/5">
+                  <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
+                  <span className="font-semibold ml-2">{match.awayTeam.name}</span>
+                </div>
               </div>
             </div>
           ))}

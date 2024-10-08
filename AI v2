@@ -1,0 +1,155 @@
+Project Overview:
+"We Know Better" is a web application for football (soccer) match predictions. It allows users to view upcoming matches, make predictions, and tracks the accuracy of both user (fans) and AI predictions.
+Project Structure:
+Copywe-know-better/
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AuthComponent.js
+│   │   │   └── Matches.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── index.css
+│   │   ├── config.js
+│   │   └── api.js
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── .env
+├── backend/
+│   ├── routes/
+│   │   ├── auth.js
+│   │   └── matches.js
+│   ├── models/
+│   │   ├── User.js
+│   │   └── Match.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+└── README.md
+Frontend (React.js):
+
+AuthComponent.js: Handles user authentication (login, register, Google sign-in) with a modal interface.
+Matches.js: New component that fetches and displays football matches.
+App.js: Main component that renders the AuthComponent and Matches component.
+config.js: Contains configuration variables like API URL and Google Client ID.
+api.js: Axios instance for making API calls with authentication.
+index.css: Contains Tailwind CSS imports and any custom styles.
+tailwind.config.js: Configuration file for Tailwind CSS.
+
+Backend (Node.js with Express.js):
+
+server.js: Main entry point for the backend, sets up Express, middleware, and CORS.
+routes/auth.js: Handles authentication routes (register, login, Google auth).
+routes/matches.js: New route file that handles fetching matches from the database.
+models/User.js: Mongoose schema for the User model.
+models/Match.js: New Mongoose schema for the Match model.
+
+Key Features Implemented:
+
+User Authentication:
+
+User Registration: Users can register with a username, email, password, and country.
+User Login: Registered users can log in with their credentials.
+Google Sign-In: Users can sign in using their Google accounts.
+JWT Authentication: JSON Web Tokens are used for maintaining user sessions.
+
+
+Match Display:
+
+Fetch Matches: Users can view matches for a specific date or fetch all matches.
+Date Navigation: Users can navigate between days to view different matches.
+Match Grouping: Matches are grouped and displayed by competition.
+Match Status: Different match statuses (TIMED, IN_PLAY, FINISHED, etc.) are handled and displayed appropriately.
+Match Details: Each match shows team names, crests, and current score or scheduled time.
+
+
+UI/UX Improvements:
+
+Responsive Design: Uses Tailwind CSS for a mobile-friendly, modern UI.
+Interactive Elements: Buttons for date navigation and fetching all matches.
+
+
+
+Database:
+
+MongoDB: Used for storing user information and match data.
+
+Deployment:
+
+Frontend: Deployed on Vercel
+Backend: Deployed on Render
+
+Match Display Flow:
+
+User lands on the page, and matches for the current date are fetched and displayed.
+User can navigate to previous or next day using provided buttons.
+Matches are grouped by competition and displayed with relevant information.
+Match status is rendered differently based on whether the match is scheduled, in progress, or finished.
+User can fetch all matches regardless of date using the "Fetch All Matches" button.
+
+Next Steps:
+
+Implement match prediction functionality:
+
+Allow users to make predictions for upcoming matches
+Store user predictions in the database
+
+
+Implement user profile:
+
+Add a profile page where users can view and edit their information
+Show user's prediction history and accuracy
+
+
+Implement AI predictions:
+
+Integrate an AI model or algorithm for match predictions
+Compare AI predictions with user predictions
+
+
+Create a leaderboard:
+
+Rank users based on their prediction accuracy
+Display top predictors
+
+
+Add admin functionality:
+
+Create an admin panel for managing matches and users
+Allow admins to input match results and calculate prediction accuracy
+
+
+Enhance UI/UX:
+
+Add animations for smoother transitions
+Implement dark mode toggle
+Add form validation with error messages
+
+
+Implement real-time updates:
+
+Use WebSockets or server-sent events to update match scores and predictions in real-time
+
+
+Add social features:
+
+Allow users to follow other predictors
+Implement a commenting system for matches
+
+
+Optimize performance:
+
+Implement lazy loading for components
+Add caching mechanisms for frequently accessed data
+
+
+Enhance security:
+
+Implement rate limiting on the backend
+Add two-factor authentication option for users
+
+
+
