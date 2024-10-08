@@ -8,13 +8,11 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={config.googleClientId}>
       <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow-sm">
-          <div className="container mx-auto px-4 py-2 flex justify-between items-center">
-            <h1 className="text-xl font-bold text-gray-800">We Know Better</h1>
-            <AuthComponent />
-          </div>
+        <header className="bg-white shadow-sm p-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-gray-800">We Know Better</h1>
+          <AuthComponent />
         </header>
-        <main className="container mx-auto mt-4 px-4">
+        <main className="p-4">
           <Matches />
         </main>
       </div>
