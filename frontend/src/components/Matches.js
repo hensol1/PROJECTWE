@@ -64,6 +64,14 @@ const Matches = () => {
     }
   };
 
+  const groupedMatches = matches.reduce((acc, match) => {
+    if (!acc[match.competition.name]) {
+      acc[match.competition.name] = [];
+    }
+    acc[match.competition.name].push(match);
+    return acc;
+  }, {});
+
   return (
     <div className="container mx-auto px-4">
       <div className="flex justify-between items-center my-4">
@@ -79,27 +87,21 @@ const Matches = () => {
         Fetch All Matches
       </button>
 
-      {matches.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
-        }
-        acc[match.competition.name].push(match);
-        return acc;
-      }, {}).map((competition, matches) => (
+      {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-6">
           <h3 className="text-lg font-semibold mb-2 flex items-center">
-            <img src={matches[0].competition.emblem} alt={competition} className="w-6 h-6 mr-2" />
+            <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-6 h-6 mr-2" />
             {competition}
           </h3>
-          {matches.map(match => (
+          {competitionMatches.map(match => (
             <div key={match.id} className="bg-white shadow rounded-lg p-4 mb-4 flex items-center justify-between">
               <div className="flex items-center w-1/3">
                 <span className="font-semibold">{match.homeTeam.name}</span>
                 <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8 mx-2" />
               </div>
-              <div className="text-center w-1/3">
-                {renderMatchStatus(match)}
-              </div>
+          <div className="text-center w-1/3">
+            {match.status === 'SCHEDULED' ? formatMatchDate(match.utcDate) : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
+          </div>
               <div className="flex items-center justify-end w-1/3">
                 <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8 mx-2" />
                 <span className="font-semibold">{match.awayTeam.name}</span>
@@ -113,3 +115,4 @@ const Matches = () => {
 };
 
 export default Matches;
+
