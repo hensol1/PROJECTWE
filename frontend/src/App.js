@@ -8,9 +8,9 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={config.googleClientId}>
       <div className="bg-gray-100">
-        <header className="bg-white shadow-sm py-2 px-4 flex justify-between items-center">
-          <h1 className="text-lg font-bold text-gray-800">We Know Better</h1>
-          <AuthComponent />
+<header className="bg-white shadow-sm py-2 px-4 flex justify-between items-center">
+  <h1 className="text-lg font-bold text-gray-800">We Know Better</h1>
+  <AuthComponent />
         </header>
         <main className="p-4">
           <Matches />

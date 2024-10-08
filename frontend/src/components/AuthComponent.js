@@ -153,7 +153,7 @@ const AuthComponent = () => {
   );
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="absolute top-0 right-0"> {/* Added absolute top-0 right-0 */}
       {loggedInUser ? (
         <div className="text-center">
           <p className="text-xl mb-4">Welcome, {loggedInUser}!</p>
