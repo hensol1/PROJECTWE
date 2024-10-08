@@ -18,7 +18,6 @@ const Matches = () => {
       const response = await api.get(`/api/matches?date=${formattedDate}`);
       console.log('Fetched matches:', response.data);
       
-      // Group matches by competition
       const groupedMatches = response.data.reduce((acc, match) => {
         if (!acc[match.competition.name]) {
           acc[match.competition.name] = [];
@@ -40,7 +39,6 @@ const Matches = () => {
       const response = await api.get('/api/matches/all');
       console.log('Fetched all matches:', response.data);
       
-      // Group matches by competition
       const groupedMatches = response.data.reduce((acc, match) => {
         if (!acc[match.competition.name]) {
           acc[match.competition.name] = [];
@@ -132,23 +130,27 @@ const Matches = () => {
             {competition}
             <span className="ml-auto">{expandedLeagues[competition] ? '▲' : '▼'}</span>
           </button>
-          {expandedLeagues[competition] && competitionMatches.map(match => (
-            <div key={match.id} className="bg-white shadow-md rounded-lg p-4 mb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center w-2/5 justify-end">
-                  <span className="font-semibold mr-2">{match.homeTeam.name}</span>
-                  <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
+          {expandedLeagues[competition] && (
+            <div className="space-y-2">
+              {competitionMatches.map(match => (
+                <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center w-2/5 justify-end">
+                      <span className="font-semibold mr-2">{match.homeTeam.name}</span>
+                      <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
+                    </div>
+                    <div className="text-center w-1/5">
+                      {renderMatchStatus(match)}
+                    </div>
+                    <div className="flex items-center w-2/5">
+                      <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
+                      <span className="font-semibold ml-2">{match.awayTeam.name}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-center w-1/5">
-                  {renderMatchStatus(match)}
-                </div>
-                <div className="flex items-center w-2/5">
-                  <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
-                  <span className="font-semibold ml-2">{match.awayTeam.name}</span>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       ))}
     </div>
