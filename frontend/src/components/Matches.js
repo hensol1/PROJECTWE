@@ -99,9 +99,6 @@ const Matches = () => {
           Next Day
         </button>
       </div>
-      <button onClick={fetchAllMatches} className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg mb-8 transition duration-200">
-        Fetch All Matches
-      </button>
 
       {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-8">
