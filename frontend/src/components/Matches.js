@@ -3,7 +3,7 @@ import api from '../api';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 
 const Matches = () => {
-  const [matches, setMatches] = useState({});
+  const [matches, setMatches] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedLeagues, setExpandedLeagues] = useState({});
 
@@ -17,19 +17,10 @@ const Matches = () => {
       console.log('Fetching matches for date:', formattedDate);
       const response = await api.get(`/api/matches?date=${formattedDate}`);
       console.log('Fetched matches:', response.data);
-      
-      const groupedMatches = response.data.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
-        }
-        acc[match.competition.name].push(match);
-        return acc;
-      }, {});
-
-      setMatches(groupedMatches);
+      setMatches(response.data);
     } catch (error) {
       console.error('Error fetching matches:', error.response ? error.response.data : error.message);
-      setMatches({});
+      setMatches([]);
     }
   };
 
@@ -38,19 +29,10 @@ const Matches = () => {
       console.log('Fetching all matches');
       const response = await api.get('/api/matches/all');
       console.log('Fetched all matches:', response.data);
-      
-      const groupedMatches = response.data.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
-        }
-        acc[match.competition.name].push(match);
-        return acc;
-      }, {});
-
-      setMatches(groupedMatches);
+      setMatches(response.data);
     } catch (error) {
       console.error('Error fetching all matches:', error.response ? error.response.data : error.message);
-      setMatches({});
+      setMatches([]);
     }
   };
 
@@ -105,6 +87,14 @@ const Matches = () => {
     }));
   };
 
+  const groupedMatches = matches.reduce((acc, match) => {
+    if (!acc[match.competition.name]) {
+      acc[match.competition.name] = [];
+    }
+    acc[match.competition.name].push(match);
+    return acc;
+  }, {});
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-4">
@@ -120,7 +110,7 @@ const Matches = () => {
         Fetch All Matches
       </button>
 
-      {Object.entries(matches).map(([competition, competitionMatches]) => (
+      {Object.entries(groupedMatches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-4">
           <button 
             className="w-full text-left text-xl font-semibold mb-2 flex items-center bg-gray-200 p-2 rounded-lg hover:bg-gray-300 transition duration-200"
@@ -130,27 +120,23 @@ const Matches = () => {
             {competition}
             <span className="ml-auto">{expandedLeagues[competition] ? '▲' : '▼'}</span>
           </button>
-          {expandedLeagues[competition] && (
-            <div className="space-y-2">
-              {competitionMatches.map(match => (
-                <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center w-2/5 justify-end">
-                      <span className="font-semibold mr-2">{match.homeTeam.name}</span>
-                      <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
-                    </div>
-                    <div className="text-center w-1/5">
-                      {renderMatchStatus(match)}
-                    </div>
-                    <div className="flex items-center w-2/5">
-                      <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
-                      <span className="font-semibold ml-2">{match.awayTeam.name}</span>
-                    </div>
-                  </div>
+          {expandedLeagues[competition] && competitionMatches.map(match => (
+            <div key={match.id} className="bg-white shadow-md rounded-lg p-4 mb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center w-2/5 justify-end">
+                  <span className="font-semibold mr-2">{match.homeTeam.name}</span>
+                  <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
                 </div>
-              ))}
+                <div className="text-center w-1/5">
+                  {renderMatchStatus(match)}
+                </div>
+                <div className="flex items-center w-2/5">
+                  <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
+                  <span className="font-semibold ml-2">{match.awayTeam.name}</span>
+                </div>
+              </div>
             </div>
-          )}
+          ))}
         </div>
       ))}
     </div>
