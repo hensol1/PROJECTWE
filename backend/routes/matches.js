@@ -113,8 +113,35 @@ router.post('/:matchId/vote', auth, async (req, res) => {
       console.log(`Added new vote for user ${user.username} on match ${matchId}`);
     }
 
-    await match.save();
-    await user.save();
+  user.totalVotes++;
+  let leagueStat = user.leagueStats.find(stat => stat.leagueId === match.competition.id);
+  if (!leagueStat) {
+    leagueStat = {
+      leagueId: match.competition.id,
+      leagueName: match.competition.name,
+      totalVotes: 0,
+      correctVotes: 0
+    };
+    user.leagueStats.push(leagueStat);
+  }
+  leagueStat.totalVotes++;
+
+  // If the match is finished, update the correctness of the vote
+  if (match.status === 'FINISHED') {
+    const isCorrect = (
+      (vote === 'home' && match.score.winner === 'HOME_TEAM') ||
+      (vote === 'away' && match.score.winner === 'AWAY_TEAM') ||
+      (vote === 'draw' && match.score.winner === 'DRAW')
+    );
+    
+    user.votes[user.votes.length - 1].isCorrect = isCorrect;
+    if (isCorrect) {
+      user.correctVotes++;
+      leagueStat.correctVotes++;
+    }
+  }
+
+  await user.save();
 
     // Calculate percentages
     const totalVotes = match.votes.home + match.votes.draw + match.votes.away;
