@@ -28,6 +28,7 @@ const AuthComponent = () => {
         country: country.value
       });
       setLoggedInUser(username);
+      setUser(username);  // Add this line
       localStorage.setItem('token', response.data.token);
       setIsModalOpen(false);
     } catch (error) {
@@ -53,6 +54,7 @@ const AuthComponent = () => {
           setGoogleUserInfo(userInfo.data);
         } else {
           setLoggedInUser(response.data.user.username);
+          setUser(response.data.user.username);  // Add this line
           localStorage.setItem('token', response.data.token);
           setIsModalOpen(false);
         }
@@ -65,6 +67,7 @@ const AuthComponent = () => {
 
   const handleLogout = () => {
     setLoggedInUser(null);
+    setUser(null);  // Add this line
     localStorage.removeItem('token');
   };
 
@@ -80,6 +83,7 @@ const AuthComponent = () => {
       });
 
       setLoggedInUser(response.data.user.username);
+      setUser(response.data.user.username);  // Add this line
       localStorage.setItem('token', response.data.token);
       setIsFirstTimeGoogleUser(false);
       setIsModalOpen(false);

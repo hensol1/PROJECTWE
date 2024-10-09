@@ -125,29 +125,30 @@ const Matches = ({ user }) => {
     }
   };
 
-  const renderVoteButtons = useCallback((match) => {
-    if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
-      return (
-        <div className="flex justify-around mt-2">
-          <button onClick={() => handleVote(match.id, 'home')} className="bg-blue-500 text-white px-2 py-1 rounded text-sm">
-            Home
-          </button>
-          <button onClick={() => handleVote(match.id, 'draw')} className="bg-gray-500 text-white px-2 py-1 rounded text-sm">
-            Draw
-          </button>
-          <button onClick={() => handleVote(match.id, 'away')} className="bg-red-500 text-white px-2 py-1 rounded text-sm">
-            Away
-          </button>
-        </div>
-      );
-    } else {
-      return (
-        <div className="mt-2 text-sm text-center">
-          <p>Votes: Home {match.votes?.home || 0}, Draw {match.votes?.draw || 0}, Away {match.votes?.away || 0}</p>
-        </div>
-      );
-    }
-  }, [user]);
+const renderVoteButtons = useCallback((match) => {
+  if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
+    return (
+      <div className="flex justify-between items-center mt-2">
+        <button onClick={() => handleVote(match.id, 'home')} className="bg-blue-500 text-white px-2 py-1 rounded text-sm">
+          Home
+        </button>
+        <button onClick={() => handleVote(match.id, 'draw')} className="bg-gray-500 text-white px-2 py-1 rounded text-sm">
+          Draw
+        </button>
+        <button onClick={() => handleVote(match.id, 'away')} className="bg-red-500 text-white px-2 py-1 rounded text-sm">
+          Away
+        </button>
+      </div>
+    );
+  } else {
+    return (
+      <div className="mt-2 text-sm text-center">
+        <p>Votes: Home {match.votes?.home || 0}, Draw {match.votes?.draw || 0}, Away {match.votes?.away || 0}</p>
+      </div>
+    );
+  }
+}, [handleVote]);
+
 
   const renderFansPrediction = useCallback((match) => {
     const votes = match.votes || { home: 0, draw: 0, away: 0 };
