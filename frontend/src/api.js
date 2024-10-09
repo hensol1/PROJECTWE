@@ -28,4 +28,6 @@ api.voteForMatch = (matchId, vote) => {
   return api.post(`/api/matches/${matchId}/vote`, { vote });
 };
 
+api.getUserProfile = () => api.get('/api/user/profile');
+
 export default api;
