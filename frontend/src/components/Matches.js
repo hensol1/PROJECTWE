@@ -205,27 +205,25 @@ const renderVoteButtons = useCallback((match) => {
           {!collapsedLeagues[competition] && (
             <div className="space-y-2">
 {competitionMatches.map(match => (
-  <div key={match.id} className="bg-white shadow-md rounded-lg p-3">
-    <div className="flex items-center">
-      <div className="w-20 flex-shrink-0">
-        {renderMatchStatus(match)}
+  <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center w-1/2 justify-start">
+        <div className="mr-2">
+          {renderMatchStatus(match)}
+        </div>
+        <span className="font-semibold mr-2">{match.homeTeam.name}</span>
+        <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
       </div>
-      <div className="flex-grow flex items-center justify-between">
-        <div className="flex items-center">
-          <span className="font-semibold mr-1">{match.homeTeam.name}</span>
-          <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-6 h-6" />
-        </div>
-        <div className="mx-2 text-center">
-          <span className="text-lg font-bold">
-            {match.status === 'SCHEDULED' || match.status === 'TIMED'
-              ? formatMatchDate(match.utcDate)
-              : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
-          </span>
-        </div>
-        <div className="flex items-center">
-          <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-6 h-6" />
-          <span className="font-semibold ml-1">{match.awayTeam.name}</span>
-        </div>
+      <div className="text-center">
+        <span className="text-lg font-bold">
+          {match.status === 'SCHEDULED' || match.status === 'TIMED'
+            ? formatMatchDate(match.utcDate)
+            : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
+        </span>
+      </div>
+      <div className="flex items-center w-1/2 justify-end">
+        <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
+        <span className="font-semibold ml-2">{match.awayTeam.name}</span>
       </div>
     </div>
     {renderVoteButtons(match)}
