@@ -86,11 +86,12 @@ const renderMatchStatus = (match) => {
   };
 
   return (
-    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
+    <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
       {match.status}
     </span>
   );
 };
+
   const handleVote = async (matchId, vote) => {
     if (!user) {
       alert('Please log in to vote');
@@ -150,28 +151,27 @@ const renderVoteButtons = useCallback((match) => {
 }, [userVotes, handleVote]);
 
 
-const renderFansPrediction = useCallback((match) => {
-  const votes = match.votes || { home: 0, draw: 0, away: 0 };
-  const maxVotes = Math.max(votes.home, votes.draw, votes.away);
-  let prediction = 'No votes yet';
+  const renderFansPrediction = useCallback((match) => {
+    const votes = match.votes || { home: 0, draw: 0, away: 0 };
+    const maxVotes = Math.max(votes.home, votes.draw, votes.away);
+    let prediction = '';
 
-  if (maxVotes > 0) {
-    if (votes.home === maxVotes) {
+    if (maxVotes === 0) {
+      prediction = 'No votes yet';
+    } else if (votes.home === maxVotes) {
       prediction = `${match.homeTeam.name} (Home)`;
     } else if (votes.away === maxVotes) {
       prediction = `${match.awayTeam.name} (Away)`;
     } else {
       prediction = 'Draw';
     }
-  }
 
-  return (
-    <div className="mt-1 text-xs text-center text-gray-600">
-      Fans Prediction: {prediction}
-    </div>
-  );
-}, []);
-
+    return (
+      <div className="mt-2 text-sm text-center">
+        <p>Fans Prediction: {prediction}</p>
+      </div>
+    );
+  }, []);
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({
@@ -207,52 +207,30 @@ const renderFansPrediction = useCallback((match) => {
 {competitionMatches.map(match => (
   <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
     <div className="flex items-center justify-between">
-      <div className="w-20 flex-shrink-0">
+      <div className="flex items-center space-x-4">
         {renderMatchStatus(match)}
+        <div className="flex items-center">
+          <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-6 h-6 mr-2" />
+          <span className="font-semibold">{match.homeTeam.name}</span>
+        </div>
       </div>
-      <div className="flex items-center justify-end w-2/5">
-        <span className="font-semibold mr-2">{match.homeTeam.name}</span>
-        <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-6 h-6" />
-      </div>
-      <div className="text-center w-1/5">
+      <div className="flex items-center space-x-4">
         <span className="text-sm font-medium">
           {match.status === 'SCHEDULED' || match.status === 'TIMED'
             ? formatMatchDate(match.utcDate)
             : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
         </span>
-      </div>
-      <div className="flex items-center justify-start w-2/5">
-        <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-6 h-6" />
-        <span className="font-semibold ml-2">{match.awayTeam.name}</span>
+        <div className="flex items-center">
+          <span className="font-semibold">{match.awayTeam.name}</span>
+          <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-6 h-6 ml-2" />
+        </div>
       </div>
     </div>
-    <div className="mt-2 flex justify-between items-center">
-      <button 
-        onClick={() => handleVote(match.id, 'home')} 
-        className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-        disabled={match.status !== 'TIMED' && match.status !== 'SCHEDULED'}
-      >
-        Home
-      </button>
-      <button 
-        onClick={() => handleVote(match.id, 'draw')} 
-        className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
-        disabled={match.status !== 'TIMED' && match.status !== 'SCHEDULED'}
-      >
-        Draw
-      </button>
-      <button 
-        onClick={() => handleVote(match.id, 'away')} 
-        className="bg-red-500 text-white px-2 py-1 rounded text-xs"
-        disabled={match.status !== 'TIMED' && match.status !== 'SCHEDULED'}
-      >
-        Away
-      </button>
-    </div>
+    {renderVoteButtons(match)}
     {renderFansPrediction(match)}
   </div>
 ))}
-</div>
+            </div>
           )}
         </div>
       ))}
