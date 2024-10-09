@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api';
 import { format, addDays, subDays, parseISO } from 'date-fns';
-import React, { useState, useEffect, useCallback } from 'react';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
