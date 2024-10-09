@@ -113,8 +113,8 @@ router.post('/:matchId/vote', auth, async (req, res) => {
       console.log(`Added new vote for user ${user.username} on match ${matchId}`);
     }
 
-  await match.save();
-  await user.save();
+    await match.save();
+    await user.save();
 
   // Calculate percentages
   const totalVotes = match.votes.home + match.votes.draw + match.votes.away;
@@ -129,7 +129,8 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     message: 'Vote recorded successfully', 
     votes: match.votes,
     percentages: percentages
-  });
+    });
+  }
 });
 
 module.exports = router;
