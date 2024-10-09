@@ -116,21 +116,25 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     await match.save();
     await user.save();
 
-  // Calculate percentages
-  const totalVotes = match.votes.home + match.votes.draw + match.votes.away;
-  const percentages = {
-    home: totalVotes > 0 ? Math.round((match.votes.home / totalVotes) * 100) : 0,
-    draw: totalVotes > 0 ? Math.round((match.votes.draw / totalVotes) * 100) : 0,
-    away: totalVotes > 0 ? Math.round((match.votes.away / totalVotes) * 100) : 0
-  };
+    // Calculate percentages
+    const totalVotes = match.votes.home + match.votes.draw + match.votes.away;
+    const percentages = {
+      home: totalVotes > 0 ? Math.round((match.votes.home / totalVotes) * 100) : 0,
+      draw: totalVotes > 0 ? Math.round((match.votes.draw / totalVotes) * 100) : 0,
+      away: totalVotes > 0 ? Math.round((match.votes.away / totalVotes) * 100) : 0
+    };
 
-  console.log(`Vote recorded successfully for match ${matchId}`);
-  res.json({ 
-    message: 'Vote recorded successfully', 
-    votes: match.votes,
-    percentages: percentages
+    console.log(`Vote recorded successfully for match ${matchId}`);
+    res.json({
+      message: 'Vote recorded successfully',
+      votes: match.votes,
+      percentages: percentages
     });
+  } catch (error) {
+    console.error('Error recording vote:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
+module.exports = router;
 module.exports = router;
