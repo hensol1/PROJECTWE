@@ -9,7 +9,7 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get('/api/user/profile');
+        const response = await api.getUserProfile();
         setProfile(response.data);
         setLoading(false);
       } catch (err) {
@@ -33,12 +33,12 @@ const UserProfile = () => {
       <p><strong>Country:</strong> {profile.country}</p>
       <p><strong>Total Votes:</strong> {profile.totalVotes}</p>
       <p><strong>Correct Votes:</strong> {profile.correctVotes}</p>
-      <p><strong>Overall Accuracy:</strong> {profile.accuracy.toFixed(2)}%</p>
+      <p><strong>Overall Accuracy:</strong> {profile.accuracy ? profile.accuracy.toFixed(2) : 0}%</p>
       
       <h2 className="text-xl font-bold mt-6 mb-2">League Statistics</h2>
-      {profile.leagueStats.map((league, index) => (
+      {profile.leagueStats && profile.leagueStats.map((league, index) => (
         <div key={index} className="mb-2">
-          <p><strong>{league.leagueName}:</strong> {league.accuracy.toFixed(2)}% accuracy</p>
+          <p><strong>{league.leagueName}:</strong> {league.accuracy ? league.accuracy.toFixed(2) : 0}% accuracy</p>
         </div>
       ))}
     </div>
