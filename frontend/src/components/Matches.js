@@ -6,7 +6,7 @@ const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
-  const [votedMatches, setVotedMatches] = useState({});
+  const [userVotes, setUserVotes] = useState({}); // Changed from votedMatches to userVotes
 
   useEffect(() => {
     fetchMatches(currentDate);
