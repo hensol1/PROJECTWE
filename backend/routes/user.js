@@ -16,10 +16,9 @@ router.get('/profile', auth, async (req, res) => {
     const correctVotes = user.correctVotes;
     const accuracy = totalVotes > 0 ? (correctVotes / totalVotes) * 100 : 0;
 
-    // Fetch full league information
-    const leagueInfo = await Match.aggregate([
-      { 
-        $group: { 
+    // Fetch league emblems
+    const leagueEmblems = await Match.aggregate([
+      { $group: { 
           _id: "$competition.id", 
           name: { $first: "$competition.name" }, 
           emblem: { $first: "$competition.emblem" } 
@@ -27,17 +26,14 @@ router.get('/profile', auth, async (req, res) => {
       }
     ]);
 
-    const leagueInfoMap = new Map(leagueInfo.map(league => [league._id.toString(), league]));
+    const leagueEmblemMap = new Map(leagueEmblems.map(league => [league._id.toString(), league.emblem]));
 
-    const leagueStats = user.leagueStats.map(league => {
-      const leagueDetails = leagueInfoMap.get(league.leagueId.toString());
-      return {
-        leagueName: leagueDetails ? leagueDetails.name : league.leagueName,
-        leagueId: league.leagueId,
-        accuracy: league.totalVotes > 0 ? (league.correctVotes / league.totalVotes) * 100 : 0,
-        leagueLogo: leagueDetails ? leagueDetails.emblem : null
-      };
-    });
+    const leagueStats = user.leagueStats.map(league => ({
+      leagueName: league.leagueName,
+      leagueId: league.leagueId,
+      accuracy: league.totalVotes > 0 ? (league.correctVotes / league.totalVotes) * 100 : 0,
+      leagueEmblem: leagueEmblemMap.get(league.leagueId.toString()) || ''
+    }));
 
     res.json({
       username: user.username,

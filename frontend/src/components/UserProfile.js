@@ -41,10 +41,10 @@ const UserProfile = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {profile.leagueStats && profile.leagueStats.map((league, index) => (
           <div key={index} className="bg-gray-100 p-2 rounded flex items-center">
-            {league.leagueLogo && (
+            {league.leagueEmblem && (
               <img 
-                src={league.leagueLogo} 
-                alt={`${league.leagueName} logo`} 
+                src={league.leagueEmblem} 
+                alt={`${league.leagueName} emblem`} 
                 className="w-8 h-8 mr-2"
               />
             )}
