@@ -49,8 +49,8 @@ const UserProfile = () => {
               />
             )}
             <div>
-              <p><strong>{league.leagueName}:</strong></p>
-              <p>{league.accuracy ? league.accuracy.toFixed(2) : 0}% accuracy</p>
+              <p><strong>{league.leagueName}</strong></p>
+              <p>{league.accuracy.toFixed(2)}% accuracy</p>
             </div>
           </div>
         ))}
