@@ -29,7 +29,9 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
       });
       setLoggedInUser(username);
       setUser(username);  // This line is now correct
-      localStorage.setItem('token', response.data.token);
+console.log('Token received:', response.data.token);
+localStorage.setItem('token', response.data.token);
+console.log('Token stored in localStorage:', localStorage.getItem('token'));
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error:', error.response ? error.response.data : error.message);
@@ -55,7 +57,9 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
         } else {
           setLoggedInUser(response.data.user.username);
           setUser(response.data.user.username);  // This line is now correct
-          localStorage.setItem('token', response.data.token);
+console.log('Token received:', response.data.token);
+localStorage.setItem('token', response.data.token);
+console.log('Token stored in localStorage:', localStorage.getItem('token'));
           setIsModalOpen(false);
         }
       } catch (error) {
@@ -84,7 +88,9 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
 
       setLoggedInUser(response.data.user.username);
       setUser(response.data.user.username);  // This line is now correct
-      localStorage.setItem('token', response.data.token);
+console.log('Token received:', response.data.token);
+localStorage.setItem('token', response.data.token);
+console.log('Token stored in localStorage:', localStorage.getItem('token'));
       setIsFirstTimeGoogleUser(false);
       setIsModalOpen(false);
     } catch (error) {

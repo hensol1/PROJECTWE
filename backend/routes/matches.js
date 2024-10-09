@@ -53,6 +53,8 @@ router.get('/all', async (req, res) => {
 
 // New route for voting
 router.post('/:matchId/vote', auth, async (req, res) => {
+    console.log('Vote route called, user:', req.user);
+
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
