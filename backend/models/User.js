@@ -22,7 +22,11 @@ const UserSchema = new mongoose.Schema({
   googleId: {
     type: String,
     sparse: true
-  }
+  },
+  votes: [{
+    matchId: String,
+    vote: String
+  }]
 });
 
 module.exports = mongoose.model('User', UserSchema);

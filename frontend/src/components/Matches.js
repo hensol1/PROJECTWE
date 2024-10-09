@@ -102,28 +102,33 @@ const Matches = ({ user }) => {
     );
   };
 
-  const handleVote = async (matchId, vote) => {
-    if (!user) {
-      alert('Please log in to vote');
-      return;
-    }
+const handleVote = async (matchId, vote) => {
+  if (!user) {
+    alert('Please log in to vote');
+    return;
+  }
 
-    try {
-      const response = await api.voteForMatch(matchId, vote);
-      setMatches(prevMatches => {
-        const updatedMatches = { ...prevMatches };
-        for (let league in updatedMatches) {
-          updatedMatches[league] = updatedMatches[league].map(match => 
-            match.id === matchId ? { ...match, votes: response.data.votes } : match
-          );
-        }
-        return updatedMatches;
-      });
-    } catch (error) {
-      console.error('Error voting:', error);
-      alert('Failed to record vote');
+  try {
+    const response = await api.voteForMatch(matchId, vote);
+    setMatches(prevMatches => {
+      const updatedMatches = { ...prevMatches };
+      for (let league in updatedMatches) {
+        updatedMatches[league] = updatedMatches[league].map(match => 
+          match.id === matchId ? { ...match, votes: response.data.votes } : match
+        );
+      }
+      return updatedMatches;
+    });
+    alert('Vote recorded successfully');
+  } catch (error) {
+    console.error('Error voting:', error);
+    if (error.response) {
+      alert(`Failed to record vote: ${error.response.data.message}`);
+    } else {
+      alert('Failed to record vote. Please try again later.');
     }
-  };
+  }
+};
 
 const renderVoteButtons = useCallback((match) => {
   if (match.status === 'TIMED' || match.status === 'SCHEDULED') {

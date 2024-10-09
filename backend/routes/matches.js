@@ -56,7 +56,7 @@ router.post('/:matchId/vote', auth, async (req, res) => {
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
-    const userId = req.user.id;  // This is now correctly set by the auth middleware
+    const userId = req.user.id;
 
     if (!['home', 'draw', 'away'].includes(vote)) {
       return res.status(400).json({ message: 'Invalid vote' });
@@ -72,13 +72,30 @@ router.post('/:matchId/vote', auth, async (req, res) => {
       return res.status(400).json({ message: 'Voting is not allowed for this match' });
     }
 
-    if (match.voters.includes(userId)) {
-      return res.status(400).json({ message: 'User has already voted' });
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    match.votes[vote]++;
-    match.voters.push(userId);
+    // Check if user has already voted for this match
+    const existingVoteIndex = user.votes.findIndex(v => v.matchId === matchId);
+
+    if (existingVoteIndex !== -1) {
+      // Update existing vote
+      const oldVote = user.votes[existingVoteIndex].vote;
+      match.votes[oldVote]--;
+      match.votes[vote]++;
+      user.votes[existingVoteIndex].vote = vote;
+    } else {
+      // Add new vote
+      match.votes[vote]++;
+      match.voters.push(userId);
+      user.votes.push({ matchId, vote });
+    }
+
     await match.save();
+    await user.save();
 
     res.json({ message: 'Vote recorded successfully', votes: match.votes });
   } catch (error) {

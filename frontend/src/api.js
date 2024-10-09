@@ -21,7 +21,7 @@ api.interceptors.request.use(
 );
 
 api.voteForMatch = (matchId, vote) => {
-  return api.post(`/matches/${matchId}/vote`, { vote });
+  return api.post(`/api/matches/${matchId}/vote`, { vote });
 };
 
 export default api;
