@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Match = require('../models/Match');
-const auth = require('../middleware/auth'); // Assuming you have an auth middleware
+const User = require('../models/User');
+const auth = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
   const { date } = req.query;
@@ -51,9 +52,9 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// New route for voting
+// Updated route for voting with improved error handling
 router.post('/:matchId/vote', auth, async (req, res) => {
-    console.log('Vote route called, user:', req.user);
+  console.log('Vote route called, user:', req.user);
 
   try {
     const { matchId } = req.params;
@@ -119,7 +120,11 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     res.json({ message: 'Vote recorded successfully', votes: match.votes });
   } catch (error) {
     console.error('Error recording vote:', error);
-    res.status(500).json({ message: 'Error recording vote', error: error.message });
+    res.status(500).json({ 
+      message: 'Error recording vote', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'production' ? '🥞' : error.stack
+    });
   }
 });
 

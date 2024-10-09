@@ -19,6 +19,10 @@ router.use(cors(corsOptions));
 // Handle OPTIONS requests
 router.options('*', cors(corsOptions));
 
+// Add this function at the top of the file
+const createToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
 
 router.post('/google', async (req, res) => {
   console.log('Received Google auth request');
@@ -34,9 +38,9 @@ router.post('/google', async (req, res) => {
       return res.json({ isNewUser: true });
     }
 
-    const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = createToken(user._id);
 
-    res.json({ token: jwtToken, user: { id: user._id, username: user.username, email: user.email } });
+    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ message: 'Authentication failed', error: error.message });
@@ -65,15 +69,14 @@ router.post('/google/complete-profile', async (req, res) => {
     });
     await user.save();
 
-    const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = createToken(user._id);
 
-    res.json({ token: jwtToken, user: { id: user._id, username: user.username, email: user.email } });
+    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
   } catch (error) {
     console.error('Complete profile error:', error);
     res.status(500).json({ message: 'Failed to complete profile', error: error.message });
   }
 });
-
 
 // Register
 router.post('/register', async (req, res) => {
@@ -102,7 +105,7 @@ router.post('/register', async (req, res) => {
 
     res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
   } catch (err) {
-    console.error(err.message);
+    console.error('Register error:', err.message);
     res.status(500).send('Server error');
   }
 });
@@ -126,7 +129,7 @@ router.post('/login', async (req, res) => {
 
     res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
   } catch (err) {
-    console.error(err.message);
+    console.error('Login error:', err.message);
     res.status(500).send('Server error');
   }
 });
