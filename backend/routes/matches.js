@@ -58,6 +58,8 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     const { vote } = req.body;
     const userId = req.user.id;
 
+    console.log(`Received vote request: matchId=${matchId}, vote=${vote}, userId=${userId}`);
+
     if (!['home', 'draw', 'away'].includes(vote)) {
       return res.status(400).json({ message: 'Invalid vote' });
     }
@@ -65,8 +67,11 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     const match = await Match.findOne({ id: matchId });
 
     if (!match) {
+      console.log(`Match not found: ${matchId}`);
       return res.status(404).json({ message: 'Match not found' });
     }
+
+    console.log(`Match found: ${match.id}, status: ${match.status}`);
 
     if (match.status !== 'TIMED' && match.status !== 'SCHEDULED') {
       return res.status(400).json({ message: 'Voting is not allowed for this match' });
@@ -75,8 +80,11 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     const user = await User.findById(userId);
 
     if (!user) {
+      console.log(`User not found: ${userId}`);
       return res.status(404).json({ message: 'User not found' });
     }
+
+    console.log(`User found: ${user.username}`);
 
     // Check if user has already voted for this match
     const existingVoteIndex = user.votes.findIndex(v => v.matchId === matchId);
@@ -87,16 +95,19 @@ router.post('/:matchId/vote', auth, async (req, res) => {
       match.votes[oldVote]--;
       match.votes[vote]++;
       user.votes[existingVoteIndex].vote = vote;
+      console.log(`Updated existing vote for user ${user.username} on match ${matchId}`);
     } else {
       // Add new vote
       match.votes[vote]++;
       match.voters.push(userId);
       user.votes.push({ matchId, vote });
+      console.log(`Added new vote for user ${user.username} on match ${matchId}`);
     }
 
     await match.save();
     await user.save();
 
+    console.log(`Vote recorded successfully for match ${matchId}`);
     res.json({ message: 'Vote recorded successfully', votes: match.votes });
   } catch (error) {
     console.error('Error recording vote:', error);
