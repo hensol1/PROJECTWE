@@ -36,7 +36,13 @@ const MatchSchema = new mongoose.Schema({
     type: String,
     get: (v) => v,
     set: (v) => v
-  }
+  },
+  votes: {
+    home: { type: Number, default: 0 },
+    draw: { type: Number, default: 0 },
+    away: { type: Number, default: 0 }
+  },
+  voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { 
   collection: 'matches',
   toJSON: { getters: true }

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Match = require('../models/Match');
+const auth = require('../middleware/auth'); // Assuming you have an auth middleware
 
 router.get('/', async (req, res) => {
   const { date } = req.query;
@@ -47,6 +48,42 @@ router.get('/all', async (req, res) => {
   } catch (error) {
     console.error('Error fetching all matches:', error);
     res.status(500).json({ message: 'Error fetching all matches', error: error.message });
+  }
+});
+
+// New route for voting
+router.post('/:matchId/vote', auth, async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { vote } = req.body;
+    const userId = req.user.id;
+
+    if (!['home', 'draw', 'away'].includes(vote)) {
+      return res.status(400).json({ message: 'Invalid vote' });
+    }
+
+    const match = await Match.findOne({ id: matchId });
+
+    if (!match) {
+      return res.status(404).json({ message: 'Match not found' });
+    }
+
+    if (match.status !== 'TIMED' && match.status !== 'SCHEDULED') {
+      return res.status(400).json({ message: 'Voting is not allowed for this match' });
+    }
+
+    if (match.voters.includes(userId)) {
+      return res.status(400).json({ message: 'User has already voted' });
+    }
+
+    match.votes[vote]++;
+    match.voters.push(userId);
+    await match.save();
+
+    res.json({ message: 'Vote recorded successfully', votes: match.votes });
+  } catch (error) {
+    console.error('Error recording vote:', error);
+    res.status(500).json({ message: 'Error recording vote', error: error.message });
   }
 });
 

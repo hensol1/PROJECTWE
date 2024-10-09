@@ -97,7 +97,6 @@ All leagues are expanded by default, showing all matches.
 User can navigate to previous or next day using provided buttons.
 User can collapse or expand individual leagues by clicking on the league header.
 Match status is rendered with different colors based on whether the match is scheduled, in progress, or finished.
-User can fetch all matches regardless of date using the "Fetch All Matches" button.
 
 Next Steps:
 

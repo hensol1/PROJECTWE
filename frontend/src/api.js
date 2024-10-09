@@ -20,4 +20,8 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+api.voteForMatch = (matchId, vote) => {
+  return api.post(`/matches/${matchId}/vote`, { vote });
+};
+
 export default api;
