@@ -87,75 +87,6 @@ const Matches = ({ user }) => {
           return 'bg-gray-200 text-gray-800';
       }
     };
-    
-    const handleVote = async (matchId, vote) => {
-  if (!user) {
-    alert('Please log in to vote');
-    return;
-  }
-
-  try {
-    const response = await api.voteForMatch(matchId, vote);
-    setMatches(prevMatches => {
-      const updatedMatches = { ...prevMatches };
-      for (let league in updatedMatches) {
-        updatedMatches[league] = updatedMatches[league].map(match => 
-          match.id === matchId ? { ...match, votes: response.data.votes } : match
-        );
-      }
-      return updatedMatches;
-    });
-  } catch (error) {
-    console.error('Error voting:', error);
-    alert('Failed to record vote');
-  }
-};
-
-const renderVoteButtons = useCallback((match) => {
-  if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
-    return (
-      <div className="flex justify-around mt-2">
-        <button onClick={() => handleVote(match.id, 'home')} className="bg-blue-500 text-white px-2 py-1 rounded text-sm">
-          Home
-        </button>
-        <button onClick={() => handleVote(match.id, 'draw')} className="bg-gray-500 text-white px-2 py-1 rounded text-sm">
-          Draw
-        </button>
-        <button onClick={() => handleVote(match.id, 'away')} className="bg-red-500 text-white px-2 py-1 rounded text-sm">
-          Away
-        </button>
-      </div>
-    );
-  } else {
-    return (
-      <div className="mt-2 text-sm text-center">
-        <p>Votes: Home {match.votes?.home || 0}, Draw {match.votes?.draw || 0}, Away {match.votes?.away || 0}</p>
-      </div>
-    );
-  }
-}, [user]);
-
-const renderFansPrediction = useCallback((match) => {
-  const votes = match.votes || { home: 0, draw: 0, away: 0 };
-  const maxVotes = Math.max(votes.home, votes.draw, votes.away);
-  let prediction = '';
-
-  if (maxVotes === 0) {
-    prediction = 'No votes yet';
-  } else if (votes.home === maxVotes) {
-    prediction = `${match.homeTeam.name} (Home)`;
-  } else if (votes.away === maxVotes) {
-    prediction = `${match.awayTeam.name} (Away)`;
-  } else {
-    prediction = 'Draw';
-  }
-
-  return (
-    <div className="mt-2 text-sm text-center">
-      <p>Fans Prediction: {prediction}</p>
-    </div>
-  );
-}, []);
 
     return (
       <div className="flex flex-col items-center">
@@ -170,6 +101,75 @@ const renderFansPrediction = useCallback((match) => {
       </div>
     );
   };
+
+  const handleVote = async (matchId, vote) => {
+    if (!user) {
+      alert('Please log in to vote');
+      return;
+    }
+
+    try {
+      const response = await api.voteForMatch(matchId, vote);
+      setMatches(prevMatches => {
+        const updatedMatches = { ...prevMatches };
+        for (let league in updatedMatches) {
+          updatedMatches[league] = updatedMatches[league].map(match => 
+            match.id === matchId ? { ...match, votes: response.data.votes } : match
+          );
+        }
+        return updatedMatches;
+      });
+    } catch (error) {
+      console.error('Error voting:', error);
+      alert('Failed to record vote');
+    }
+  };
+
+  const renderVoteButtons = useCallback((match) => {
+    if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
+      return (
+        <div className="flex justify-around mt-2">
+          <button onClick={() => handleVote(match.id, 'home')} className="bg-blue-500 text-white px-2 py-1 rounded text-sm">
+            Home
+          </button>
+          <button onClick={() => handleVote(match.id, 'draw')} className="bg-gray-500 text-white px-2 py-1 rounded text-sm">
+            Draw
+          </button>
+          <button onClick={() => handleVote(match.id, 'away')} className="bg-red-500 text-white px-2 py-1 rounded text-sm">
+            Away
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        <div className="mt-2 text-sm text-center">
+          <p>Votes: Home {match.votes?.home || 0}, Draw {match.votes?.draw || 0}, Away {match.votes?.away || 0}</p>
+        </div>
+      );
+    }
+  }, [user]);
+
+  const renderFansPrediction = useCallback((match) => {
+    const votes = match.votes || { home: 0, draw: 0, away: 0 };
+    const maxVotes = Math.max(votes.home, votes.draw, votes.away);
+    let prediction = '';
+
+    if (maxVotes === 0) {
+      prediction = 'No votes yet';
+    } else if (votes.home === maxVotes) {
+      prediction = `${match.homeTeam.name} (Home)`;
+    } else if (votes.away === maxVotes) {
+      prediction = `${match.awayTeam.name} (Away)`;
+    } else {
+      prediction = 'Draw';
+    }
+
+    return (
+      <div className="mt-2 text-sm text-center">
+        <p>Fans Prediction: {prediction}</p>
+      </div>
+    );
+  }, []);
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({
@@ -202,26 +202,23 @@ const renderFansPrediction = useCallback((match) => {
           </button>
           {!collapsedLeagues[competition] && (
             <div className="space-y-2">
-{competitionMatches.map(match => (
-  <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center w-2/5 justify-end">
-        <span className="font-semibold mr-2">{match.homeTeam.name}</span>
-        <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
-      </div>
-      <div className="text-center w-1/5">
-        {renderMatchStatus(match)}
-      </div>
-      <div className="flex items-center w-2/5">
-        <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
-        <span className="font-semibold ml-2">{match.awayTeam.name}</span>
-      </div>
-    </div>
-    {renderVoteButtons(match)}
-    {renderFansPrediction(match)}
-  </div>
-))}
+              {competitionMatches.map(match => (
+                <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center w-2/5 justify-end">
+                      <span className="font-semibold mr-2">{match.homeTeam.name}</span>
+                      <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
+                    </div>
+                    <div className="text-center w-1/5">
+                      {renderMatchStatus(match)}
+                    </div>
+                    <div className="flex items-center w-2/5">
+                      <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
+                      <span className="font-semibold ml-2">{match.awayTeam.name}</span>
+                    </div>
                   </div>
+                  {renderVoteButtons(match)}
+                  {renderFansPrediction(match)}
                 </div>
               ))}
             </div>
