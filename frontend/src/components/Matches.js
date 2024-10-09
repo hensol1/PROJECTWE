@@ -72,25 +72,29 @@ const Matches = ({ user }) => {
     return format(date, 'HH:mm');
   };
 
-const renderMatchStatus = (match) => {
-  const statusStyle = (status) => {
-    switch (status) {
-      case 'FINISHED': return 'bg-gray-500 text-white';
-      case 'IN_PLAY':
-      case 'PAUSED':
-      case 'LIVE': return 'bg-green-500 text-white';
-      case 'TIMED':
-      case 'SCHEDULED': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-200 text-gray-800';
-    }
-  };
+  const renderMatchStatus = (match) => {
+    const statusStyle = (status) => {
+      switch (status) {
+        case 'FINISHED':
+          return 'bg-gray-500 text-white';
+        case 'IN_PLAY':
+        case 'PAUSED':
+        case 'LIVE':
+          return 'bg-green-500 text-white';
+        case 'TIMED':
+        case 'SCHEDULED':
+          return 'bg-blue-500 text-white';
+        default:
+          return 'bg-gray-200 text-gray-800';
+      }
+    };
 
-  return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
-      {match.status}
-    </span>
-  );
-};
+    return (
+      <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
+        {match.status}
+      </span>
+    );
+  };
 
   const handleVote = async (matchId, vote) => {
     if (!user) {
@@ -204,32 +208,25 @@ const renderVoteButtons = useCallback((match) => {
           </button>
           {!collapsedLeagues[competition] && (
             <div className="space-y-2">
-{competitionMatches.map(match => (
-  <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-4">
-        {renderMatchStatus(match)}
-        <div className="flex items-center">
-          <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-6 h-6 mr-2" />
-          <span className="font-semibold">{match.homeTeam.name}</span>
-        </div>
-      </div>
-      <div className="flex items-center space-x-4">
-        <span className="text-sm font-medium">
-          {match.status === 'SCHEDULED' || match.status === 'TIMED'
-            ? formatMatchDate(match.utcDate)
-            : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
-        </span>
-        <div className="flex items-center">
-          <span className="font-semibold">{match.awayTeam.name}</span>
-          <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-6 h-6 ml-2" />
-        </div>
-      </div>
-    </div>
-    {renderVoteButtons(match)}
-    {renderFansPrediction(match)}
-  </div>
-))}
+              {competitionMatches.map(match => (
+                <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center w-2/5 justify-end">
+                      <span className="font-semibold mr-2">{match.homeTeam.name}</span>
+                      <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-8 h-8" />
+                    </div>
+                    <div className="text-center w-1/5">
+                      {renderMatchStatus(match)}
+                    </div>
+                    <div className="flex items-center w-2/5">
+                      <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-8 h-8" />
+                      <span className="font-semibold ml-2">{match.awayTeam.name}</span>
+                    </div>
+                  </div>
+                  {renderVoteButtons(match)}
+                  {renderFansPrediction(match)}
+                </div>
+              ))}
             </div>
           )}
         </div>
