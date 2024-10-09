@@ -56,7 +56,7 @@ router.post('/:matchId/vote', auth, async (req, res) => {
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.id;  // This is now correctly set by the auth middleware
 
     if (!['home', 'draw', 'away'].includes(vote)) {
       return res.status(400).json({ message: 'Invalid vote' });
