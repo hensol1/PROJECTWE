@@ -5,7 +5,7 @@ import api from '../api';
 import Select from 'react-select';
 import countryList from 'react-select-country-list';
 
-const AuthComponent = () => {
+const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
@@ -28,7 +28,7 @@ const AuthComponent = () => {
         country: country.value
       });
       setLoggedInUser(username);
-      setUser(username);  // Add this line
+      setUser(username);  // This line is now correct
       localStorage.setItem('token', response.data.token);
       setIsModalOpen(false);
     } catch (error) {
@@ -54,7 +54,7 @@ const AuthComponent = () => {
           setGoogleUserInfo(userInfo.data);
         } else {
           setLoggedInUser(response.data.user.username);
-          setUser(response.data.user.username);  // Add this line
+          setUser(response.data.user.username);  // This line is now correct
           localStorage.setItem('token', response.data.token);
           setIsModalOpen(false);
         }
@@ -67,7 +67,7 @@ const AuthComponent = () => {
 
   const handleLogout = () => {
     setLoggedInUser(null);
-    setUser(null);  // Add this line
+    setUser(null);  // This line is now correct
     localStorage.removeItem('token');
   };
 
@@ -83,7 +83,7 @@ const AuthComponent = () => {
       });
 
       setLoggedInUser(response.data.user.username);
-      setUser(response.data.user.username);  // Add this line
+      setUser(response.data.user.username);  // This line is now correct
       localStorage.setItem('token', response.data.token);
       setIsFirstTimeGoogleUser(false);
       setIsModalOpen(false);
