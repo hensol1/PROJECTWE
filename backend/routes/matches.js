@@ -56,6 +56,12 @@ router.post('/:matchId/vote', auth, async (req, res) => {
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
+
+    if (!req.user) {
+      console.log('User not authenticated');
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
     const userId = req.user.id;
 
     console.log(`Received vote request: matchId=${matchId}, vote=${vote}, userId=${userId}`);
