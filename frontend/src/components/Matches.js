@@ -6,6 +6,7 @@ const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
+  const [votedMatches, setVotedMatches] = useState({});
 
   useEffect(() => {
     fetchMatches(currentDate);
@@ -102,57 +103,75 @@ const Matches = ({ user }) => {
     );
   };
 
-const handleVote = async (matchId, vote) => {
-  if (!user) {
-    alert('Please log in to vote');
-    return;
-  }
-
-  try {
-    const response = await api.voteForMatch(matchId, vote);
-    setMatches(prevMatches => {
-      const updatedMatches = { ...prevMatches };
-      for (let league in updatedMatches) {
-        updatedMatches[league] = updatedMatches[league].map(match => 
-          match.id === matchId ? { ...match, votes: response.data.votes } : match
-        );
-      }
-      return updatedMatches;
-    });
-    alert('Vote recorded successfully');
-  } catch (error) {
-    console.error('Error voting:', error);
-    if (error.response) {
-      alert(`Failed to record vote: ${error.response.data.message}`);
-    } else {
-      alert('Failed to record vote. Please try again later.');
+  const handleVote = async (matchId, vote) => {
+    if (!user) {
+      alert('Please log in to vote');
+      return;
     }
-  }
-};
 
-const renderVoteButtons = useCallback((match) => {
-  if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
-    return (
-      <div className="flex justify-between items-center mt-2">
-        <button onClick={() => handleVote(match.id, 'home')} className="bg-blue-500 text-white px-2 py-1 rounded text-sm">
-          Home
-        </button>
-        <button onClick={() => handleVote(match.id, 'draw')} className="bg-gray-500 text-white px-2 py-1 rounded text-sm">
-          Draw
-        </button>
-        <button onClick={() => handleVote(match.id, 'away')} className="bg-red-500 text-white px-2 py-1 rounded text-sm">
-          Away
-        </button>
-      </div>
-    );
-  } else {
-    return (
-      <div className="mt-2 text-sm text-center">
-        <p>Votes: Home {match.votes?.home || 0}, Draw {match.votes?.draw || 0}, Away {match.votes?.away || 0}</p>
-      </div>
-    );
-  }
-}, [handleVote]);
+    try {
+      const response = await api.voteForMatch(matchId, vote);
+      setMatches(prevMatches => {
+        const updatedMatches = { ...prevMatches };
+        for (let league in updatedMatches) {
+          updatedMatches[league] = updatedMatches[league].map(match => 
+            match.id === matchId ? { ...match, votes: response.data.votes } : match
+          );
+        }
+        return updatedMatches;
+      });
+      setVotedMatches(prev => ({
+        ...prev,
+        [matchId]: response.data.percentages
+      }));
+      alert('Vote recorded successfully');
+    } catch (error) {
+      console.error('Error voting:', error);
+      if (error.response) {
+        alert(`Failed to record vote: ${error.response.data.message}`);
+      } else {
+        alert('Failed to record vote. Please try again later.');
+      }
+    }
+  };
+
+  const renderVoteButtons = useCallback((match) => {
+    const hasVoted = votedMatches[match.id];
+    
+    if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
+      return (
+        <div className="flex justify-around mt-2">
+          <button 
+            onClick={() => handleVote(match.id, 'home')} 
+            className={`bg-blue-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            disabled={hasVoted}
+          >
+            Home {hasVoted ? `${votedMatches[match.id].home}%` : ''}
+          </button>
+          <button 
+            onClick={() => handleVote(match.id, 'draw')} 
+            className={`bg-gray-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            disabled={hasVoted}
+          >
+            Draw {hasVoted ? `${votedMatches[match.id].draw}%` : ''}
+          </button>
+          <button 
+            onClick={() => handleVote(match.id, 'away')} 
+            className={`bg-red-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            disabled={hasVoted}
+          >
+            Away {hasVoted ? `${votedMatches[match.id].away}%` : ''}
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        <div className="mt-2 text-sm text-center">
+          <p>Votes: Home {match.votes?.home || 0}, Draw {match.votes?.draw || 0}, Away {match.votes?.away || 0}</p>
+        </div>
+      );
+    }
+  }, [votedMatches, handleVote]);
 
 
   const renderFansPrediction = useCallback((match) => {
