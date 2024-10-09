@@ -90,16 +90,9 @@ const Matches = ({ user }) => {
     };
 
     return (
-      <div className="flex flex-col items-center">
-        <span className="text-lg font-bold mb-1">
-          {match.status === 'SCHEDULED' || match.status === 'TIMED'
-            ? formatMatchDate(match.utcDate)
-            : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
-        </span>
-        <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
-          {match.status}
-        </span>
-      </div>
+      <span className={`px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
+        {match.status}
+      </span>
     );
   };
 
@@ -128,29 +121,29 @@ const Matches = ({ user }) => {
     }
   };
 
-  const renderVoteButtons = useCallback((match) => {
+  const   const renderVoteButtons = useCallback((match) => {
     const hasVoted = userVotes[match.id];
     
     if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
       return (
-        <div className="flex justify-around mt-2">
+        <div className="flex justify-center mt-2">
           <button 
             onClick={() => handleVote(match.id, 'home')} 
-            className={`bg-blue-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            className={`bg-blue-500 text-white px-2 py-1 rounded-l text-sm ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
             Home {hasVoted ? `${userVotes[match.id].home}%` : ''}
           </button>
           <button 
             onClick={() => handleVote(match.id, 'draw')} 
-            className={`bg-gray-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            className={`bg-gray-500 text-white px-2 py-1 text-sm ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
             Draw {hasVoted ? `${userVotes[match.id].draw}%` : ''}
           </button>
           <button 
             onClick={() => handleVote(match.id, 'away')} 
-            className={`bg-red-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            className={`bg-red-500 text-white px-2 py-1 rounded-r text-sm ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
             Away {hasVoted ? `${userVotes[match.id].away}%` : ''}
