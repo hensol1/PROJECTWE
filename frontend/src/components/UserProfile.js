@@ -40,8 +40,18 @@ const UserProfile = () => {
       <h2 className="text-xl font-bold mt-6 mb-2">League Statistics</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {profile.leagueStats && profile.leagueStats.map((league, index) => (
-          <div key={index} className="bg-gray-100 p-2 rounded">
-            <p><strong>{league.leagueName}:</strong> {league.accuracy ? league.accuracy.toFixed(2) : 0}% accuracy</p>
+          <div key={index} className="bg-gray-100 p-2 rounded flex items-center">
+            {league.leagueLogo && (
+              <img 
+                src={league.leagueLogo} 
+                alt={`${league.leagueName} logo`} 
+                className="w-8 h-8 mr-2"
+              />
+            )}
+            <div>
+              <p><strong>{league.leagueName}:</strong></p>
+              <p>{league.accuracy ? league.accuracy.toFixed(2) : 0}% accuracy</p>
+            </div>
           </div>
         ))}
       </div>

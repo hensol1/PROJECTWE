@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
+const Match = require('../models/Match'); // Add this line to import the Match model
 
 router.get('/profile', auth, async (req, res) => {
   try {
@@ -15,9 +16,18 @@ router.get('/profile', auth, async (req, res) => {
     const correctVotes = user.correctVotes;
     const accuracy = totalVotes > 0 ? (correctVotes / totalVotes) * 100 : 0;
 
+    // Fetch league logos
+    const leagueLogos = await Match.aggregate([
+      { $group: { _id: "$competition.id", name: { $first: "$competition.name" }, logo: { $first: "$competition.emblem" } } }
+    ]);
+
+    const leagueLogoMap = new Map(leagueLogos.map(league => [league._id, league.logo]));
+
     const leagueStats = user.leagueStats.map(league => ({
       leagueName: league.leagueName,
-      accuracy: league.totalVotes > 0 ? (league.correctVotes / league.totalVotes) * 100 : 0
+      leagueId: league.leagueId,
+      accuracy: league.totalVotes > 0 ? (league.correctVotes / league.totalVotes) * 100 : 0,
+      leagueLogo: leagueLogoMap.get(league.leagueId) || '' // Add league logo URL
     }));
 
     res.json({
