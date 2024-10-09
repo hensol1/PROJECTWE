@@ -121,38 +121,38 @@ const Matches = ({ user }) => {
     }
   };
 
-  const   const renderVoteButtons = useCallback((match) => {
-    const hasVoted = userVotes[match.id];
-    
-    if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
-      return (
-        <div className="flex justify-center mt-2">
-          <button 
-            onClick={() => handleVote(match.id, 'home')} 
-            className={`bg-blue-500 text-white px-2 py-1 rounded-l text-sm ${hasVoted ? 'cursor-default' : ''}`}
-            disabled={hasVoted}
-          >
-            Home {hasVoted ? `${userVotes[match.id].home}%` : ''}
-          </button>
-          <button 
-            onClick={() => handleVote(match.id, 'draw')} 
-            className={`bg-gray-500 text-white px-2 py-1 text-sm ${hasVoted ? 'cursor-default' : ''}`}
-            disabled={hasVoted}
-          >
-            Draw {hasVoted ? `${userVotes[match.id].draw}%` : ''}
-          </button>
-          <button 
-            onClick={() => handleVote(match.id, 'away')} 
-            className={`bg-red-500 text-white px-2 py-1 rounded-r text-sm ${hasVoted ? 'cursor-default' : ''}`}
-            disabled={hasVoted}
-          >
-            Away {hasVoted ? `${userVotes[match.id].away}%` : ''}
-          </button>
-        </div>
-      );
-    }
-    return null;
-  }, [userVotes, handleVote]);
+const renderVoteButtons = useCallback((match) => {
+  const hasVoted = userVotes[match.id];
+  
+  if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
+    return (
+      <div className="flex justify-center mt-2">
+        <button 
+          onClick={() => handleVote(match.id, 'home')} 
+          className={`bg-blue-500 text-white px-2 py-1 rounded-l text-sm ${hasVoted ? 'cursor-default' : ''}`}
+          disabled={hasVoted}
+        >
+          Home {hasVoted ? `${userVotes[match.id].home}%` : ''}
+        </button>
+        <button 
+          onClick={() => handleVote(match.id, 'draw')} 
+          className={`bg-gray-500 text-white px-2 py-1 text-sm ${hasVoted ? 'cursor-default' : ''}`}
+          disabled={hasVoted}
+        >
+          Draw {hasVoted ? `${userVotes[match.id].draw}%` : ''}
+        </button>
+        <button 
+          onClick={() => handleVote(match.id, 'away')} 
+          className={`bg-red-500 text-white px-2 py-1 rounded-r text-sm ${hasVoted ? 'cursor-default' : ''}`}
+          disabled={hasVoted}
+        >
+          Away {hasVoted ? `${userVotes[match.id].away}%` : ''}
+        </button>
+      </div>
+    );
+  }
+  return null;
+}, [userVotes, handleVote]);
 
 
   const renderFansPrediction = useCallback((match) => {
