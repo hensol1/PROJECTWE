@@ -120,23 +120,16 @@ const Matches = ({ user }) => {
         }
         return updatedMatches;
       });
-      setVotedMatches(prev => ({
-        ...prev,
-        [matchId]: response.data.percentages
-      }));
+      setUserVotes(prev => ({ ...prev, [matchId]: response.data.percentages }));
       alert('Vote recorded successfully');
     } catch (error) {
       console.error('Error voting:', error);
-      if (error.response) {
-        alert(`Failed to record vote: ${error.response.data.message}`);
-      } else {
-        alert('Failed to record vote. Please try again later.');
-      }
+      alert('Failed to record vote');
     }
   };
 
   const renderVoteButtons = useCallback((match) => {
-    const hasVoted = votedMatches[match.id];
+    const hasVoted = userVotes[match.id];
     
     if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
       return (
@@ -146,32 +139,27 @@ const Matches = ({ user }) => {
             className={`bg-blue-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
-            Home {hasVoted ? `${votedMatches[match.id].home}%` : ''}
+            Home {hasVoted ? `${userVotes[match.id].home}%` : ''}
           </button>
           <button 
             onClick={() => handleVote(match.id, 'draw')} 
             className={`bg-gray-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
-            Draw {hasVoted ? `${votedMatches[match.id].draw}%` : ''}
+            Draw {hasVoted ? `${userVotes[match.id].draw}%` : ''}
           </button>
           <button 
             onClick={() => handleVote(match.id, 'away')} 
             className={`bg-red-500 text-white px-2 py-1 rounded text-sm ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
-            Away {hasVoted ? `${votedMatches[match.id].away}%` : ''}
+            Away {hasVoted ? `${userVotes[match.id].away}%` : ''}
           </button>
         </div>
       );
-    } else {
-      return (
-        <div className="mt-2 text-sm text-center">
-          <p>Votes: Home {match.votes?.home || 0}, Draw {match.votes?.draw || 0}, Away {match.votes?.away || 0}</p>
-        </div>
-      );
     }
-  }, [votedMatches, handleVote]);
+    return null;
+  }, [userVotes, handleVote]);
 
 
   const renderFansPrediction = useCallback((match) => {
