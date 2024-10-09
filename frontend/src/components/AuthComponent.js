@@ -134,17 +134,13 @@ const AuthComponent = () => {
           {isLogin ? 'Sign In' : 'Register'}
         </button>
       </form>
-<div class="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-700">
-  <button 
-    class="flex items-center bg-white dark:bg-gray-900 border border-gray-300 rounded-lg shadow-md px-6 py-2 text-sm font-medium text-gray-800 dark:text-white hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"   
-
-    onClick={() => googleLogin()} // Keep the onClick handler
-  >
-    <svg class="h-6 w-6 mr-2" ... (rest of your svg code) </svg>
-    <span>Continue with Google</span>
-  </button>
-</div>
-<p className="mt-4 text-center">
+      <button
+        onClick={() => googleLogin()}
+        className="w-full mt-4 bg-red-500 text-white py-2 rounded-md hover:bg-red-600"
+      >
+        Sign in with Google
+      </button>
+      <p className="mt-4 text-center">
         {isLogin ? "Don't have an account? " : "Already have an account? "}
         <button
           onClick={() => setIsLogin(!isLogin)}
