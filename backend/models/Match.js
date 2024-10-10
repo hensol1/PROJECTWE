@@ -37,17 +37,16 @@ const MatchSchema = new mongoose.Schema({
     get: (v) => v,
     set: (v) => v
   },
+  aiPrediction: {
+    type: String,
+    enum: ['HOME_TEAM', 'DRAW', 'AWAY_TEAM', null],
+    default: null
+  },
   votes: {
     home: { type: Number, default: 0 },
     draw: { type: Number, default: 0 },
     away: { type: Number, default: 0 }
   },
-    aiPrediction: {
-    type: String,
-    enum: ['HOME_TEAM', 'DRAW', 'AWAY_TEAM'],
-    default: null
-  },
-
   voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { 
   collection: 'matches',
