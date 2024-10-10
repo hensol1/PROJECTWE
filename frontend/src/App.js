@@ -12,6 +12,9 @@ function App() {
 
   useEffect(() => {
     console.log('Current user state:', user);
+    if (user) {
+      console.log('Is admin?', user.isAdmin);
+    }
   }, [user]);
 
   return (

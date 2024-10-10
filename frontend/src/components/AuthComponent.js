@@ -18,27 +18,28 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
 
   const countries = useMemo(() => countryList().getData(), []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await api.post(`/api/auth/${isLogin ? 'login' : 'register'}`, {
-        username,
-        password,
-        email,
-        country: country.value
-      });
-      const userData = response.data.user; // Assuming the backend sends user data
-      setLoggedInUser(userData);
-      setUser(userData); // Pass the entire user object, not just the username
-      console.log('User set:', userData); // Add this line
-      console.log('Token received:', response.data.token);
-      localStorage.setItem('token', response.data.token);
-      console.log('Token stored in localStorage:', localStorage.getItem('token'));
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error:', error.response ? error.response.data : error.message);
-    }
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await api.post(`/api/auth/${isLogin ? 'login' : 'register'}`, {
+      username,
+      password,
+      email,
+      country: country.value
+    });
+    console.log('Full response:', response.data); // Log the entire response
+    const userData = response.data.user;
+    setLoggedInUser(userData);
+    setUser(userData);
+    console.log('User set:', userData);
+    console.log('Token received:', response.data.token);
+    localStorage.setItem('token', response.data.token);
+    console.log('Token stored in localStorage:', localStorage.getItem('token'));
+    setIsModalOpen(false);
+  } catch (error) {
+    console.error('Error:', error.response ? error.response.data : error.message);
+  }
+};
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {

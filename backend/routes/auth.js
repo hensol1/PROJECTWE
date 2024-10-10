@@ -40,7 +40,7 @@ router.post('/google', async (req, res) => {
 
     const token = createToken(user._id);
 
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    res.json({ token, user: { id: user._id, username: user.username, email: user.email  } });
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ message: 'Authentication failed', error: error.message });
@@ -103,7 +103,15 @@ router.post('/register', async (req, res) => {
 
     const token = createToken(user._id);
 
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin // Add this line
+      }
+    });
   } catch (err) {
     console.error('Register error:', err.message);
     res.status(500).send('Server error');
@@ -127,7 +135,15 @@ router.post('/login', async (req, res) => {
 
     const token = createToken(user._id);
 
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin // Add this line
+      }
+    });
   } catch (err) {
     console.error('Login error:', err.message);
     res.status(500).send('Server error');
