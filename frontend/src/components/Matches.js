@@ -104,7 +104,7 @@ const renderMatchStatus = (match) => {
     switch (status) {
       case 'FINISHED': return 'bg-gray-500 text-white';
       case 'IN_PLAY':
-      case 'PAUSED':
+      case 'HALFTIME':
       case 'LIVE': return 'bg-green-500 text-white';
       case 'TIMED':
       case 'SCHEDULED': return 'bg-blue-500 text-white';

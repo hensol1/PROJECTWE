@@ -99,7 +99,7 @@ router.get('/', async (req, res) => {
     }
 
     // Define the order of statuses
-    const statusOrder = ['IN_PLAY', 'PAUSED', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
+    const statusOrder = ['IN_PLAY', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
 
     // Sort the matches
     const sortedMatches = matches.sort((a, b) => {
