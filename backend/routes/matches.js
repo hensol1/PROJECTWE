@@ -6,6 +6,7 @@ const FanPredictionStat = require('../models/FanPredictionStat');
 const auth = require('../middleware/auth'); // Add this line to import the auth middleware
 
 // Function to update fan prediction accuracy
+// Updated function to update fan prediction accuracy
 const updateFanAccuracy = async (match) => {
   if (match.status === 'FINISHED' && match.votes && !match.fanPredictionProcessed) {
     const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
@@ -24,9 +25,10 @@ const updateFanAccuracy = async (match) => {
     // Mark this match as processed
     match.fanPredictionProcessed = true;
     await match.save();
+
+    console.log(`Updated fan accuracy for match ${match.id}. Total: ${stat.totalPredictions}, Correct: ${stat.correctPredictions}`);
   }
 };
-
 
 router.get('/', async (req, res) => {
   const { date } = req.query;
@@ -48,24 +50,34 @@ router.get('/', async (req, res) => {
 
     // Update fan accuracy for any newly finished matches
     for (const match of matches) {
-      await updateFanAccuracy(match);
+      if (match.status === 'FINISHED' && !match.fanPredictionProcessed) {
+        await updateFanAccuracy(match);
+      }
     }
 
     // Fetch the latest cumulative fan accuracy
     const stat = await FanPredictionStat.findOne();
-    const fanAccuracy = stat ? (stat.correctPredictions / stat.totalPredictions) * 100 : 0;
+    const fanAccuracy = stat && stat.totalPredictions > 0
+      ? (stat.correctPredictions / stat.totalPredictions) * 100
+      : 0;
 
     console.log('Matches found:', matches.length);
-    if (matches.length > 0) {
-      console.log('Sample match date:', matches[0].utcDate);
-    }
+    console.log('Fan Accuracy:', fanAccuracy);
+    console.log('Total Predictions:', stat ? stat.totalPredictions : 0);
+    console.log('Correct Predictions:', stat ? stat.correctPredictions : 0);
 
-    res.json({ matches, fanAccuracy, totalPredictions: stat ? stat.totalPredictions : 0 });
+    res.json({ 
+      matches, 
+      fanAccuracy, 
+      totalPredictions: stat ? stat.totalPredictions : 0,
+      correctPredictions: stat ? stat.correctPredictions : 0
+    });
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
   }
 });
+
 
 router.get('/all', async (req, res) => {
   try {
