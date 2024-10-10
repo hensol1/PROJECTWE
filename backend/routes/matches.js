@@ -5,55 +5,55 @@ const User = require('../models/User');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const auth = require('../middleware/auth');
 
-// Updated function to update fan prediction accuracy
-const updateFanAccuracy = async (match) => {
-  console.log(`Updating fan accuracy for match ${match.id}`);
-  console.log(`Match status: ${match.status}`);
-  console.log(`Match votes:`, match.votes);
-  console.log(`Match score:`, match.score);
+// Cache for fan accuracy stats
+let fanAccuracyCache = null;
+let lastCalculationTime = 0;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-  if (match.status === 'FINISHED' && match.votes) {
-    const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
-    
-    stat.totalPredictions += 1;
-    
-    const { home, draw, away } = match.votes;
-    const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
-    
-    console.log(`Fan prediction: ${fanPrediction}`);
+const calculateFanAccuracy = async () => {
+  const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
+  stat.totalPredictions = 0;
+  stat.correctPredictions = 0;
 
-    let actualWinner;
-    if (match.score.winner === null) {
-      const { home: homeScore, away: awayScore } = match.score.fullTime;
-      if (homeScore > awayScore) {
-        actualWinner = 'HOME_TEAM';
-      } else if (awayScore > homeScore) {
-        actualWinner = 'AWAY_TEAM';
+  const matches = await Match.find({ status: 'FINISHED' });
+
+  for (const match of matches) {
+    if (match.votes) {
+      stat.totalPredictions += 1;
+      const { home, draw, away } = match.votes;
+      const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
+
+      let actualWinner;
+      if (match.score.winner === null) {
+        const { home: homeScore, away: awayScore } = match.score.fullTime;
+        if (homeScore > awayScore) {
+          actualWinner = 'HOME_TEAM';
+        } else if (awayScore > homeScore) {
+          actualWinner = 'AWAY_TEAM';
+        } else {
+          actualWinner = 'DRAW';
+        }
       } else {
-        actualWinner = 'DRAW';
+        actualWinner = match.score.winner;
       }
-    } else {
-      actualWinner = match.score.winner;
+
+      if (fanPrediction === actualWinner) {
+        stat.correctPredictions += 1;
+      }
     }
-
-    console.log(`Actual winner: ${actualWinner}`);
-
-    if (fanPrediction === actualWinner) {
-      stat.correctPredictions += 1;
-      console.log('Prediction was correct');
-    } else {
-      console.log('Prediction was incorrect');
-    }
-    
-    await stat.save();
-    
-    match.fanPredictionProcessed = true;
-    await match.save();
-
-    console.log(`Updated fan accuracy. Total: ${stat.totalPredictions}, Correct: ${stat.correctPredictions}`);
-  } else {
-    console.log('Match not eligible for fan accuracy update');
   }
+
+  await stat.save();
+  return stat;
+};
+
+const getFanAccuracy = async () => {
+  const currentTime = Date.now();
+  if (!fanAccuracyCache || currentTime - lastCalculationTime > CACHE_DURATION) {
+    fanAccuracyCache = await calculateFanAccuracy();
+    lastCalculationTime = currentTime;
+  }
+  return fanAccuracyCache;
 };
 
 router.get('/', async (req, res) => {
@@ -67,45 +67,33 @@ router.get('/', async (req, res) => {
   const nextDayString = nextDay.toISOString().split('T')[0];
 
   try {
-    // Reset FanPredictionStat
-    await FanPredictionStat.deleteMany({});
-    
-    const matches = await Match.find().sort({ 'competition.name': 1, utcDate: 1 });
+    const [matches, stat] = await Promise.all([
+      Match.find({
+        utcDate: {
+          $gte: queryDateString,
+          $lt: nextDayString
+        }
+      }).sort({ 'competition.name': 1, utcDate: 1 }),
+      getFanAccuracy()
+    ]);
 
-    console.log(`Found ${matches.length} total matches`);
+    console.log(`Found ${matches.length} matches for date ${queryDateString}`);
 
-    // Update fan accuracy for all finished matches
-    for (const match of matches) {
-      if (match.status === 'FINISHED') {
-        await updateFanAccuracy(match);
-      }
-    }
-
-    // Fetch matches for the specific date
-    const dateMatches = matches.filter(match => {
-      const matchDate = new Date(match.utcDate);
-      return matchDate >= queryDate && matchDate < nextDay;
-    });
-
-    console.log(`Found ${dateMatches.length} matches for date ${queryDateString}`);
-
-    // Fetch the latest cumulative fan accuracy
-    const stat = await FanPredictionStat.findOne();
-    const fanAccuracy = stat && stat.totalPredictions > 0
+    const fanAccuracy = stat.totalPredictions > 0
       ? (stat.correctPredictions / stat.totalPredictions) * 100
       : 0;
 
     console.log('Fan Accuracy Stats:', {
-      totalPredictions: stat ? stat.totalPredictions : 0,
-      correctPredictions: stat ? stat.correctPredictions : 0,
+      totalPredictions: stat.totalPredictions,
+      correctPredictions: stat.correctPredictions,
       fanAccuracy
     });
 
     res.json({ 
-      matches: dateMatches, 
+      matches, 
       fanAccuracy, 
-      totalPredictions: stat ? stat.totalPredictions : 0,
-      correctPredictions: stat ? stat.correctPredictions : 0
+      totalPredictions: stat.totalPredictions,
+      correctPredictions: stat.correctPredictions
     });
   } catch (error) {
     console.error('Error fetching matches:', error);
@@ -239,8 +227,18 @@ router.post('/:matchId/vote', auth, async (req, res) => {
   }
 });
 
+// Add a new route to manually trigger fan accuracy recalculation
+router.post('/recalculate-accuracy', auth, async (req, res) => {
+  try {
+    const stat = await calculateFanAccuracy();
+    fanAccuracyCache = stat;
+    lastCalculationTime = Date.now();
+    res.json({ message: 'Fan accuracy recalculated', stat });
+  } catch (error) {
+    console.error('Error recalculating fan accuracy:', error);
+    res.status(500).json({ message: 'Error recalculating fan accuracy', error: error.message });
+  }
+});
 
 
-
-module.exports = router;
 module.exports = router;
