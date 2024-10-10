@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const Match = require('../models/Match');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
+const Match = require('../models/Match');
 
 router.post('/:matchId/predict', [auth, admin], async (req, res) => {
+  console.log('Admin prediction route called');
   try {
     const { matchId } = req.params;
     const { prediction } = req.body;

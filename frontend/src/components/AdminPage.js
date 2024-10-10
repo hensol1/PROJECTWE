@@ -31,15 +31,16 @@ const AdminPage = () => {
     setCurrentDate(prevDate => days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days)));
   };
 
-  const handlePrediction = async (matchId, prediction) => {
-    try {
-      await api.post(`/api/admin/${matchId}/predict`, { prediction });
-      fetchMatches(currentDate);
-    } catch (error) {
-      console.error('Error making AI prediction:', error);
-      alert('Failed to record AI prediction');
-    }
-  };
+const handlePrediction = async (matchId, prediction) => {
+  try {
+    const response = await api.makeAIPrediction(matchId, prediction);
+    console.log('AI prediction response:', response.data);
+    fetchMatches(currentDate);
+  } catch (error) {
+    console.error('Error making AI prediction:', error.response?.data || error.message);
+    alert('Failed to record AI prediction: ' + (error.response?.data?.message || error.message));
+  }
+};
 
   return (
     <div className="max-w-3xl mx-auto">
