@@ -105,6 +105,19 @@ router.get('/', async (req, res) => {
       } else {
         matchObj.fanPrediction = null;
       }
+      
+          // Update fan prediction to include team information
+    if (matchObj.fanPrediction) {
+      matchObj.fanPredictionTeam = matchObj.fanPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
+                                   matchObj.fanPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
+    }
+
+    // Update AI prediction to include team information
+    if (matchObj.aiPrediction) {
+      matchObj.aiPredictionTeam = matchObj.aiPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
+                                  matchObj.aiPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
+    }
+
 
       // Check if the user has voted for this match
       if (userVotes) {

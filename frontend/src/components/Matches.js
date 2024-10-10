@@ -166,34 +166,41 @@ const renderMatchStatus = (match) => {
     return null;
   }, [handleVote]);
 
-  const renderPredictions = useCallback((match) => {
-    const getTeamName = (prediction) => {
-      switch(prediction) {
-        case 'HOME_TEAM':
-          return `${match.homeTeam.name} (Home)`;
-        case 'AWAY_TEAM':
-          return `${match.awayTeam.name} (Away)`;
-        case 'DRAW':
-          return 'Draw';
-        default:
-          return 'No prediction';
-      }
-    };
+const renderPredictions = useCallback((match) => {
+  const getTeamPrediction = (prediction) => {
+    switch(prediction) {
+      case 'HOME_TEAM':
+        return (
+          <>
+            {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-4 h-4 inline-block ml-1" />
+          </>
+        );
+      case 'AWAY_TEAM':
+        return (
+          <>
+            {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-4 h-4 inline-block ml-1" />
+          </>
+        );
+      case 'DRAW':
+        return 'Draw';
+      default:
+        return 'No prediction';
+    }
+  };
 
-    return (
-      <div className="mt-2 text-sm flex justify-between">
-        <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-          Fans Prediction: {match.fanPrediction ? getTeamName(match.fanPrediction) : 'No votes yet'}
+  return (
+    <div className="mt-2 text-sm flex justify-between">
+      <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+        Fans Prediction: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
+      </p>
+      {match.aiPrediction && (
+        <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+          AI Prediction: {getTeamPrediction(match.aiPrediction)}
         </p>
-        {match.aiPrediction && (
-          <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-            AI Prediction: {getTeamName(match.aiPrediction)}
-          </p>
-        )}
-      </div>
-    );
-  }, []);
-
+      )}
+    </div>
+  );
+}, []);
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({
