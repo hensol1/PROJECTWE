@@ -237,6 +237,8 @@ const renderPredictions = useCallback((match) => {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-4">
+            <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
+
         <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
           Previous Day
         </button>
@@ -247,17 +249,6 @@ const renderPredictions = useCallback((match) => {
       </div>
 
       <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
-
-      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-        <p className="font-bold">Cumulative Fan Prediction Accuracy</p>
-        <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct.</p>
-      </div>
-
-      <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
-        <p className="font-bold">Cumulative AI Prediction Accuracy</p>
-        <p>{aiAccuracy.toFixed(2)}% of AI predictions have been correct.</p>
-      </div>
-
 
       {Object.entries(matches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-4">
