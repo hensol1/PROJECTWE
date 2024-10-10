@@ -79,6 +79,32 @@ router.get('/', async (req, res) => {
 
     console.log(`Found ${matches.length} matches for date ${queryDateString}`);
 
+    const processedMatches = matches.map(match => {
+      if (match.status === 'FINISHED' && match.votes) {
+        const { home, draw, away } = match.votes;
+        const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
+        
+        let actualResult;
+        if (match.score.winner === null) {
+          const { home: homeScore, away: awayScore } = match.score.fullTime;
+          if (homeScore > awayScore) {
+            actualResult = 'HOME_TEAM';
+          } else if (awayScore > homeScore) {
+            actualResult = 'AWAY_TEAM';
+          } else {
+            actualResult = 'DRAW';
+          }
+        } else {
+          actualResult = match.score.winner;
+        }
+
+        const matchObj = match.toObject();
+        matchObj.fanPredictionCorrect = fanPrediction === actualResult;
+        return matchObj;
+      }
+      return match;
+    });
+
     const fanAccuracy = stat.totalPredictions > 0
       ? (stat.correctPredictions / stat.totalPredictions) * 100
       : 0;
@@ -90,17 +116,14 @@ router.get('/', async (req, res) => {
     });
 
     res.json({ 
-      matches, 
-      fanAccuracy, 
-      totalPredictions: stat.totalPredictions,
-      correctPredictions: stat.correctPredictions
+      matches: processedMatches, 
+      fanAccuracy
     });
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
   }
 });
-
 
 router.get('/all', async (req, res) => {
   try {

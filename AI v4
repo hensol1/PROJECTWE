@@ -1,0 +1,84 @@
+Project Overview:
+"We Know Better" is a web application for football (soccer) match predictions. It allows users to view upcoming matches, make predictions, and tracks the accuracy of both user (fans) and AI predictions.
+Project Structure:
+Copywe-know-better/
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AuthComponent.js
+│   │   │   ├── Matches.js
+│   │   │   └── UserProfile.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── index.css
+│   │   ├── config.js
+│   │   └── api.js
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── .env
+├── backend/
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── matches.js
+│   │   └── user.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Match.js
+│   │   └── FanPredictionStat.js
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+└── README.md
+Key Components and Features:
+
+Frontend (React.js):
+
+App.js: Main component with navigation and user state management.
+AuthComponent.js: Handles user authentication (login, register, Google sign-in) with a modal interface.
+Matches.js: Fetches and displays football matches, allows voting, and shows fan predictions.
+UserProfile.js: Displays user statistics and vote history.
+api.js: Axios instance for making API calls with authentication.
+
+
+Backend (Node.js with Express.js):
+
+server.js: Main entry point for the backend, sets up Express, middleware, and CORS.
+routes/auth.js: Handles authentication routes (register, login, Google auth).
+routes/matches.js: Handles fetching matches, voting, and calculating fan prediction accuracy.
+routes/user.js: Handles user profile data and statistics.
+models/User.js: Mongoose schema for the User model, including vote history and league stats.
+models/Match.js: Mongoose schema for the Match model, including vote counts and fan prediction processing.
+models/FanPredictionStat.js: Mongoose schema for storing cumulative fan prediction statistics.
+middleware/auth.js: Authentication middleware for protecting routes.
+
+
+
+Recent Updates and Changes:
+
+Implemented cumulative fan prediction accuracy calculation.
+Added caching mechanism for fan accuracy stats to improve performance.
+Updated the Matches component to display fan prediction accuracy.
+Implemented a user profile page showing detailed voting history and statistics.
+Added color-coding to the vote history to indicate correct and incorrect predictions.
+Optimized the match fetching process to reduce load times when navigating through dates.
+
+Key Features:
+
+User Authentication: Registration, login, and Google sign-in.
+Match Display: View matches for specific dates with the ability to navigate between days.
+Voting System: Users can vote on match outcomes (home win, draw, away win).
+Fan Predictions: Display of current fan prediction based on majority votes.
+Cumulative Fan Accuracy: Calculation and display of overall fan prediction accuracy.
+User Profile: Detailed view of user's voting history and statistics.
+Performance Optimization: Caching of fan accuracy stats to improve load times.
+
+Deployment:
+
+Frontend: Deployed on Vercel
+Backend: Deployed on Render
+

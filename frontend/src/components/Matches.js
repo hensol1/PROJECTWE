@@ -154,27 +154,32 @@ const renderVoteButtons = useCallback((match) => {
 }, [userVotes, handleVote]);
 
 
-  const renderFansPrediction = useCallback((match) => {
-    const votes = match.votes || { home: 0, draw: 0, away: 0 };
-    const maxVotes = Math.max(votes.home, votes.draw, votes.away);
-    let prediction = '';
+const renderFansPrediction = useCallback((match) => {
+  const votes = match.votes || { home: 0, draw: 0, away: 0 };
+  const maxVotes = Math.max(votes.home, votes.draw, votes.away);
+  let prediction = '';
 
-    if (maxVotes === 0) {
-      prediction = 'No votes yet';
-    } else if (votes.home === maxVotes) {
-      prediction = `${match.homeTeam.name} (Home)`;
-    } else if (votes.away === maxVotes) {
-      prediction = `${match.awayTeam.name} (Away)`;
-    } else {
-      prediction = 'Draw';
-    }
+  if (maxVotes === 0) {
+    prediction = 'No votes yet';
+  } else if (votes.home === maxVotes) {
+    prediction = `${match.homeTeam.name} (Home)`;
+  } else if (votes.away === maxVotes) {
+    prediction = `${match.awayTeam.name} (Away)`;
+  } else {
+    prediction = 'Draw';
+  }
 
-    return (
-      <div className="mt-2 text-sm text-center">
-        <p>Fans Prediction: {prediction}</p>
-      </div>
-    );
-  }, []);
+  let predictionClass = '';
+  if (match.status === 'FINISHED') {
+    predictionClass = match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100';
+  }
+
+  return (
+    <div className={`mt-2 text-sm text-center p-2 rounded ${predictionClass}`}>
+      <p>Fans Prediction: {prediction}</p>
+    </div>
+  );
+}, []);
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({
@@ -196,9 +201,10 @@ const renderVoteButtons = useCallback((match) => {
       </div>
 
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-        <p className="font-bold">Cumulative Fan Prediction Accuracy</p>
-        <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct ({Math.round(fanAccuracy * totalPredictions / 100)} out of {totalPredictions} total predictions).</p>
-      </div>
+  <p className="font-bold">Cumulative Fan Prediction Accuracy</p>
+  <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct.</p>
+</div>
+
 
       {Object.entries(matches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-4">
