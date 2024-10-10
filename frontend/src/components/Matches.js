@@ -237,8 +237,6 @@ const renderPredictions = useCallback((match) => {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-4">
-            <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
-
         <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
           Previous Day
         </button>
