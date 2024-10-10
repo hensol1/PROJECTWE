@@ -12,7 +12,7 @@ const Matches = ({ user }) => {
   const [userVotes, setUserVotes] = useState({});
 
   const sortMatches = (matches) => {
-    const statusOrder = ['IN_PLAY', 'PAUSED', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
+    const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
     return Object.entries(matches).reduce((acc, [competition, competitionMatches]) => {
       acc[competition] = competitionMatches.sort((a, b) => {
         const statusA = statusOrder.indexOf(a.status);
