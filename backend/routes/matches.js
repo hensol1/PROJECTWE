@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Match = require('../models/Match');
-const FanPredictionStat = require('../models/FanPredictionStat'); // New model to store cumulative stats
+const User = require('../models/User'); // Make sure this is imported
+const FanPredictionStat = require('../models/FanPredictionStat');
+const auth = require('../middleware/auth'); // Add this line to import the auth middleware
 
 // Function to update fan prediction accuracy
 const updateFanAccuracy = async (match) => {
