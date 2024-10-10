@@ -1,0 +1,114 @@
+Project Overview:
+"We Know Better" is a web application for football (soccer) match predictions. It allows users to view upcoming matches, make predictions, and tracks the accuracy of both user (fans) and AI predictions.
+
+we-know-better/
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AuthComponent.js
+│   │   │   ├── Matches.js
+│   │   │   └── UserProfile.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── index.css
+│   │   ├── config.js
+│   │   └── api.js
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── .env
+├── backend/
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── matches.js
+│   │   └── user.js
+│   ├── models/
+│   │   ├── User.js
+│   │   └── Match.js
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+└── README.md
+
+Key Features Implemented:
+
+User Authentication:
+
+User Registration: Users can register with a username, email, password, and country.
+User Login: Registered users can log in with their credentials.
+Google Sign-In: Users can sign in using their Google accounts.
+JWT Authentication: JSON Web Tokens are used for maintaining user sessions.
+
+
+Match Display:
+
+Fetch Matches: Users can view matches for a specific date or fetch all matches.
+Date Navigation: Users can navigate between days to view different matches.
+Match Grouping: Matches are grouped and displayed by competition.
+Collapsible Leagues: Leagues are expanded by default, but can be collapsed by the user.
+Match Status: Different match statuses (TIMED, IN_PLAY, FINISHED, etc.) are handled and displayed appropriately with color-coding.
+Compact Layout: Matches are displayed in a compact format with status, team names, logos, and score/time all on one line.
+
+
+Prediction Functionality:
+
+Voting System: Users can vote for Home, Draw, or Away for upcoming matches.
+Vote Restrictions: Voting is only allowed for matches with 'TIMED' or 'SCHEDULED' status.
+Vote Display: After voting, users see the percentage split of votes for that match.
+Fans Prediction: Display of the current fan prediction based on majority votes.
+
+
+User Profile:
+
+Profile Statistics: Users can view their total votes, correct votes, and overall accuracy.
+League-specific Stats: Accuracy breakdown by league, including league logos.
+
+
+UI/UX Improvements:
+
+Responsive Design: Uses Tailwind CSS for a mobile-friendly, modern UI.
+Minimalistic Header: A compact header with the app title and authentication button.
+Interactive Elements: Buttons for date navigation and match voting.
+Collapsible Sections: Users can expand or collapse league sections for better organization.
+
+
+
+Database:
+
+MongoDB: Used for storing user information, match data, and voting records.
+
+Deployment:
+
+Frontend: Deployed on Vercel
+Backend: Deployed on Render
+
+Key changes and additions:
+
+Frontend:
+
+Added UserProfile.js in the components folder to handle the user profile display.
+Modified Matches.js to include the new compact layout and voting functionality.
+Updated AuthComponent.js to handle Google Sign-In and profile completion.
+Modified App.js to include routing between Matches and UserProfile views.
+Updated api.js to include new endpoints for voting and fetching user profiles.
+
+
+Backend:
+
+Added user.js in the routes folder to handle user profile-related endpoints.
+Updated matches.js in the routes folder to include voting functionality.
+Modified auth.js in the routes folder to handle Google authentication.
+Added auth.js in the middleware folder for JWT authentication.
+Updated User.js model to include fields for voting history and statistics.
+Modified Match.js model to include fields for votes and voters.
+
+Next Steps:
+
+Implement cumulative fan vote display and analysis.
+Enhance error handling and user feedback for voting and authentication processes.
+Implement a mechanism to update vote correctness when matches are finished.
+Consider adding more detailed match statistics and prediction analytics.
