@@ -239,55 +239,7 @@ router.post('/:matchId/vote', auth, async (req, res) => {
   }
 });
 
-router.post('/recalculate-fan-accuracy', async (req, res) => {
-  try {
-    const matches = await Match.find({ status: 'FINISHED' });
-    let totalPredictions = 0;
-    let correctPredictions = 0;
 
-    for (const match of matches) {
-      if (match.votes) {
-        totalPredictions++;
-        const { home, draw, away } = match.votes;
-        const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
-        
-        let actualWinner = match.score.winner;
-        if (actualWinner === null) {
-          const { home: homeScore, away: awayScore } = match.score.fullTime;
-          if (homeScore > awayScore) {
-            actualWinner = 'HOME_TEAM';
-          } else if (awayScore > homeScore) {
-            actualWinner = 'AWAY_TEAM';
-          } else {
-            actualWinner = 'DRAW';
-          }
-        }
-
-        if (fanPrediction === actualWinner) {
-          correctPredictions++;
-        }
-
-        match.fanPredictionProcessed = true;
-        await match.save();
-      }
-    }
-
-    const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
-    stat.totalPredictions = totalPredictions;
-    stat.correctPredictions = correctPredictions;
-    await stat.save();
-
-    res.json({ 
-      message: 'Fan accuracy recalculated', 
-      totalPredictions, 
-      correctPredictions,
-      accuracy: totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0
-    });
-  } catch (error) {
-    console.error('Error recalculating fan accuracy:', error);
-    res.status(500).json({ message: 'Error recalculating fan accuracy', error: error.message });
-  }
-});
 
 
 module.exports = router;
