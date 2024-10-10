@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import AuthComponent from './components/AuthComponent';
 import Matches from './components/Matches';
 import UserProfile from './components/UserProfile';
@@ -30,13 +30,13 @@ function App() {
           </div>
         </header>
         <main className="flex-grow container mx-auto p-4">
-          <Switch>
-            <Route exact path="/" render={() => <Matches user={user} />} />
-            <Route path="/profile" component={UserProfile} />
+          <Routes>
+            <Route path="/" element={<Matches user={user} />} />
+            <Route path="/profile" element={<UserProfile />} />
             {user && user.isAdmin && (
-              <Route path="/admin" component={AdminPage} />
+              <Route path="/admin" element={<AdminPage />} />
             )}
-          </Switch>
+          </Routes>
         </main>
       </div>
     </Router>
