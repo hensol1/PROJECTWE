@@ -6,8 +6,12 @@ const FanPredictionStat = require('../models/FanPredictionStat');
 const auth = require('../middleware/auth'); // Add this line to import the auth middleware
 
 // Function to update fan prediction accuracy
-// Updated function to update fan prediction accuracy
 const updateFanAccuracy = async (match) => {
+  console.log(`Updating fan accuracy for match ${match.id}`);
+  console.log(`Match status: ${match.status}`);
+  console.log(`Match votes:`, match.votes);
+  console.log(`Match score:`, match.score);
+
   if (match.status === 'FINISHED' && match.votes && !match.fanPredictionProcessed) {
     const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
     
@@ -16,8 +20,29 @@ const updateFanAccuracy = async (match) => {
     const { home, draw, away } = match.votes;
     const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
     
-    if (fanPrediction === match.score.winner) {
+    console.log(`Fan prediction: ${fanPrediction}`);
+    console.log(`Actual result: ${match.score.winner}`);
+
+    // Check if match.score.winner is null and determine the winner based on the score
+    let actualWinner = match.score.winner;
+    if (actualWinner === null) {
+      const { home: homeScore, away: awayScore } = match.score.fullTime;
+      if (homeScore > awayScore) {
+        actualWinner = 'HOME_TEAM';
+      } else if (awayScore > homeScore) {
+        actualWinner = 'AWAY_TEAM';
+      } else {
+        actualWinner = 'DRAW';
+      }
+    }
+
+    console.log(`Actual winner (after null check): ${actualWinner}`);
+
+    if (fanPrediction === actualWinner) {
       stat.correctPredictions += 1;
+      console.log('Prediction was correct');
+    } else {
+      console.log('Prediction was incorrect');
     }
     
     await stat.save();
@@ -26,7 +51,9 @@ const updateFanAccuracy = async (match) => {
     match.fanPredictionProcessed = true;
     await match.save();
 
-    console.log(`Updated fan accuracy for match ${match.id}. Total: ${stat.totalPredictions}, Correct: ${stat.correctPredictions}`);
+    console.log(`Updated fan accuracy. Total: ${stat.totalPredictions}, Correct: ${stat.correctPredictions}`);
+  } else {
+    console.log('Match not eligible for fan accuracy update');
   }
 };
 
@@ -48,6 +75,8 @@ router.get('/', async (req, res) => {
       }
     }).sort({ 'competition.name': 1, utcDate: 1 });
 
+    console.log(`Found ${matches.length} matches for date ${queryDateString}`);
+
     // Update fan accuracy for any newly finished matches
     for (const match of matches) {
       if (match.status === 'FINISHED' && !match.fanPredictionProcessed) {
@@ -61,10 +90,11 @@ router.get('/', async (req, res) => {
       ? (stat.correctPredictions / stat.totalPredictions) * 100
       : 0;
 
-    console.log('Matches found:', matches.length);
-    console.log('Fan Accuracy:', fanAccuracy);
-    console.log('Total Predictions:', stat ? stat.totalPredictions : 0);
-    console.log('Correct Predictions:', stat ? stat.correctPredictions : 0);
+    console.log('Fan Accuracy Stats:', {
+      totalPredictions: stat ? stat.totalPredictions : 0,
+      correctPredictions: stat ? stat.correctPredictions : 0,
+      fanAccuracy
+    });
 
     res.json({ 
       matches, 
