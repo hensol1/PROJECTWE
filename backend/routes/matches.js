@@ -137,7 +137,7 @@ router.get('/', async (req, res) => {
       }
 
       return matchObj;
-    }));
+    });
 
     const fanAccuracy = stat.totalPredictions > 0
       ? (stat.correctPredictions / stat.totalPredictions) * 100
