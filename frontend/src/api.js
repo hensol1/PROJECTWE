@@ -26,9 +26,9 @@ api.voteForMatch = (matchId, vote) => {
 
 api.getUserProfile = () => api.get('/api/user/profile');
 
-// Add this method for logging out
-api.logout = () => {
-  localStorage.removeItem('token');
+// Add this new function for AI predictions
+api.makeAIPrediction = (matchId, prediction) => {
+  return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
 
 export default api;
