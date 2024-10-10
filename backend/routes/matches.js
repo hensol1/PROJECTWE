@@ -3,6 +3,7 @@ const router = express.Router();
 const Match = require('../models/Match');
 const User = require('../models/User');
 const FanPredictionStat = require('../models/FanPredictionStat');
+const AIPredictionStat = require('../models/AIPredictionStat');
 const auth = require('../middleware/auth');
 
 // Cache for fan accuracy stats
@@ -10,51 +11,53 @@ let fanAccuracyCache = null;
 let lastCalculationTime = 0;
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-const calculateFanAccuracy = async () => {
-  const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
-  stat.totalPredictions = 0;
-  stat.correctPredictions = 0;
+const calculateAccuracy = async () => {
+  const fanStat = await FanPredictionStat.findOne() || new FanPredictionStat();
+  const aiStat = await AIPredictionStat.findOne() || new AIPredictionStat();
+  
+  fanStat.totalPredictions = 0;
+  fanStat.correctPredictions = 0;
+  aiStat.totalPredictions = 0;
+  aiStat.correctPredictions = 0;
 
   const matches = await Match.find({ status: 'FINISHED' });
 
   for (const match of matches) {
     if (match.votes) {
-      stat.totalPredictions += 1;
+      fanStat.totalPredictions += 1;
       const { home, draw, away } = match.votes;
       const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
 
       let actualWinner;
       if (match.score.winner === null) {
         const { home: homeScore, away: awayScore } = match.score.fullTime;
-        if (homeScore > awayScore) {
-          actualWinner = 'HOME_TEAM';
-        } else if (awayScore > homeScore) {
-          actualWinner = 'AWAY_TEAM';
-        } else {
-          actualWinner = 'DRAW';
-        }
+        actualWinner = homeScore > awayScore ? 'HOME_TEAM' : (awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW');
       } else {
         actualWinner = match.score.winner;
       }
 
       if (fanPrediction === actualWinner) {
-        stat.correctPredictions += 1;
+        fanStat.correctPredictions += 1;
+      }
+    }
+
+    if (match.aiPrediction) {
+      aiStat.totalPredictions += 1;
+      if (match.aiPrediction === match.score.winner) {
+        aiStat.correctPredictions += 1;
       }
     }
   }
 
-  await stat.save();
+  await Promise.all([fanStat.save(), aiStat.save()]);
+  return { fanStat, aiStat };
+};
+
+const getAIAccuracy = async () => {
+  const stat = await AIPredictionStat.findOne() || new AIPredictionStat();
   return stat;
 };
 
-const getFanAccuracy = async () => {
-  const currentTime = Date.now();
-  if (!fanAccuracyCache || currentTime - lastCalculationTime > CACHE_DURATION) {
-    fanAccuracyCache = await calculateFanAccuracy();
-    lastCalculationTime = currentTime;
-  }
-  return fanAccuracyCache;
-};
 
 router.get('/', async (req, res) => {
   const { date } = req.query;
@@ -67,14 +70,14 @@ router.get('/', async (req, res) => {
   const nextDayString = nextDay.toISOString().split('T')[0];
 
   try {
-    const [matches, stat] = await Promise.all([
+    const [matches, stats] = await Promise.all([
       Match.find({
         utcDate: {
           $gte: queryDateString,
           $lt: nextDayString
         }
       }).sort({ 'competition.name': 1, utcDate: 1 }),
-      getFanAccuracy()
+      calculateAccuracy()
     ]);
 
     console.log(`Found ${matches.length} matches for date ${queryDateString}`);
@@ -152,19 +155,18 @@ router.get('/', async (req, res) => {
       return matchObj;
     });
 
-    const fanAccuracy = stat.totalPredictions > 0
-      ? (stat.correctPredictions / stat.totalPredictions) * 100
+    const fanAccuracy = stats.fanStat.totalPredictions > 0
+      ? (stats.fanStat.correctPredictions / stats.fanStat.totalPredictions) * 100
       : 0;
 
-    console.log('Fan Accuracy Stats:', {
-      totalPredictions: stat.totalPredictions,
-      correctPredictions: stat.correctPredictions,
-      fanAccuracy
-    });
+    const aiAccuracy = stats.aiStat.totalPredictions > 0
+      ? (stats.aiStat.correctPredictions / stats.aiStat.totalPredictions) * 100
+      : 0;
 
     res.json({ 
       matches: processedMatches, 
-      fanAccuracy
+      fanAccuracy,
+      aiAccuracy
     });
   } catch (error) {
     console.error('Error fetching matches:', error);

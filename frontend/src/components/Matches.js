@@ -5,6 +5,7 @@ import { format, addDays, subDays, parseISO } from 'date-fns';
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
   const [fanAccuracy, setFanAccuracy] = useState(0);
+  const [aiAccuracy, setAIAccuracy] = useState(0);
   const [totalPredictions, setTotalPredictions] = useState(0);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
@@ -31,6 +32,7 @@ const Matches = ({ user }) => {
 
       setMatches(groupedMatches);
       setFanAccuracy(response.data.fanAccuracy);
+      setAIAccuracy(response.data.aiAccuracy);
       setTotalPredictions(response.data.totalPredictions);
       setCollapsedLeagues({});
     } catch (error) {
@@ -222,9 +224,14 @@ const renderPredictions = useCallback((match) => {
       </div>
 
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-  <p className="font-bold">Cumulative Fan Prediction Accuracy</p>
-  <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct.</p>
-</div>
+        <p className="font-bold">Cumulative Fan Prediction Accuracy</p>
+        <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct.</p>
+      </div>
+
+      <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
+        <p className="font-bold">Cumulative AI Prediction Accuracy</p>
+        <p>{aiAccuracy.toFixed(2)}% of AI predictions have been correct.</p>
+      </div>
 
 
       {Object.entries(matches).map(([competition, competitionMatches]) => (
