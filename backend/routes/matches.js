@@ -80,11 +80,31 @@ router.get('/', async (req, res) => {
 
     const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
+      
+      // Add vote counts to the match object
+      matchObj.voteCounts = {
+        home: match.votes.home || 0,
+        draw: match.votes.draw || 0,
+        away: match.votes.away || 0
+      };
+
+      // Calculate fan prediction based on majority votes
+      const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
+      if (totalVotes > 0) {
+        const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
+        if (matchObj.voteCounts.home === maxVotes) {
+          matchObj.fanPrediction = 'HOME_TEAM';
+        } else if (matchObj.voteCounts.away === maxVotes) {
+          matchObj.fanPrediction = 'AWAY_TEAM';
+        } else {
+          matchObj.fanPrediction = 'DRAW';
+        }
+      } else {
+        matchObj.fanPrediction = null;
+      }
+
       if (match.status === 'FINISHED') {
         if (match.votes) {
-          const { home, draw, away } = match.votes;
-          const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
-          
           let actualResult;
           if (match.score.winner === null) {
             const { home: homeScore, away: awayScore } = match.score.fullTime;
@@ -99,7 +119,7 @@ router.get('/', async (req, res) => {
             actualResult = match.score.winner;
           }
           
-          matchObj.fanPredictionCorrect = fanPrediction === actualResult;
+          matchObj.fanPredictionCorrect = matchObj.fanPrediction === actualResult;
         }
         if (match.aiPrediction) {
           const actualResult = match.score.winner || 
