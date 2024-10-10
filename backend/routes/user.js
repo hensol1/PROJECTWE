@@ -12,10 +12,6 @@ router.get('/profile', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const totalVotes = user.totalVotes;
-    const correctVotes = user.correctVotes;
-    const accuracy = totalVotes > 0 ? (correctVotes / totalVotes) * 100 : 0;
-
     // Fetch league emblems
     const leagueEmblems = await Match.aggregate([
       { $group: { 
@@ -28,25 +24,43 @@ router.get('/profile', auth, async (req, res) => {
 
     const leagueEmblemMap = new Map(leagueEmblems.map(league => [league._id.toString(), league.emblem]));
 
-    const leagueStats = user.leagueStats.map(league => ({
-      leagueName: league.leagueName,
-      leagueId: league.leagueId,
-      accuracy: league.totalVotes > 0 ? (league.correctVotes / league.totalVotes) * 100 : 0,
-      leagueEmblem: leagueEmblemMap.get(league.leagueId.toString()) || ''
-    }));
+    // Fetch detailed vote history and recalculate statistics
+    let totalVotes = 0;
+    let correctVotes = 0;
+    const leagueStats = {};
 
-    // Fetch detailed vote history
     const voteHistory = await Promise.all(user.votes.map(async (vote) => {
       const match = await Match.findOne({ id: vote.matchId });
       if (!match) return null;
 
       let isCorrect = null;
       if (match.status === 'FINISHED') {
+        totalVotes++;
+        const homeScore = match.score.fullTime.home;
+        const awayScore = match.score.fullTime.away;
+        
         isCorrect = (
-          (vote.vote === 'home' && match.score.winner === 'HOME_TEAM') ||
-          (vote.vote === 'away' && match.score.winner === 'AWAY_TEAM') ||
-          (vote.vote === 'draw' && match.score.winner === 'DRAW')
+          (vote.vote === 'home' && homeScore > awayScore) ||
+          (vote.vote === 'away' && awayScore > homeScore) ||
+          (vote.vote === 'draw' && homeScore === awayScore)
         );
+
+        if (isCorrect) {
+          correctVotes++;
+        }
+
+        // Update league stats
+        if (!leagueStats[match.competition.id]) {
+          leagueStats[match.competition.id] = { 
+            name: match.competition.name,
+            totalVotes: 0, 
+            correctVotes: 0 
+          };
+        }
+        leagueStats[match.competition.id].totalVotes++;
+        if (isCorrect) {
+          leagueStats[match.competition.id].correctVotes++;
+        }
       }
 
       return {
@@ -68,6 +82,17 @@ router.get('/profile', auth, async (req, res) => {
     // Filter out any null values (matches that weren't found)
     const filteredVoteHistory = voteHistory.filter(vote => vote !== null);
 
+    // Calculate overall accuracy
+    const accuracy = totalVotes > 0 ? (correctVotes / totalVotes) * 100 : 0;
+
+    // Prepare league stats for response
+    const leagueStatsArray = Object.entries(leagueStats).map(([leagueId, stats]) => ({
+      leagueName: stats.name,
+      leagueId,
+      accuracy: stats.totalVotes > 0 ? (stats.correctVotes / stats.totalVotes) * 100 : 0,
+      leagueEmblem: leagueEmblemMap.get(leagueId) || ''
+    }));
+
     res.json({
       username: user.username,
       email: user.email,
@@ -75,7 +100,7 @@ router.get('/profile', auth, async (req, res) => {
       totalVotes,
       correctVotes,
       accuracy,
-      leagueStats,
+      leagueStats: leagueStatsArray,
       voteHistory: filteredVoteHistory
     });
   } catch (error) {
