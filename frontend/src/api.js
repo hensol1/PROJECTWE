@@ -14,9 +14,6 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
-      console.log('Token included in request:', token);
-    } else {
-      console.log('No token found in localStorage');
     }
     return config;
   },
@@ -24,14 +21,14 @@ api.interceptors.request.use(
 );
 
 api.voteForMatch = (matchId, vote) => {
-  console.log('Sending vote request for match:', matchId, 'vote:', vote);
   return api.post(`/api/matches/${matchId}/vote`, { vote });
 };
 
 api.getUserProfile = () => api.get('/api/user/profile');
 
-api.makeAIPrediction = (matchId, prediction) => {
-  return api.post(`/api/admin/${matchId}/predict`, { prediction });
+// Add this method for logging out
+api.logout = () => {
+  localStorage.removeItem('token');
 };
 
 export default api;

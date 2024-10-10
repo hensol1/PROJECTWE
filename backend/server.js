@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const adminRoutes = require('./routes/admin');
+const userRoutes = require('./routes/user');
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/matches', require('./routes/matches'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', adminRoutes);
+app.use('/api/user', userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -5,17 +5,28 @@ import AuthComponent from './components/AuthComponent';
 import Matches from './components/Matches';
 import UserProfile from './components/UserProfile';
 import AdminPage from './components/AdminPage';
+import api from './api';
 import config from './config';
 
 function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    console.log('Current user state:', user);
-    if (user) {
-      console.log('Is admin?', user.isAdmin);
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchUserProfile(token);
     }
-  }, [user]);
+  }, []);
+
+  const fetchUserProfile = async (token) => {
+    try {
+      const response = await api.get('/api/user/profile');
+      setUser(response.data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      localStorage.removeItem('token');
+    }
+  };
 
   return (
     <GoogleOAuthProvider clientId={config.googleClientId}>
@@ -30,15 +41,10 @@ function App() {
                   <>
                     <Link to="/profile" className="mr-4 text-blue-500 hover:text-blue-700">Profile</Link>
                     {user.isAdmin && (
-                      <>
-                        <Link to="/admin" className="mr-4 text-blue-500 hover:text-blue-700">Admin</Link>
-                        {console.log('Admin link should be visible')}
-                      </>
+                      <Link to="/admin" className="mr-4 text-blue-500 hover:text-blue-700">Admin</Link>
                     )}
-                    {!user.isAdmin && console.log('User is not admin')}
                   </>
                 )}
-                {!user && console.log('No user logged in')}
                 <AuthComponent setUser={setUser} />
               </nav>
             </div>

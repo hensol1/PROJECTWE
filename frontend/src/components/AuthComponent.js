@@ -17,6 +17,25 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
   const [googleUserInfo, setGoogleUserInfo] = useState(null);
 
   const countries = useMemo(() => countryList().getData(), []);
+  
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchUserProfile();
+    }
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await api.getUserProfile();
+      setLoggedInUser(response.data);
+      setUser(response.data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      handleLogout();
+    }
+  };
+
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -77,6 +96,7 @@ const handleSubmit = async (e) => {
     setLoggedInUser(null);
     setUser(null);
     localStorage.removeItem('token');
+    window.location.reload(); // This will refresh the page
   };
 
   const handleFirstTimeGoogleUser = async (e) => {
