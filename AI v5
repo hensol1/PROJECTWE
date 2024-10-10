@@ -1,0 +1,97 @@
+Project Overview:
+"We Know Better" is a web application for football (soccer) match predictions. It allows users to view upcoming matches, make predictions, and tracks the accuracy of both user (fans) and AI predictions.
+Updated Project Structure:
+Copywe-know-better/
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AuthComponent.js
+│   │   │   ├── Matches.js
+│   │   │   ├── UserProfile.js
+│   │   │   ├── AdminPage.js
+│   │   │   └── AccuracyComparison.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── index.css
+│   │   ├── config.js
+│   │   └── api.js
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── .env
+├── backend/
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── matches.js
+│   │   ├── user.js
+│   │   └── admin.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Match.js
+│   │   ├── FanPredictionStat.js
+│   │   └── AIPredictionStat.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   └── admin.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+└── README.md
+Key Components and Features:
+Frontend (React.js):
+
+App.js: Main component with navigation and user state management.
+AuthComponent.js: Handles user authentication (login, register, Google sign-in) with a modal interface.
+Matches.js: Fetches and displays football matches, allows voting, and shows fan and AI predictions.
+UserProfile.js: Displays user statistics and vote history.
+AdminPage.js: Allows admin users to make AI predictions for matches.
+AccuracyComparison.js: Displays a comparison of fan and AI prediction accuracies.
+api.js: Axios instance for making API calls with authentication.
+
+Backend (Node.js with Express.js):
+
+server.js: Main entry point for the backend, sets up Express, middleware, and CORS.
+routes/auth.js: Handles authentication routes (register, login, Google auth).
+routes/matches.js: Handles fetching matches, voting, and calculating fan prediction accuracy.
+routes/user.js: Handles user profile data and statistics.
+routes/admin.js: Handles AI prediction functionality for admin users.
+models/User.js: Mongoose schema for the User model, including vote history and league stats.
+models/Match.js: Mongoose schema for the Match model, including vote counts and AI prediction.
+models/FanPredictionStat.js: Mongoose schema for storing cumulative fan prediction statistics.
+models/AIPredictionStat.js: Mongoose schema for storing cumulative AI prediction statistics.
+middleware/auth.js: Authentication middleware for protecting routes.
+middleware/admin.js: Admin middleware for protecting admin-only routes.
+
+Recent Updates and Changes:
+
+Implemented cumulative fan and AI prediction accuracy calculation and display.
+Added caching mechanism for accuracy stats to improve performance.
+Implemented an admin page for making AI predictions.
+Updated the Matches component to display both fan and AI predictions.
+Implemented a user profile page showing detailed voting history and statistics.
+Added color-coding to the vote history to indicate correct and incorrect predictions.
+Optimized the match fetching process to reduce load times when navigating through dates.
+Implemented match sorting based on status (IN_PLAY, PAUSED, HALFTIME, LIVE, TIMED, SCHEDULED, FINISHED).
+Created a new AccuracyComparison component for a visually appealing display of fan vs AI accuracy.
+Updated CORS configuration to allow frontend access to backend API.
+
+Key Features:
+
+User Authentication: Registration, login, and Google sign-in.
+Match Display: View matches for specific dates with the ability to navigate between days.
+Voting System: Users can vote on match outcomes (home win, draw, away win).
+Fan Predictions: Display of current fan prediction based on majority votes.
+AI Predictions: Admin users can make AI predictions for matches.
+Cumulative Accuracy Comparison: Visual comparison of fan and AI prediction accuracies.
+User Profile: Detailed view of user's voting history and statistics.
+Admin Functionality: Separate admin page for managing AI predictions.
+Performance Optimization: Caching of accuracy stats to improve load times.
+Responsive Design: Tailwind CSS for a mobile-friendly interface.
+
+Deployment:
+
+Frontend: Deployed on Vercel (https://projectwe-tau.vercel.app)
+Backend: Deployed on Render (https://projectwe.onrender.com)
+
