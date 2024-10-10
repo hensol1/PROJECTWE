@@ -43,11 +43,21 @@ const calculateAccuracy = async () => {
 
     if (match.aiPrediction) {
       aiStat.totalPredictions += 1;
-      if (match.aiPrediction === match.score.winner) {
+      let actualWinner;
+      if (match.score.winner === null) {
+        const { home: homeScore, away: awayScore } = match.score.fullTime;
+        actualWinner = homeScore > awayScore ? 'HOME_TEAM' : (awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW');
+      } else {
+        actualWinner = match.score.winner;
+      }
+
+      if (match.aiPrediction === actualWinner) {
         aiStat.correctPredictions += 1;
       }
     }
   }
+
+  console.log('AI Stat:', aiStat); // Add this log
 
   await Promise.all([fanStat.save(), aiStat.save()]);
   return { fanStat, aiStat };
