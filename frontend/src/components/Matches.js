@@ -107,12 +107,20 @@ const renderMatchStatus = (match) => {
         const updatedMatches = { ...prevMatches };
         for (let league in updatedMatches) {
           updatedMatches[league] = updatedMatches[league].map(match => 
-            match.id === matchId ? { ...match, votes: response.data.votes } : match
+            match.id === matchId ? { 
+              ...match, 
+              votes: response.data.votes,
+              voteCounts: {
+                home: response.data.votes.home,
+                draw: response.data.votes.draw,
+                away: response.data.votes.away
+              },
+              userVote: vote
+            } : match
           );
         }
         return updatedMatches;
       });
-      setUserVotes(prev => ({ ...prev, [matchId]: response.data.percentages }));
       alert('Vote recorded successfully');
     } catch (error) {
       console.error('Error voting:', error);
@@ -158,65 +166,33 @@ const renderMatchStatus = (match) => {
     return null;
   }, [handleVote]);
 
-  const renderFansPrediction = useCallback((match) => {
-    if (!match.fanPrediction) {
-      return 'No votes yet';
-    }
-
-    let prediction = '';
-    switch (match.fanPrediction) {
-      case 'HOME_TEAM':
-        prediction = `${match.homeTeam.name} (Home)`;
-        break;
-      case 'AWAY_TEAM':
-        prediction = `${match.awayTeam.name} (Away)`;
-        break;
-      case 'DRAW':
-        prediction = 'Draw';
-        break;
-    }
-
-    let predictionClass = '';
-    if (match.status === 'FINISHED') {
-      predictionClass = match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100';
-    }
+  const renderPredictions = useCallback((match) => {
+    const getTeamName = (prediction) => {
+      switch(prediction) {
+        case 'HOME_TEAM':
+          return `${match.homeTeam.name} (Home)`;
+        case 'AWAY_TEAM':
+          return `${match.awayTeam.name} (Away)`;
+        case 'DRAW':
+          return 'Draw';
+        default:
+          return 'No prediction';
+      }
+    };
 
     return (
-      <div className={`mt-2 text-sm text-center p-2 rounded ${predictionClass}`}>
-        <p>Fans Prediction: {prediction}</p>
+      <div className="mt-2 text-sm flex justify-between">
+        <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+          Fans Prediction: {match.fanPrediction ? getTeamName(match.fanPrediction) : 'No votes yet'}
+        </p>
+        {match.aiPrediction && (
+          <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+            AI Prediction: {getTeamName(match.aiPrediction)}
+          </p>
+        )}
       </div>
     );
   }, []);
-
-const renderPredictions = useCallback((match) => {
-  const fanPrediction = renderFansPrediction(match);
-  
-  const getTeamName = (prediction) => {
-    switch(prediction) {
-      case 'HOME_TEAM':
-        return match.homeTeam.name;
-      case 'AWAY_TEAM':
-        return match.awayTeam.name;
-      case 'DRAW':
-        return 'Draw';
-      default:
-        return 'No prediction';
-    }
-  };
-
-  return (
-    <div className="mt-2 text-sm flex justify-between">
-      <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-        Fans Prediction: {fanPrediction}
-      </p>
-      {match.aiPrediction && (
-        <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-          AI Prediction: {getTeamName(match.aiPrediction)}
-        </p>
-      )}
-    </div>
-  );
-}, [renderFansPrediction]);
 
 
   const toggleLeague = (competition) => {
