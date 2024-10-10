@@ -5,6 +5,7 @@ import { format, addDays, subDays, parseISO } from 'date-fns';
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
   const [fanAccuracy, setFanAccuracy] = useState(0);
+  const [totalPredictions, setTotalPredictions] = useState(0);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [userVotes, setUserVotes] = useState({});
@@ -30,6 +31,7 @@ const Matches = ({ user }) => {
 
       setMatches(groupedMatches);
       setFanAccuracy(response.data.fanAccuracy);
+      setTotalPredictions(response.data.totalPredictions);
       setCollapsedLeagues({});
     } catch (error) {
       console.error('Error fetching matches:', error.response ? error.response.data : error.message);
@@ -194,8 +196,8 @@ const renderVoteButtons = useCallback((match) => {
       </div>
 
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-        <p className="font-bold">Fan Prediction Accuracy</p>
-        <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct.</p>
+        <p className="font-bold">Cumulative Fan Prediction Accuracy</p>
+        <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct ({Math.round(fanAccuracy * totalPredictions / 100)} out of {totalPredictions} total predictions).</p>
       </div>
 
       {Object.entries(matches).map(([competition, competitionMatches]) => (

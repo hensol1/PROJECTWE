@@ -48,4 +48,7 @@ const MatchSchema = new mongoose.Schema({
   toJSON: { getters: true }
 });
 
+  fanPredictionProcessed: { type: Boolean, default: false }
+});
+
 module.exports = mongoose.model('Match', MatchSchema);

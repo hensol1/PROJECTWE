@@ -1,29 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const Match = require('../models/Match');
-const User = require('../models/User');
-const auth = require('../middleware/auth');
+const FanPredictionStat = require('../models/FanPredictionStat'); // New model to store cumulative stats
 
-// Function to calculate fan prediction accuracy
-const calculateFanAccuracy = (matches) => {
-  let totalPredictions = 0;
-  let correctPredictions = 0;
-
-  matches.forEach(match => {
-    if (match.status === 'FINISHED' && match.votes) {
-      totalPredictions++;
-      const { home, draw, away } = match.votes;
-      const fanPrediction = home > away ? 'home' : (away > home ? 'away' : 'draw');
-      const actualResult = match.score.winner === 'HOME_TEAM' ? 'home' : 
-                           (match.score.winner === 'AWAY_TEAM' ? 'away' : 'draw');
-      
-      if (fanPrediction === actualResult) {
-        correctPredictions++;
-      }
+// Function to update fan prediction accuracy
+const updateFanAccuracy = async (match) => {
+  if (match.status === 'FINISHED' && match.votes && !match.fanPredictionProcessed) {
+    const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
+    
+    stat.totalPredictions += 1;
+    
+    const { home, draw, away } = match.votes;
+    const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
+    
+    if (fanPrediction === match.score.winner) {
+      stat.correctPredictions += 1;
     }
-  });
-
-  return totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0;
+    
+    await stat.save();
+    
+    // Mark this match as processed
+    match.fanPredictionProcessed = true;
+    await match.save();
+  }
 };
 
 
@@ -45,14 +44,21 @@ router.get('/', async (req, res) => {
       }
     }).sort({ 'competition.name': 1, utcDate: 1 });
 
-    const fanAccuracy = calculateFanAccuracy(matches);
+    // Update fan accuracy for any newly finished matches
+    for (const match of matches) {
+      await updateFanAccuracy(match);
+    }
+
+    // Fetch the latest cumulative fan accuracy
+    const stat = await FanPredictionStat.findOne();
+    const fanAccuracy = stat ? (stat.correctPredictions / stat.totalPredictions) * 100 : 0;
 
     console.log('Matches found:', matches.length);
     if (matches.length > 0) {
       console.log('Sample match date:', matches[0].utcDate);
     }
 
-    res.json({ matches, fanAccuracy });
+    res.json({ matches, fanAccuracy, totalPredictions: stat ? stat.totalPredictions : 0 });
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
