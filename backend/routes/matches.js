@@ -78,15 +78,25 @@ router.get('/', async (req, res) => {
 
     console.log(`Found ${matches.length} matches for date ${queryDateString}`);
 
-    const processedMatches = matches.map(match => {
+    const processedMatches = await Promise.all(matches.map(async (match) => {
       const matchObj = match.toObject();
       
-      // Add vote counts to the match object
-      matchObj.voteCounts = {
-        home: match.votes.home || 0,
-        draw: match.votes.draw || 0,
-        away: match.votes.away || 0
-      };
+      // Count votes for this match
+      const voteCount = await User.aggregate([
+        { $unwind: "$votes" },
+        { $match: { "votes.matchId": match.id } },
+        { $group: {
+            _id: "$votes.vote",
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      // Initialize vote counts
+      matchObj.voteCounts = { home: 0, draw: 0, away: 0 };
+      voteCount.forEach(vote => {
+        matchObj.voteCounts[vote._id] = vote.count;
+      });
 
       // Calculate fan prediction based on majority votes
       const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
@@ -104,33 +114,29 @@ router.get('/', async (req, res) => {
       }
 
       if (match.status === 'FINISHED') {
-        if (match.votes) {
-          let actualResult;
-          if (match.score.winner === null) {
-            const { home: homeScore, away: awayScore } = match.score.fullTime;
-            if (homeScore > awayScore) {
-              actualResult = 'HOME_TEAM';
-            } else if (awayScore > homeScore) {
-              actualResult = 'AWAY_TEAM';
-            } else {
-              actualResult = 'DRAW';
-            }
+        let actualResult;
+        if (match.score.winner === null) {
+          const { home: homeScore, away: awayScore } = match.score.fullTime;
+          if (homeScore > awayScore) {
+            actualResult = 'HOME_TEAM';
+          } else if (awayScore > homeScore) {
+            actualResult = 'AWAY_TEAM';
           } else {
-            actualResult = match.score.winner;
+            actualResult = 'DRAW';
           }
-          
-          matchObj.fanPredictionCorrect = matchObj.fanPrediction === actualResult;
+        } else {
+          actualResult = match.score.winner;
         }
+        
+        matchObj.fanPredictionCorrect = matchObj.fanPrediction === actualResult;
+        
         if (match.aiPrediction) {
-          const actualResult = match.score.winner || 
-            (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
-             match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-          
           matchObj.aiPredictionCorrect = match.aiPrediction === actualResult;
         }
       }
+
       return matchObj;
-    });
+    }));
 
     const fanAccuracy = stat.totalPredictions > 0
       ? (stat.correctPredictions / stat.totalPredictions) * 100
@@ -151,6 +157,7 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
   }
 });
+
 
 router.get('/all', async (req, res) => {
   try {

@@ -122,6 +122,11 @@ const renderMatchStatus = (match) => {
 
 const renderVoteButtons = useCallback((match) => {
   const hasVoted = userVotes[match.id];
+  const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+  
+  const getPercentage = (voteCount) => {
+    return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+  };
   
   if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
     return (
@@ -131,28 +136,27 @@ const renderVoteButtons = useCallback((match) => {
           className={`bg-blue-500 text-white px-2 py-1 rounded-l text-sm ${hasVoted ? 'cursor-default' : ''}`}
           disabled={hasVoted}
         >
-          Home {hasVoted ? `${userVotes[match.id].home}%` : ''}
+          Home {getPercentage(match.voteCounts.home)}%
         </button>
         <button 
           onClick={() => handleVote(match.id, 'draw')} 
           className={`bg-gray-500 text-white px-2 py-1 text-sm ${hasVoted ? 'cursor-default' : ''}`}
           disabled={hasVoted}
         >
-          Draw {hasVoted ? `${userVotes[match.id].draw}%` : ''}
+          Draw {getPercentage(match.voteCounts.draw)}%
         </button>
         <button 
           onClick={() => handleVote(match.id, 'away')} 
           className={`bg-red-500 text-white px-2 py-1 rounded-r text-sm ${hasVoted ? 'cursor-default' : ''}`}
           disabled={hasVoted}
         >
-          Away {hasVoted ? `${userVotes[match.id].away}%` : ''}
+          Away {getPercentage(match.voteCounts.away)}%
         </button>
       </div>
     );
   }
   return null;
 }, [userVotes, handleVote]);
-
 
 const renderFansPrediction = useCallback((match) => {
   const votes = match.votes || { home: 0, draw: 0, away: 0 };
