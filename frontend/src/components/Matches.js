@@ -152,6 +152,27 @@ const renderMatchStatus = (match) => {
       alert('Failed to record vote');
     }
   };
+  
+  
+  const renderMatchStatus = (match) => {
+    const statusStyle = (status) => {
+      switch (status) {
+        case 'FINISHED': return 'bg-gray-500 text-white';
+        case 'IN_PLAY':
+        case 'HALFTIME':
+        case 'LIVE': return 'bg-green-500 text-white';
+        case 'TIMED':
+        case 'SCHEDULED': return 'bg-blue-500 text-white';
+        default: return 'bg-gray-200 text-gray-800';
+      }
+    };
+
+    return (
+      <span className={`inline-block px-1 py-0.5 rounded text-xs font-medium ${statusStyle(match.status)}`}>
+        {match.status}
+      </span>
+    );
+  };
 
   const renderVoteButtons = useCallback((match) => {
     const hasVoted = match.userVote;
@@ -166,21 +187,21 @@ const renderMatchStatus = (match) => {
         <div className="flex justify-center mt-2">
           <button 
             onClick={() => handleVote(match.id, 'home')} 
-            className={`bg-blue-500 text-white px-2 py-1 rounded-l text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            className={`bg-blue-500 text-white px-1 py-0.5 rounded-l text-xs ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
             Home {hasVoted ? `${getPercentage(match.voteCounts.home)}%` : ''}
           </button>
           <button 
             onClick={() => handleVote(match.id, 'draw')} 
-            className={`bg-gray-500 text-white px-2 py-1 text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            className={`bg-gray-500 text-white px-1 py-0.5 text-xs ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
             Draw {hasVoted ? `${getPercentage(match.voteCounts.draw)}%` : ''}
           </button>
           <button 
             onClick={() => handleVote(match.id, 'away')} 
-            className={`bg-red-500 text-white px-2 py-1 rounded-r text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            className={`bg-red-500 text-white px-1 py-0.5 rounded-r text-xs ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
             Away {hasVoted ? `${getPercentage(match.voteCounts.away)}%` : ''}
@@ -191,41 +212,41 @@ const renderMatchStatus = (match) => {
     return null;
   }, [handleVote]);
 
-const renderPredictions = useCallback((match) => {
-  const getTeamPrediction = (prediction) => {
-    switch(prediction) {
-      case 'HOME_TEAM':
-        return (
-          <>
-            {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-4 h-4 inline-block ml-1" />
-          </>
-        );
-      case 'AWAY_TEAM':
-        return (
-          <>
-            {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-4 h-4 inline-block ml-1" />
-          </>
-        );
-      case 'DRAW':
-        return 'Draw';
-      default:
-        return 'No prediction';
-    }
-  };
+  const renderPredictions = useCallback((match) => {
+    const getTeamPrediction = (prediction) => {
+      switch(prediction) {
+        case 'HOME_TEAM':
+          return (
+            <>
+              {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+            </>
+          );
+        case 'AWAY_TEAM':
+          return (
+            <>
+              {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+            </>
+          );
+        case 'DRAW':
+          return 'Draw';
+        default:
+          return 'No prediction';
+      }
+    };
 
-  return (
-    <div className="mt-2 text-sm flex justify-between">
-      <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-        Fans Prediction: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
-      </p>
-      {match.aiPrediction && (
-        <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-          AI Prediction: {getTeamPrediction(match.aiPrediction)}
+    return (
+      <div className="mt-1 text-xs flex flex-col sm:flex-row sm:justify-between">
+        <p className={`p-0.5 rounded mb-0.5 sm:mb-0 ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+          Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
         </p>
-      )}
-    </div>
-  );
-}, []);
+        {match.aiPrediction && (
+          <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+            AI: {getTeamPrediction(match.aiPrediction)}
+          </p>
+        )}
+      </div>
+    );
+  }, []);
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({
@@ -235,58 +256,58 @@ const renderPredictions = useCallback((match) => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto px-2">
       <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
 
-      <div className="flex justify-between items-center my-4">
-        <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+      <div className="flex justify-between items-center my-2">
+        <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
           Previous Day
         </button>
-        <h2 className="text-2xl font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
-        <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+        <h2 className="text-lg font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
+        <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
           Next Day
         </button>
       </div>
 
       {Object.entries(matches).map(([competition, competitionMatches]) => (
-        <div key={competition} className="mb-4">
+        <div key={competition} className="mb-2">
           <button 
-            className="w-full text-left text-xl font-semibold mb-2 flex items-center bg-gray-200 p-2 rounded-lg hover:bg-gray-300 transition duration-200"
+            className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
             onClick={() => toggleLeague(competition)}
           >
-            <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-8 h-8 mr-2" />
+            <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-5 h-5 mr-1" />
             {competition}
             <span className="ml-auto">{collapsedLeagues[competition] ? '▼' : '▲'}</span>
           </button>
           {!collapsedLeagues[competition] && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {competitionMatches.map(match => (
-        <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center justify-start w-3/12">
-              <div className="mr-2">
-                {renderMatchStatus(match)}
-              </div>
-              <span className="font-semibold mr-2">{match.homeTeam.name}</span>
-              <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-6 h-6" />
+                <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-start w-5/12">
+                      <div className="mr-1">
+                        {renderMatchStatus(match)}
+                      </div>
+                      <span className="font-semibold mr-1">{match.homeTeam.name}</span>
+                      <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-4 h-4" />
+                    </div>
+                    <div className="text-center w-2/12">
+                      <span className="font-bold">
+                        {match.status === 'SCHEDULED' || match.status === 'TIMED'
+                          ? formatMatchDate(match.utcDate)
+                          : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end w-5/12">
+                      <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-4 h-4" />
+                      <span className="font-semibold ml-1">{match.awayTeam.name}</span>
+                    </div>
+                  </div>
+                  {renderVoteButtons(match)}
+                  {renderPredictions(match)}
+                </div>
+              ))}
             </div>
-            <div className="text-center">
-              <span className="text-lg font-bold">
-                {match.status === 'SCHEDULED' || match.status === 'TIMED'
-                  ? formatMatchDate(match.utcDate)
-                  : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
-              </span>
-            </div>
-            <div className="flex items-center justify-end w-3/12">
-              <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-6 h-6" />
-              <span className="font-semibold ml-2">{match.awayTeam.name}</span>
-            </div>
-          </div>
-          {renderVoteButtons(match)}
-          {renderPredictions(match)}
-        </div>
-      ))}
-</div>
           )}
         </div>
       ))}
