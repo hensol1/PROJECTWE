@@ -48,8 +48,7 @@ const MatchSchema = new mongoose.Schema({
     default: null
   },
 
-  voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  fanPredictionProcessed: { type: Boolean, default: false }  // Moved inside the schema
+  voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { 
   collection: 'matches',
   toJSON: { getters: true }

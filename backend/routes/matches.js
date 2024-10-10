@@ -85,25 +85,11 @@ router.get('/', async (req, res) => {
       userVotes = user ? user.votes : null;
     }
 
-    const processedMatches = await Promise.all(matches.map(async (match) => {
+    const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
       
-      // Count votes for this match
-      const voteCount = await User.aggregate([
-        { $unwind: "$votes" },
-        { $match: { "votes.matchId": match.id } },
-        { $group: {
-            _id: "$votes.vote",
-            count: { $sum: 1 }
-          }
-        }
-      ]);
-
-      // Initialize vote counts
-      matchObj.voteCounts = { home: 0, draw: 0, away: 0 };
-      voteCount.forEach(vote => {
-        matchObj.voteCounts[vote._id] = vote.count;
-      });
+      // Use the votes stored in the match document
+      matchObj.voteCounts = match.votes;
 
       // Calculate fan prediction based on majority votes
       const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
@@ -194,12 +180,6 @@ router.post('/:matchId/vote', auth, async (req, res) => {
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
-
-    if (!req.user) {
-      console.log('User not authenticated');
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-
     const userId = req.user.id;
 
     console.log(`Received vote request: matchId=${matchId}, vote=${vote}, userId=${userId}`);
@@ -209,7 +189,6 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     }
 
     const match = await Match.findOne({ id: matchId });
-
     if (!match) {
       console.log(`Match not found: ${matchId}`);
       return res.status(404).json({ message: 'Match not found' });
@@ -222,7 +201,6 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     }
 
     const user = await User.findById(userId);
-
     if (!user) {
       console.log(`User not found: ${userId}`);
       return res.status(404).json({ message: 'User not found' });
@@ -232,6 +210,7 @@ router.post('/:matchId/vote', auth, async (req, res) => {
 
     // Check if user has already voted for this match
     const existingVoteIndex = user.votes.findIndex(v => v.matchId === matchId);
+    const hasVoted = match.voters.includes(userId);
 
     if (existingVoteIndex !== -1) {
       // Update existing vote
@@ -243,40 +222,27 @@ router.post('/:matchId/vote', auth, async (req, res) => {
     } else {
       // Add new vote
       match.votes[vote]++;
-      match.voters.push(userId);
+      if (!hasVoted) {
+        match.voters.push(userId);
+      }
       user.votes.push({ matchId, vote });
       console.log(`Added new vote for user ${user.username} on match ${matchId}`);
     }
 
-  user.totalVotes++;
-  let leagueStat = user.leagueStats.find(stat => stat.leagueId === match.competition.id);
-  if (!leagueStat) {
-    leagueStat = {
-      leagueId: match.competition.id,
-      leagueName: match.competition.name,
-      totalVotes: 0,
-      correctVotes: 0
-    };
-    user.leagueStats.push(leagueStat);
-  }
-  leagueStat.totalVotes++;
-
-  // If the match is finished, update the correctness of the vote
-  if (match.status === 'FINISHED') {
-    const isCorrect = (
-      (vote === 'home' && match.score.winner === 'HOME_TEAM') ||
-      (vote === 'away' && match.score.winner === 'AWAY_TEAM') ||
-      (vote === 'draw' && match.score.winner === 'DRAW')
-    );
-    
-    user.votes[user.votes.length - 1].isCorrect = isCorrect;
-    if (isCorrect) {
-      user.correctVotes++;
-      leagueStat.correctVotes++;
+    user.totalVotes = user.votes.length;
+    let leagueStat = user.leagueStats.find(stat => stat.leagueId === match.competition.id);
+    if (!leagueStat) {
+      leagueStat = {
+        leagueId: match.competition.id,
+        leagueName: match.competition.name,
+        totalVotes: 0,
+        correctVotes: 0
+      };
+      user.leagueStats.push(leagueStat);
     }
-  }
+    leagueStat.totalVotes++;
 
-  await user.save();
+    await Promise.all([user.save(), match.save()]);
 
     // Calculate percentages
     const totalVotes = match.votes.home + match.votes.draw + match.votes.away;
