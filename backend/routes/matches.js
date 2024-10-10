@@ -62,7 +62,6 @@ router.get('/', async (req, res) => {
   queryDate.setUTCHours(0, 0, 0, 0);
   const nextDay = new Date(queryDate);
   nextDay.setUTCDate(queryDate.getUTCDate() + 1);
-
   const queryDateString = queryDate.toISOString().split('T')[0];
   const nextDayString = nextDay.toISOString().split('T')[0];
 
@@ -112,26 +111,6 @@ router.get('/', async (req, res) => {
       }
       return matchObj;
     });
-
-    const fanAccuracy = stat.totalPredictions > 0
-      ? (stat.correctPredictions / stat.totalPredictions) * 100
-      : 0;
-
-    console.log('Fan Accuracy Stats:', {
-      totalPredictions: stat.totalPredictions,
-      correctPredictions: stat.correctPredictions,
-      fanAccuracy
-    });
-
-    res.json({ 
-      matches: processedMatches, 
-      fanAccuracy
-    });
-  } catch (error) {
-    console.error('Error fetching matches:', error);
-    res.status(500).json({ message: 'Error fetching matches', error: error.message });
-  }
-});
 
     const fanAccuracy = stat.totalPredictions > 0
       ? (stat.correctPredictions / stat.totalPredictions) * 100
