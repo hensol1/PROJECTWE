@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import AuthComponent from './components/AuthComponent';
 import Matches from './components/Matches';
@@ -14,13 +14,13 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      fetchUserProfile(token);
+      fetchUserProfile();
     }
   }, []);
 
-  const fetchUserProfile = async (token) => {
+  const fetchUserProfile = async () => {
     try {
-      const response = await api.get('/api/user/profile');
+      const response = await api.getUserProfile();
       setUser(response.data);
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -52,10 +52,14 @@ function App() {
           <main className="flex-grow container mx-auto p-4">
             <Routes>
               <Route path="/" element={<Matches user={user} />} />
-              <Route path="/profile" element={<UserProfile user={user} />} />
+              <Route 
+                path="/profile" 
+                element={user ? <UserProfile user={user} /> : <Navigate to="/" />} 
+              />
               {user && user.isAdmin && (
                 <Route path="/admin" element={<AdminPage />} />
               )}
+              <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
         </div>

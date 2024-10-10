@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import api from '../api';
@@ -6,6 +7,7 @@ import Select from 'react-select';
 import countryList from 'react-select-country-list';
 
 const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
@@ -96,7 +98,7 @@ const handleSubmit = async (e) => {
     setLoggedInUser(null);
     setUser(null);
     localStorage.removeItem('token');
-    window.location.reload(); // This will refresh the page
+    navigate('/'); // Redirect to home page
   };
 
   const handleFirstTimeGoogleUser = async (e) => {
