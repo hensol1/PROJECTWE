@@ -30,4 +30,8 @@ api.voteForMatch = (matchId, vote) => {
 
 api.getUserProfile = () => api.get('/api/user/profile');
 
+api.makeAIPrediction = (matchId, prediction) => {
+  return api.post(`/api/admin/${matchId}/predict`, { prediction });
+};
+
 export default api;

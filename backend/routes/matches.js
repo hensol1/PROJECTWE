@@ -80,30 +80,58 @@ router.get('/', async (req, res) => {
     console.log(`Found ${matches.length} matches for date ${queryDateString}`);
 
     const processedMatches = matches.map(match => {
-      if (match.status === 'FINISHED' && match.votes) {
-        const { home, draw, away } = match.votes;
-        const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
-        
-        let actualResult;
-        if (match.score.winner === null) {
-          const { home: homeScore, away: awayScore } = match.score.fullTime;
-          if (homeScore > awayScore) {
-            actualResult = 'HOME_TEAM';
-          } else if (awayScore > homeScore) {
-            actualResult = 'AWAY_TEAM';
+      const matchObj = match.toObject();
+      if (match.status === 'FINISHED') {
+        if (match.votes) {
+          const { home, draw, away } = match.votes;
+          const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
+          
+          let actualResult;
+          if (match.score.winner === null) {
+            const { home: homeScore, away: awayScore } = match.score.fullTime;
+            if (homeScore > awayScore) {
+              actualResult = 'HOME_TEAM';
+            } else if (awayScore > homeScore) {
+              actualResult = 'AWAY_TEAM';
+            } else {
+              actualResult = 'DRAW';
+            }
           } else {
-            actualResult = 'DRAW';
+            actualResult = match.score.winner;
           }
-        } else {
-          actualResult = match.score.winner;
+          
+          matchObj.fanPredictionCorrect = fanPrediction === actualResult;
         }
-
-        const matchObj = match.toObject();
-        matchObj.fanPredictionCorrect = fanPrediction === actualResult;
-        return matchObj;
+        if (match.aiPrediction) {
+          const actualResult = match.score.winner || 
+            (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
+             match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+          
+          matchObj.aiPredictionCorrect = match.aiPrediction === actualResult;
+        }
       }
-      return match;
+      return matchObj;
     });
+
+    const fanAccuracy = stat.totalPredictions > 0
+      ? (stat.correctPredictions / stat.totalPredictions) * 100
+      : 0;
+
+    console.log('Fan Accuracy Stats:', {
+      totalPredictions: stat.totalPredictions,
+      correctPredictions: stat.correctPredictions,
+      fanAccuracy
+    });
+
+    res.json({ 
+      matches: processedMatches, 
+      fanAccuracy
+    });
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+    res.status(500).json({ message: 'Error fetching matches', error: error.message });
+  }
+});
 
     const fanAccuracy = stat.totalPredictions > 0
       ? (stat.correctPredictions / stat.totalPredictions) * 100

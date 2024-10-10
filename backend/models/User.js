@@ -23,6 +23,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     sparse: true
   },
+    isAdmin: {
+    type: Boolean,
+    default: false
+  },
+
   votes: [{
     matchId: String,
     vote: String,

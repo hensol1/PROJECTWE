@@ -42,6 +42,12 @@ const MatchSchema = new mongoose.Schema({
     draw: { type: Number, default: 0 },
     away: { type: Number, default: 0 }
   },
+    aiPrediction: {
+    type: String,
+    enum: ['HOME_TEAM', 'DRAW', 'AWAY_TEAM'],
+    default: null
+  },
+
   voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   fanPredictionProcessed: { type: Boolean, default: false }  // Moved inside the schema
 }, { 

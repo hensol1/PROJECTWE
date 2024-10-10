@@ -169,17 +169,26 @@ const renderFansPrediction = useCallback((match) => {
     prediction = 'Draw';
   }
 
-  let predictionClass = '';
-  if (match.status === 'FINISHED') {
-    predictionClass = match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100';
-  }
+  return prediction;
+}, []);
 
+const renderPredictions = useCallback((match) => {
+  const fanPrediction = renderFansPrediction(match);
+  
   return (
-    <div className={`mt-2 text-sm text-center p-2 rounded ${predictionClass}`}>
-      <p>Fans Prediction: {prediction}</p>
+    <div className="mt-2 text-sm">
+      <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+        Fans Prediction: {fanPrediction}
+      </p>
+      {match.aiPrediction && (
+        <p className={`p-1 rounded mt-1 ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+          AI Prediction: {match.aiPrediction}
+        </p>
+      )}
     </div>
   );
-}, []);
+}, [renderFansPrediction]);
+
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({
@@ -241,7 +250,7 @@ const renderFansPrediction = useCallback((match) => {
             </div>
           </div>
           {renderVoteButtons(match)}
-          {renderFansPrediction(match)}
+          {renderPredictions(match)}
         </div>
       ))}
 </div>
