@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api';
 import { format, addDays, subDays, parseISO } from 'date-fns';
+import AccuracyComparison from './AccuracyComparison'; // Import the new component
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
@@ -244,6 +245,8 @@ const renderPredictions = useCallback((match) => {
           Next Day
         </button>
       </div>
+
+      <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
 
       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
         <p className="font-bold">Cumulative Fan Prediction Accuracy</p>
