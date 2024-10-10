@@ -66,14 +66,15 @@ router.get('/', async (req, res) => {
   const nextDayString = nextDay.toISOString().split('T')[0];
 
   try {
-    const [matches, stat] = await Promise.all([
+    const [matches, stat, userVotes] = await Promise.all([
       Match.find({
         utcDate: {
           $gte: queryDateString,
           $lt: nextDayString
         }
       }).sort({ 'competition.name': 1, utcDate: 1 }),
-      getFanAccuracy()
+      getFanAccuracy(),
+      userId ? User.findById(userId, 'votes') : null
     ]);
 
     console.log(`Found ${matches.length} matches for date ${queryDateString}`);
@@ -112,6 +113,15 @@ router.get('/', async (req, res) => {
       } else {
         matchObj.fanPrediction = null;
       }
+
+      // Check if the user has voted for this match
+      if (userVotes) {
+        const userVote = userVotes.votes.find(v => v.matchId === match.id);
+        if (userVote) {
+          matchObj.userVote = userVote.vote;
+        }
+      }
+
 
       if (match.status === 'FINISHED') {
         let actualResult;

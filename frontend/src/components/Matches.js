@@ -120,61 +120,73 @@ const renderMatchStatus = (match) => {
     }
   };
 
-const renderVoteButtons = useCallback((match) => {
-  const hasVoted = userVotes[match.id];
-  const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
-  
-  const getPercentage = (voteCount) => {
-    return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-  };
-  
-  if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
+  const renderVoteButtons = useCallback((match) => {
+    const hasVoted = match.userVote;
+    const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+    
+    const getPercentage = (voteCount) => {
+      return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+    };
+    
+    if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
+      return (
+        <div className="flex justify-center mt-2">
+          <button 
+            onClick={() => handleVote(match.id, 'home')} 
+            className={`bg-blue-500 text-white px-2 py-1 rounded-l text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            disabled={hasVoted}
+          >
+            Home {hasVoted ? `${getPercentage(match.voteCounts.home)}%` : ''}
+          </button>
+          <button 
+            onClick={() => handleVote(match.id, 'draw')} 
+            className={`bg-gray-500 text-white px-2 py-1 text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            disabled={hasVoted}
+          >
+            Draw {hasVoted ? `${getPercentage(match.voteCounts.draw)}%` : ''}
+          </button>
+          <button 
+            onClick={() => handleVote(match.id, 'away')} 
+            className={`bg-red-500 text-white px-2 py-1 rounded-r text-sm ${hasVoted ? 'cursor-default' : ''}`}
+            disabled={hasVoted}
+          >
+            Away {hasVoted ? `${getPercentage(match.voteCounts.away)}%` : ''}
+          </button>
+        </div>
+      );
+    }
+    return null;
+  }, [handleVote]);
+
+  const renderFansPrediction = useCallback((match) => {
+    if (!match.fanPrediction) {
+      return 'No votes yet';
+    }
+
+    let prediction = '';
+    switch (match.fanPrediction) {
+      case 'HOME_TEAM':
+        prediction = `${match.homeTeam.name} (Home)`;
+        break;
+      case 'AWAY_TEAM':
+        prediction = `${match.awayTeam.name} (Away)`;
+        break;
+      case 'DRAW':
+        prediction = 'Draw';
+        break;
+    }
+
+    let predictionClass = '';
+    if (match.status === 'FINISHED') {
+      predictionClass = match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100';
+    }
+
     return (
-      <div className="flex justify-center mt-2">
-        <button 
-          onClick={() => handleVote(match.id, 'home')} 
-          className={`bg-blue-500 text-white px-2 py-1 rounded-l text-sm ${hasVoted ? 'cursor-default' : ''}`}
-          disabled={hasVoted}
-        >
-          Home {getPercentage(match.voteCounts.home)}%
-        </button>
-        <button 
-          onClick={() => handleVote(match.id, 'draw')} 
-          className={`bg-gray-500 text-white px-2 py-1 text-sm ${hasVoted ? 'cursor-default' : ''}`}
-          disabled={hasVoted}
-        >
-          Draw {getPercentage(match.voteCounts.draw)}%
-        </button>
-        <button 
-          onClick={() => handleVote(match.id, 'away')} 
-          className={`bg-red-500 text-white px-2 py-1 rounded-r text-sm ${hasVoted ? 'cursor-default' : ''}`}
-          disabled={hasVoted}
-        >
-          Away {getPercentage(match.voteCounts.away)}%
-        </button>
+      <div className={`mt-2 text-sm text-center p-2 rounded ${predictionClass}`}>
+        <p>Fans Prediction: {prediction}</p>
       </div>
     );
-  }
-  return null;
-}, [userVotes, handleVote]);
-
-const renderFansPrediction = useCallback((match) => {
-  const votes = match.votes || { home: 0, draw: 0, away: 0 };
-  const maxVotes = Math.max(votes.home, votes.draw, votes.away);
-  let prediction = '';
-
-  if (maxVotes === 0) {
-    prediction = 'No votes yet';
-  } else if (votes.home === maxVotes) {
-    prediction = `${match.homeTeam.name} (Home)`;
-  } else if (votes.away === maxVotes) {
-    prediction = `${match.awayTeam.name} (Away)`;
-  } else {
-    prediction = 'Draw';
-  }
-
-  return prediction;
-}, []);
+  }, []);
 
 const renderPredictions = useCallback((match) => {
   const fanPrediction = renderFansPrediction(match);
