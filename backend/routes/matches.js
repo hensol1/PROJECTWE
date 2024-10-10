@@ -4,6 +4,29 @@ const Match = require('../models/Match');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
+// Function to calculate fan prediction accuracy
+const calculateFanAccuracy = (matches) => {
+  let totalPredictions = 0;
+  let correctPredictions = 0;
+
+  matches.forEach(match => {
+    if (match.status === 'FINISHED' && match.votes) {
+      totalPredictions++;
+      const { home, draw, away } = match.votes;
+      const fanPrediction = home > away ? 'home' : (away > home ? 'away' : 'draw');
+      const actualResult = match.score.winner === 'HOME_TEAM' ? 'home' : 
+                           (match.score.winner === 'AWAY_TEAM' ? 'away' : 'draw');
+      
+      if (fanPrediction === actualResult) {
+        correctPredictions++;
+      }
+    }
+  });
+
+  return totalPredictions > 0 ? (correctPredictions / totalPredictions) * 100 : 0;
+};
+
+
 router.get('/', async (req, res) => {
   const { date } = req.query;
   const queryDate = new Date(date);
@@ -15,10 +38,6 @@ router.get('/', async (req, res) => {
   const nextDayString = nextDay.toISOString().split('T')[0];
 
   try {
-    console.log('Fetching matches for date:', date);
-    console.log('Query start:', queryDateString);
-    console.log('Query end:', nextDayString);
-
     const matches = await Match.find({
       utcDate: {
         $gte: queryDateString,
@@ -26,12 +45,14 @@ router.get('/', async (req, res) => {
       }
     }).sort({ 'competition.name': 1, utcDate: 1 });
 
+    const fanAccuracy = calculateFanAccuracy(matches);
+
     console.log('Matches found:', matches.length);
     if (matches.length > 0) {
       console.log('Sample match date:', matches[0].utcDate);
     }
 
-    res.json(matches);
+    res.json({ matches, fanAccuracy });
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({ message: 'Error fetching matches', error: error.message });

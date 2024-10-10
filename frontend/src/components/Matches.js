@@ -4,9 +4,10 @@ import { format, addDays, subDays, parseISO } from 'date-fns';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
+  const [fanAccuracy, setFanAccuracy] = useState(0);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
-  const [userVotes, setUserVotes] = useState({}); // Changed from votedMatches to userVotes
+  const [userVotes, setUserVotes] = useState({});
 
   useEffect(() => {
     fetchMatches(currentDate);
@@ -19,7 +20,7 @@ const Matches = ({ user }) => {
       const response = await api.get(`/api/matches?date=${formattedDate}`);
       console.log('Fetched matches:', response.data);
       
-      const groupedMatches = response.data.reduce((acc, match) => {
+      const groupedMatches = response.data.matches.reduce((acc, match) => {
         if (!acc[match.competition.name]) {
           acc[match.competition.name] = [];
         }
@@ -28,7 +29,7 @@ const Matches = ({ user }) => {
       }, {});
 
       setMatches(groupedMatches);
-      // Reset collapsed state when fetching new matches
+      setFanAccuracy(response.data.fanAccuracy);
       setCollapsedLeagues({});
     } catch (error) {
       console.error('Error fetching matches:', error.response ? error.response.data : error.message);
@@ -190,6 +191,11 @@ const renderVoteButtons = useCallback((match) => {
         <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
           Next Day
         </button>
+      </div>
+
+      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
+        <p className="font-bold">Fan Prediction Accuracy</p>
+        <p>{fanAccuracy.toFixed(2)}% of fan predictions have been correct.</p>
       </div>
 
       {Object.entries(matches).map(([competition, competitionMatches]) => (
