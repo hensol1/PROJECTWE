@@ -192,41 +192,41 @@ const Matches = ({ user }) => {
     return null;
   }, [handleVote]);
 
-  const renderPredictions = useCallback((match) => {
-    const getTeamPrediction = (prediction) => {
-      switch(prediction) {
-        case 'HOME_TEAM':
-          return (
-            <>
-              {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-3 h-3 inline-block ml-0.5" />
-            </>
-          );
-        case 'AWAY_TEAM':
-          return (
-            <>
-              {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-3 h-3 inline-block ml-0.5" />
-            </>
-          );
-        case 'DRAW':
-          return 'Draw';
-        default:
-          return 'No prediction';
-      }
-    };
+const renderPredictions = useCallback((match) => {
+  const getTeamPrediction = (prediction) => {
+    switch(prediction) {
+      case 'HOME_TEAM':
+        return (
+          <>
+            {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+          </>
+        );
+      case 'AWAY_TEAM':
+        return (
+          <>
+            {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+          </>
+        );
+      case 'DRAW':
+        return 'Draw';
+      default:
+        return 'No prediction';
+    }
+  };
 
-    return (
-      <div className="mt-1 text-xs flex flex-col sm:flex-row sm:justify-between">
-        <p className={`p-0.5 rounded mb-0.5 sm:mb-0 ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-          Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
+  return (
+    <div className="mt-1 text-xs flex justify-between">
+      <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+        Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
+      </p>
+      {match.aiPrediction && (
+        <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+          AI: {getTeamPrediction(match.aiPrediction)}
         </p>
-        {match.aiPrediction && (
-          <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-            AI: {getTeamPrediction(match.aiPrediction)}
-          </p>
-        )}
-      </div>
-    );
-  }, []);
+      )}
+    </div>
+  );
+}, []);
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({
