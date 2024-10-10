@@ -42,13 +42,11 @@ const MatchSchema = new mongoose.Schema({
     draw: { type: Number, default: 0 },
     away: { type: Number, default: 0 }
   },
-  voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  fanPredictionProcessed: { type: Boolean, default: false }  // Moved inside the schema
 }, { 
   collection: 'matches',
   toJSON: { getters: true }
-});
-
-  fanPredictionProcessed: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('Match', MatchSchema);
