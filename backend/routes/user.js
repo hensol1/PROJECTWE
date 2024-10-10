@@ -79,8 +79,10 @@ router.get('/profile', auth, async (req, res) => {
       };
     }));
 
-    // Filter out any null values (matches that weren't found)
-    const filteredVoteHistory = voteHistory.filter(vote => vote !== null);
+    // Filter out null values and sort the vote history
+    const filteredVoteHistory = voteHistory
+      .filter(vote => vote !== null)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // Calculate overall accuracy
     const accuracy = totalVotes > 0 ? (correctVotes / totalVotes) * 100 : 0;

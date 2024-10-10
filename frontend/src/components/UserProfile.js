@@ -44,7 +44,7 @@ const UserProfile = () => {
             <tbody>
               {profile.voteHistory.map((vote, index) => (
                 <tr key={index} className={vote.isCorrect === true ? 'bg-green-100' : (vote.isCorrect === false ? 'bg-red-100' : '')}>
-                  <td className="py-2 px-4 border-b">{format(parseISO(vote.date), 'dd MMM yyyy')}</td>
+                  <td className="py-2 px-4 border-b">{format(parseISO(vote.date), 'dd MMM yyyy HH:mm')}</td>
                   <td className="py-2 px-4 border-b flex items-center">
                     <img src={vote.competition.emblem} alt={vote.competition.name} className="w-6 h-6 mr-2" />
                     {vote.competition.name}
@@ -64,6 +64,7 @@ const UserProfile = () => {
       </div>
     );
   };
+
 
   return (
     <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
