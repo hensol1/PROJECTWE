@@ -100,25 +100,25 @@ const Matches = ({ user }) => {
     return format(date, 'HH:mm');
   };
 
-const renderMatchStatus = (match) => {
-  const statusStyle = (status) => {
-    switch (status) {
-      case 'FINISHED': return 'bg-gray-500 text-white';
-      case 'IN_PLAY':
-      case 'HALFTIME':
-      case 'LIVE': return 'bg-green-500 text-white';
-      case 'TIMED':
-      case 'SCHEDULED': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-200 text-gray-800';
-    }
-  };
+  const renderMatchStatus = (match) => {
+    const statusStyle = (status) => {
+      switch (status) {
+        case 'FINISHED': return 'bg-gray-500 text-white';
+        case 'IN_PLAY':
+        case 'HALFTIME':
+        case 'LIVE': return 'bg-green-500 text-white';
+        case 'TIMED':
+        case 'SCHEDULED': return 'bg-blue-500 text-white';
+        default: return 'bg-gray-200 text-gray-800';
+      }
+    };
 
-  return (
-    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${statusStyle(match.status)}`}>
-      {match.status}
-    </span>
-  );
-};
+    return (
+      <span className={`inline-block px-1 py-0.5 rounded text-xs font-medium ${statusStyle(match.status)}`}>
+        {match.status}
+      </span>
+    );
+  };
 
   const handleVote = async (matchId, vote) => {
     if (!user) {
@@ -154,26 +154,6 @@ const renderMatchStatus = (match) => {
   };
   
   
-  const renderMatchStatus = (match) => {
-    const statusStyle = (status) => {
-      switch (status) {
-        case 'FINISHED': return 'bg-gray-500 text-white';
-        case 'IN_PLAY':
-        case 'HALFTIME':
-        case 'LIVE': return 'bg-green-500 text-white';
-        case 'TIMED':
-        case 'SCHEDULED': return 'bg-blue-500 text-white';
-        default: return 'bg-gray-200 text-gray-800';
-      }
-    };
-
-    return (
-      <span className={`inline-block px-1 py-0.5 rounded text-xs font-medium ${statusStyle(match.status)}`}>
-        {match.status}
-      </span>
-    );
-  };
-
   const renderVoteButtons = useCallback((match) => {
     const hasVoted = match.userVote;
     const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
