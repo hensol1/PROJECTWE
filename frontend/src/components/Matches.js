@@ -175,14 +175,27 @@ const renderFansPrediction = useCallback((match) => {
 const renderPredictions = useCallback((match) => {
   const fanPrediction = renderFansPrediction(match);
   
+  const getTeamName = (prediction) => {
+    switch(prediction) {
+      case 'HOME_TEAM':
+        return match.homeTeam.name;
+      case 'AWAY_TEAM':
+        return match.awayTeam.name;
+      case 'DRAW':
+        return 'Draw';
+      default:
+        return 'No prediction';
+    }
+  };
+
   return (
-    <div className="mt-2 text-sm">
+    <div className="mt-2 text-sm flex justify-between">
       <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
         Fans Prediction: {fanPrediction}
       </p>
       {match.aiPrediction && (
-        <p className={`p-1 rounded mt-1 ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-          AI Prediction: {match.aiPrediction}
+        <p className={`p-1 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+          AI Prediction: {getTeamName(match.aiPrediction)}
         </p>
       )}
     </div>
