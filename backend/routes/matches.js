@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const Match = require('../models/Match');
-const User = require('../models/User'); // Make sure this is imported
+const User = require('../models/User');
 const FanPredictionStat = require('../models/FanPredictionStat');
-const auth = require('../middleware/auth'); // Add this line to import the auth middleware
+const auth = require('../middleware/auth');
 
-// Function to update fan prediction accuracy
+// Updated function to update fan prediction accuracy
 const updateFanAccuracy = async (match) => {
   console.log(`Updating fan accuracy for match ${match.id}`);
   console.log(`Match status: ${match.status}`);
   console.log(`Match votes:`, match.votes);
   console.log(`Match score:`, match.score);
 
-  if (match.status === 'FINISHED' && match.votes && !match.fanPredictionProcessed) {
+  if (match.status === 'FINISHED' && match.votes) {
     const stat = await FanPredictionStat.findOne() || new FanPredictionStat();
     
     stat.totalPredictions += 1;
@@ -21,11 +21,9 @@ const updateFanAccuracy = async (match) => {
     const fanPrediction = home > away ? 'HOME_TEAM' : (away > home ? 'AWAY_TEAM' : 'DRAW');
     
     console.log(`Fan prediction: ${fanPrediction}`);
-    console.log(`Actual result: ${match.score.winner}`);
 
-    // Check if match.score.winner is null and determine the winner based on the score
-    let actualWinner = match.score.winner;
-    if (actualWinner === null) {
+    let actualWinner;
+    if (match.score.winner === null) {
       const { home: homeScore, away: awayScore } = match.score.fullTime;
       if (homeScore > awayScore) {
         actualWinner = 'HOME_TEAM';
@@ -34,9 +32,11 @@ const updateFanAccuracy = async (match) => {
       } else {
         actualWinner = 'DRAW';
       }
+    } else {
+      actualWinner = match.score.winner;
     }
 
-    console.log(`Actual winner (after null check): ${actualWinner}`);
+    console.log(`Actual winner: ${actualWinner}`);
 
     if (fanPrediction === actualWinner) {
       stat.correctPredictions += 1;
@@ -47,7 +47,6 @@ const updateFanAccuracy = async (match) => {
     
     await stat.save();
     
-    // Mark this match as processed
     match.fanPredictionProcessed = true;
     await match.save();
 
@@ -68,21 +67,27 @@ router.get('/', async (req, res) => {
   const nextDayString = nextDay.toISOString().split('T')[0];
 
   try {
-    const matches = await Match.find({
-      utcDate: {
-        $gte: queryDateString,
-        $lt: nextDayString
-      }
-    }).sort({ 'competition.name': 1, utcDate: 1 });
+    // Reset FanPredictionStat
+    await FanPredictionStat.deleteMany({});
+    
+    const matches = await Match.find().sort({ 'competition.name': 1, utcDate: 1 });
 
-    console.log(`Found ${matches.length} matches for date ${queryDateString}`);
+    console.log(`Found ${matches.length} total matches`);
 
-    // Update fan accuracy for any newly finished matches
+    // Update fan accuracy for all finished matches
     for (const match of matches) {
-      if (match.status === 'FINISHED' && !match.fanPredictionProcessed) {
+      if (match.status === 'FINISHED') {
         await updateFanAccuracy(match);
       }
     }
+
+    // Fetch matches for the specific date
+    const dateMatches = matches.filter(match => {
+      const matchDate = new Date(match.utcDate);
+      return matchDate >= queryDate && matchDate < nextDay;
+    });
+
+    console.log(`Found ${dateMatches.length} matches for date ${queryDateString}`);
 
     // Fetch the latest cumulative fan accuracy
     const stat = await FanPredictionStat.findOne();
@@ -97,7 +102,7 @@ router.get('/', async (req, res) => {
     });
 
     res.json({ 
-      matches, 
+      matches: dateMatches, 
       fanAccuracy, 
       totalPredictions: stat ? stat.totalPredictions : 0,
       correctPredictions: stat ? stat.correctPredictions : 0
