@@ -58,6 +58,7 @@ const getFanAccuracy = async () => {
 
 router.get('/', async (req, res) => {
   const { date } = req.query;
+  const userId = req.user ? req.user.id : null; // Get user ID if logged in
   const queryDate = new Date(date);
   queryDate.setUTCHours(0, 0, 0, 0);
   const nextDay = new Date(queryDate);
@@ -66,18 +67,23 @@ router.get('/', async (req, res) => {
   const nextDayString = nextDay.toISOString().split('T')[0];
 
   try {
-    const [matches, stat, userVotes] = await Promise.all([
+    const [matches, stat] = await Promise.all([
       Match.find({
         utcDate: {
           $gte: queryDateString,
           $lt: nextDayString
         }
       }).sort({ 'competition.name': 1, utcDate: 1 }),
-      getFanAccuracy(),
-      userId ? User.findById(userId, 'votes') : null
+      getFanAccuracy()
     ]);
 
     console.log(`Found ${matches.length} matches for date ${queryDateString}`);
+
+    let userVotes = null;
+    if (userId) {
+      const user = await User.findById(userId, 'votes');
+      userVotes = user ? user.votes : null;
+    }
 
     const processedMatches = await Promise.all(matches.map(async (match) => {
       const matchObj = match.toObject();
@@ -116,12 +122,11 @@ router.get('/', async (req, res) => {
 
       // Check if the user has voted for this match
       if (userVotes) {
-        const userVote = userVotes.votes.find(v => v.matchId === match.id);
+        const userVote = userVotes.find(v => v.matchId === match.id);
         if (userVote) {
           matchObj.userVote = userVote.vote;
         }
       }
-
 
       if (match.status === 'FINISHED') {
         let actualResult;
@@ -167,7 +172,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
   }
 });
-
 
 router.get('/all', async (req, res) => {
   try {
