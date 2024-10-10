@@ -27,11 +27,12 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
         email,
         country: country.value
       });
-      setLoggedInUser(username);
-      setUser(username);  // This line is now correct
-console.log('Token received:', response.data.token);
-localStorage.setItem('token', response.data.token);
-console.log('Token stored in localStorage:', localStorage.getItem('token'));
+      const userData = response.data.user; // Assuming the backend sends user data
+      setLoggedInUser(userData);
+      setUser(userData); // Pass the entire user object, not just the username
+      console.log('Token received:', response.data.token);
+      localStorage.setItem('token', response.data.token);
+      console.log('Token stored in localStorage:', localStorage.getItem('token'));
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error:', error.response ? error.response.data : error.message);
@@ -55,11 +56,12 @@ console.log('Token stored in localStorage:', localStorage.getItem('token'));
           setIsFirstTimeGoogleUser(true);
           setGoogleUserInfo(userInfo.data);
         } else {
-          setLoggedInUser(response.data.user.username);
-          setUser(response.data.user.username);  // This line is now correct
-console.log('Token received:', response.data.token);
-localStorage.setItem('token', response.data.token);
-console.log('Token stored in localStorage:', localStorage.getItem('token'));
+          const userData = response.data.user;
+          setLoggedInUser(userData);
+          setUser(userData); // Pass the entire user object
+          console.log('Token received:', response.data.token);
+          localStorage.setItem('token', response.data.token);
+          console.log('Token stored in localStorage:', localStorage.getItem('token'));
           setIsModalOpen(false);
         }
       } catch (error) {
@@ -71,7 +73,7 @@ console.log('Token stored in localStorage:', localStorage.getItem('token'));
 
   const handleLogout = () => {
     setLoggedInUser(null);
-    setUser(null);  // This line is now correct
+    setUser(null);
     localStorage.removeItem('token');
   };
 
@@ -86,11 +88,12 @@ console.log('Token stored in localStorage:', localStorage.getItem('token'));
         country: country.value
       });
 
-      setLoggedInUser(response.data.user.username);
-      setUser(response.data.user.username);  // This line is now correct
-console.log('Token received:', response.data.token);
-localStorage.setItem('token', response.data.token);
-console.log('Token stored in localStorage:', localStorage.getItem('token'));
+      const userData = response.data.user;
+      setLoggedInUser(userData);
+      setUser(userData); // Pass the entire user object
+      console.log('Token received:', response.data.token);
+      localStorage.setItem('token', response.data.token);
+      console.log('Token stored in localStorage:', localStorage.getItem('token'));
       setIsFirstTimeGoogleUser(false);
       setIsModalOpen(false);
     } catch (error) {
@@ -166,7 +169,7 @@ console.log('Token stored in localStorage:', localStorage.getItem('token'));
     <div className="relative">
       {loggedInUser ? (
         <div className="flex items-center">
-          <p className="mr-2">Welcome, {loggedInUser}!</p>
+          <p className="mr-2">Welcome, {loggedInUser.username}!</p>
           <button
             onClick={handleLogout}
             className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"

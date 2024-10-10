@@ -34,7 +34,7 @@ function App() {
           <main className="flex-grow container mx-auto p-4">
             <Routes>
               <Route path="/" element={<Matches user={user} />} />
-              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/profile" element={<UserProfile user={user} />} />
               {user && user.isAdmin && (
                 <Route path="/admin" element={<AdminPage />} />
               )}
