@@ -30,6 +30,7 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
       const userData = response.data.user; // Assuming the backend sends user data
       setLoggedInUser(userData);
       setUser(userData); // Pass the entire user object, not just the username
+      console.log('User set:', userData); // Add this line
       console.log('Token received:', response.data.token);
       localStorage.setItem('token', response.data.token);
       console.log('Token stored in localStorage:', localStorage.getItem('token'));
