@@ -86,7 +86,7 @@ router.get('/', async (req, res) => {
           $gte: queryDateString,
           $lt: nextDayString
         }
-      }).sort({ 'competition.name': 1, utcDate: 1 }),
+      }),
       calculateAccuracy()
     ]);
 
@@ -98,7 +98,27 @@ router.get('/', async (req, res) => {
       userVotes = user ? user.votes : null;
     }
 
-    const processedMatches = matches.map(match => {
+    // Define the order of statuses
+    const statusOrder = ['IN_PLAY', 'PAUSED', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
+
+    // Sort the matches
+    const sortedMatches = matches.sort((a, b) => {
+      const statusA = statusOrder.indexOf(a.status);
+      const statusB = statusOrder.indexOf(b.status);
+      
+      if (statusA === statusB) {
+        // If statuses are the same, sort by utcDate
+        return new Date(a.utcDate) - new Date(b.utcDate);
+      }
+      
+      // If status is not in the list, put it at the end
+      if (statusA === -1) return 1;
+      if (statusB === -1) return -1;
+      
+      return statusA - statusB;
+    });
+
+    const processedMatches = sortedMatches.map(match => {
       const matchObj = match.toObject();
       
       // Use the votes stored in the match document
@@ -119,18 +139,17 @@ router.get('/', async (req, res) => {
         matchObj.fanPrediction = null;
       }
       
-          // Update fan prediction to include team information
-    if (matchObj.fanPrediction) {
-      matchObj.fanPredictionTeam = matchObj.fanPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
-                                   matchObj.fanPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
-    }
+      // Update fan prediction to include team information
+      if (matchObj.fanPrediction) {
+        matchObj.fanPredictionTeam = matchObj.fanPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
+                                     matchObj.fanPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
+      }
 
-    // Update AI prediction to include team information
-    if (matchObj.aiPrediction) {
-      matchObj.aiPredictionTeam = matchObj.aiPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
-                                  matchObj.aiPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
-    }
-
+      // Update AI prediction to include team information
+      if (matchObj.aiPrediction) {
+        matchObj.aiPredictionTeam = matchObj.aiPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
+                                    matchObj.aiPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
+      }
 
       // Check if the user has voted for this match
       if (userVotes) {

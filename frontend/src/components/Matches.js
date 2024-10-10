@@ -11,6 +11,26 @@ const Matches = ({ user }) => {
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [userVotes, setUserVotes] = useState({});
 
+  const sortMatches = (matches) => {
+    const statusOrder = ['IN_PLAY', 'PAUSED', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
+    return Object.entries(matches).reduce((acc, [competition, competitionMatches]) => {
+      acc[competition] = competitionMatches.sort((a, b) => {
+        const statusA = statusOrder.indexOf(a.status);
+        const statusB = statusOrder.indexOf(b.status);
+        
+        if (statusA === statusB) {
+          return new Date(a.utcDate) - new Date(b.utcDate);
+        }
+        
+        if (statusA === -1) return 1;
+        if (statusB === -1) return -1;
+        
+        return statusA - statusB;
+      });
+      return acc;
+    }, {});
+  };
+
   useEffect(() => {
     fetchMatches(currentDate);
   }, [currentDate]);
@@ -30,7 +50,9 @@ const Matches = ({ user }) => {
         return acc;
       }, {});
 
-      setMatches(groupedMatches);
+      const sortedMatches = sortMatches(groupedMatches);
+
+      setMatches(sortedMatches);
       setFanAccuracy(response.data.fanAccuracy);
       setAIAccuracy(response.data.aiAccuracy);
       setTotalPredictions(response.data.totalPredictions);
@@ -246,7 +268,7 @@ const renderPredictions = useCallback((match) => {
           </button>
           {!collapsedLeagues[competition] && (
             <div className="space-y-2">
-      {competitionMatches.map(match => (
+              {competitionMatches.map(match => (
         <div key={match.id} className="bg-white shadow-md rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-start w-3/12">
