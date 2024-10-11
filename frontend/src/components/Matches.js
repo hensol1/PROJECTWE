@@ -120,38 +120,38 @@ const Matches = ({ user }) => {
     );
   };
 
-  const handleVote = async (matchId, vote) => {
-    if (!user) {
-      alert('Please log in to vote');
-      return;
-    }
+const handleVote = async (matchId, vote) => {
+  if (!user) {
+    alert('Please log in to vote');
+    return;
+  }
 
-    try {
-      const response = await api.voteForMatch(matchId, vote);
-      setMatches(prevMatches => {
-        const updatedMatches = { ...prevMatches };
-        for (let league in updatedMatches) {
-          updatedMatches[league] = updatedMatches[league].map(match => 
-            match.id === matchId ? { 
-              ...match, 
-              votes: response.data.votes,
-              voteCounts: {
-                home: response.data.votes.home,
-                draw: response.data.votes.draw,
-                away: response.data.votes.away
-              },
-              userVote: vote
-            } : match
-          );
-        }
-        return updatedMatches;
-      });
-      alert('Vote recorded successfully');
-    } catch (error) {
-      console.error('Error voting:', error);
-      alert('Failed to record vote');
-    }
-  };
+  try {
+    const response = await api.voteForMatch(matchId, vote);
+    setMatches(prevMatches => {
+      const updatedMatches = { ...prevMatches };
+      for (let league in updatedMatches) {
+        updatedMatches[league] = updatedMatches[league].map(match => 
+          match.id === matchId ? { 
+            ...match, 
+            votes: response.data.votes,
+            voteCounts: {
+              home: response.data.votes.home,
+              draw: response.data.votes.draw,
+              away: response.data.votes.away
+            },
+            userVote: vote
+          } : match
+        );
+      }
+      return updatedMatches;
+    });
+    // Remove the alert('Vote recorded successfully'); line
+  } catch (error) {
+    console.error('Error voting:', error);
+    alert('Failed to record vote');
+  }
+};
   
   
   const renderVoteButtons = useCallback((match) => {
