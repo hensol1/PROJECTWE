@@ -26,44 +26,52 @@ const UserProfile = () => {
   if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
   if (!profile) return null;
 
-  const renderVoteHistory = () => {
-    return (
-      <div className="mt-4 sm:mt-8">
-        <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-4">Vote History</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white text-xs sm:text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="py-1 sm:py-2 px-2 sm:px-4 border-b">Date</th>
-                <th className="py-1 sm:py-2 px-2 sm:px-4 border-b">Competition</th>
-                <th className="py-1 sm:py-2 px-2 sm:px-4 border-b">Match</th>
-                <th className="py-1 sm:py-2 px-2 sm:px-4 border-b">Your Vote</th>
-                <th className="py-1 sm:py-2 px-2 sm:px-4 border-b">Result</th>
+const renderVoteHistory = () => {
+  return (
+    <div className="mt-4 sm:mt-8">
+      <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-4">Vote History</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white text-xs sm:text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="py-1 sm:py-2 px-1 sm:px-2 border-b">Date</th>
+              <th className="py-1 sm:py-2 px-1 sm:px-2 border-b">Competition</th>
+              <th className="py-1 sm:py-2 px-1 sm:px-2 border-b">Match</th>
+              <th className="py-1 sm:py-2 px-1 sm:px-2 border-b">Vote</th>
+              <th className="py-1 sm:py-2 px-1 sm:px-2 border-b">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {profile.voteHistory.map((vote, index) => (
+              <tr key={index} className={vote.isCorrect === true ? 'bg-green-100' : (vote.isCorrect === false ? 'bg-red-100' : '')}>
+                <td className="py-1 sm:py-2 px-1 sm:px-2 border-b">{format(parseISO(vote.date), 'dd MMM HH:mm')}</td>
+                <td className="py-1 sm:py-2 px-1 sm:px-2 border-b">
+                  <div className="flex items-center">
+                    <img src={vote.competition.emblem} alt={vote.competition.name} className="w-4 h-4 sm:w-6 sm:h-6 mr-1" />
+                    <span className="text-xs sm:text-sm truncate">{vote.competition.name}</span>
+                  </div>
+                </td>
+                <td className="py-1 sm:py-2 px-1 sm:px-2 border-b">
+                  <div className="flex flex-col sm:flex-row sm:items-center">
+                    <span className="truncate">{vote.homeTeam}</span>
+                    <span className="hidden sm:inline mx-1">vs</span>
+                    <span className="truncate">{vote.awayTeam}</span>
+                  </div>
+                </td>
+                <td className="py-1 sm:py-2 px-1 sm:px-2 border-b capitalize">{vote.vote}</td>
+                <td className="py-1 sm:py-2 px-1 sm:px-2 border-b">
+                  {vote.status === 'FINISHED' 
+                    ? `${vote.score.home} - ${vote.score.away}`
+                    : vote.status}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {profile.voteHistory.map((vote, index) => (
-                <tr key={index} className={vote.isCorrect === true ? 'bg-green-100' : (vote.isCorrect === false ? 'bg-red-100' : '')}>
-                  <td className="py-1 sm:py-2 px-2 sm:px-4 border-b">{format(parseISO(vote.date), 'dd MMM yyyy HH:mm')}</td>
-                  <td className="py-1 sm:py-2 px-2 sm:px-4 border-b flex items-center">
-                    <img src={vote.competition.emblem} alt={vote.competition.name} className="w-4 h-4 sm:w-6 sm:h-6 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">{vote.competition.name}</span>
-                  </td>
-                  <td className="py-1 sm:py-2 px-2 sm:px-4 border-b">{vote.homeTeam} vs {vote.awayTeam}</td>
-                  <td className="py-1 sm:py-2 px-2 sm:px-4 border-b capitalize">{vote.vote}</td>
-                  <td className="py-1 sm:py-2 px-2 sm:px-4 border-b">
-                    {vote.status === 'FINISHED' 
-                      ? `${vote.score.home} - ${vote.score.away}`
-                      : vote.status}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   return (
     <div className="max-w-4xl mx-auto mt-4 sm:mt-8 p-4 sm:p-6 bg-white rounded-lg shadow-md">
