@@ -31,4 +31,6 @@ api.makeAIPrediction = (matchId, prediction) => {
   return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
 
+api.getUserStats = () => api.get('/api/user/stats');
+
 export default api;
