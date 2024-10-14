@@ -1,0 +1,97 @@
+Project Overview:
+"We Know Better" is a web application for football (soccer) match predictions. It allows users to view upcoming matches, make predictions, and tracks the accuracy of both user (fans) and AI predictions.
+Updated Project Structure:
+Copywe-know-better/
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AuthComponent.js
+│   │   │   ├── Matches.js
+│   │   │   ├── UserProfile.js
+│   │   │   ├── UserStats.js
+│   │   │   ├── AdminPage.js
+│   │   │   └── AccuracyComparison.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── index.css
+│   │   ├── config.js
+│   │   └── api.js
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── .env
+├── backend/
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── matches.js
+│   │   ├── user.js
+│   │   └── admin.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Match.js
+│   │   ├── FanPredictionStat.js
+│   │   └── AIPredictionStat.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   └── admin.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+└── README.md
+Key Components and Features:
+Frontend (React.js):
+
+App.js: Main component with navigation and user state management.
+AuthComponent.js: Handles user authentication (login, register, Google sign-in) with a modal interface.
+Matches.js: Fetches and displays football matches, allows voting, and shows fan and AI predictions.
+UserProfile.js: Displays basic user information.
+UserStats.js: Shows user statistics, league stats, and vote history.
+AdminPage.js: Allows admins to make AI predictions for matches.
+AccuracyComparison.js: Displays a comparison of fan and AI prediction accuracies.
+api.js: Axios instance for making API calls with authentication.
+
+Backend (Node.js with Express.js):
+
+server.js: Main entry point for the backend, sets up Express, middleware, and CORS.
+routes/auth.js: Handles authentication routes (register, login, Google auth).
+routes/matches.js: Handles fetching matches, voting, and calculating fan prediction accuracy.
+routes/user.js: Handles user profile data and statistics, now split into separate profile and stats endpoints.
+routes/admin.js: Handles admin-specific routes, including making AI predictions.
+models/User.js: Mongoose schema for the User model, including vote history and league stats.
+models/Match.js: Mongoose schema for the Match model, including vote counts and AI prediction.
+models/FanPredictionStat.js: Mongoose schema for storing cumulative fan prediction statistics.
+models/AIPredictionStat.js: Mongoose schema for storing cumulative AI prediction statistics.
+middleware/auth.js: Authentication middleware for protecting routes.
+middleware/admin.js: Admin middleware for protecting admin-only routes.
+
+Recent Updates and Changes:
+
+Separated user profile and stats into different components and routes.
+Added a new UserStats component to display detailed user statistics and vote history.
+Updated the UserProfile component to show only basic user information.
+Added a new "Stats" link in the navigation for logged-in users.
+Created a new route in the backend to fetch user stats separately from the profile.
+Improved mobile responsiveness for both the Matches and UserStats components.
+Implemented an AccuracyComparison component to display fan vs AI prediction accuracy.
+Updated the admin page to allow for making AI predictions on matches.
+Improved the voting mechanism to provide visual feedback without intrusive alerts.
+
+Key Features:
+
+User Authentication: Registration, login, and Google sign-in.
+Match Display: View matches for specific dates with the ability to navigate between days.
+Voting System: Users can vote on match outcomes (home win, draw, away win).
+Fan Predictions: Display of current fan prediction based on majority votes.
+AI Predictions: Admins can make AI predictions for matches.
+Cumulative Accuracy: Calculation and display of overall fan and AI prediction accuracy.
+User Profile: Display of basic user information.
+User Stats: Detailed view of user's voting history, league-specific stats, and overall accuracy.
+Admin Functionality: Ability to make AI predictions for matches.
+Mobile Responsiveness: Optimized layout for both desktop and mobile devices.
+
+Deployment:
+
+Frontend: Deployed on Vercel
+Backend: Deployed on Render
