@@ -36,10 +36,7 @@ function App() {
           <header className="bg-white shadow-sm py-2 px-4">
             <div className="container mx-auto flex justify-between items-center">
               <h1 className="text-lg font-bold text-gray-800">We Know Better</h1>
-              <div className="flex items-center">
-                {user && <span className="mr-4">Welcome, {user.name}!</span>}
-                <AuthComponent setUser={setUser} />
-              </div>
+              <AuthComponent setUser={setUser} user={user} />
             </div>
           </header>
           {user && (
