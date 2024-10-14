@@ -36,21 +36,26 @@ function App() {
           <header className="bg-white shadow-sm py-2 px-4">
             <div className="container mx-auto flex justify-between items-center">
               <h1 className="text-lg font-bold text-gray-800">We Know Better</h1>
-              <nav className="flex items-center space-x-4">
-                <Link to="/" className="text-blue-500 hover:text-blue-700">Home</Link>
-                {user && (
-                  <>
-                    <Link to="/profile" className="text-blue-500 hover:text-blue-700">Profile</Link>
-                    <Link to="/stats" className="text-blue-500 hover:text-blue-700">Stats</Link>
-                    {user.isAdmin && (
-                      <Link to="/admin" className="text-blue-500 hover:text-blue-700">Admin</Link>
-                    )}
-                  </>
-                )}
+              <div className="flex items-center">
+                <span className="mr-4">
+                  {user ? `Welcome, ${user.name}!` : ''}
+                </span>
                 <AuthComponent setUser={setUser} />
-              </nav>
+              </div>
             </div>
           </header>
+          {user && (
+            <nav className="bg-gray-200 shadow-sm py-2 px-4">
+              <div className="container mx-auto flex justify-center items-center space-x-4">
+                <Link to="/" className="text-blue-500 hover:text-blue-700">Home</Link>
+                <Link to="/profile" className="text-blue-500 hover:text-blue-700">Profile</Link>
+                <Link to="/stats" className="text-blue-500 hover:text-blue-700">Stats</Link>
+                {user.isAdmin && (
+                  <Link to="/admin" className="text-blue-500 hover:text-blue-700">Admin</Link>
+                )}
+              </div>
+            </nav>
+          )}
           <main className="flex-grow container mx-auto p-4">
             <Routes>
               <Route path="/" element={<Matches user={user} />} />
