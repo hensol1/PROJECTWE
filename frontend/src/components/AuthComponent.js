@@ -20,10 +20,29 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
 
   const countries = useMemo(() => countryList().getData(), []);
   
+  const fetchUserData = async () => {
+    try {
+      const [profileResponse, statsResponse] = await Promise.all([
+        api.getUserProfile(),
+        api.getUserStats()
+      ]);
+      const userData = {
+        ...profileResponse.data,
+        stats: statsResponse.data
+      };
+      setLoggedInUser(userData);
+      setUser(userData);
+      console.log('User data fetched:', userData);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      handleLogout();
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      fetchUserProfile();
+      fetchUserData();
     }
   }, []);
 
@@ -39,28 +58,30 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
   };
 
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await api.post(`/api/auth/${isLogin ? 'login' : 'register'}`, {
-      username,
-      password,
-      email,
-      country: country.value
-    });
-    console.log('Full response:', response.data); // Log the entire response
-    const userData = response.data.user;
+  const handleLoginSuccess = async (token, userData) => {
     setLoggedInUser(userData);
     setUser(userData);
-    console.log('User set:', userData);
-    console.log('Token received:', response.data.token);
-    localStorage.setItem('token', response.data.token);
+    console.log('Token received:', token);
+    localStorage.setItem('token', token);
     console.log('Token stored in localStorage:', localStorage.getItem('token'));
     setIsModalOpen(false);
-  } catch (error) {
-    console.error('Error:', error.response ? error.response.data : error.message);
-  }
-};
+    await fetchUserData(); // Fetch full user data including votes
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.post(`/api/auth/${isLogin ? 'login' : 'register'}`, {
+        username,
+        password,
+        email,
+        country: country.value
+      });
+      await handleLoginSuccess(response.data.token, response.data.user);
+    } catch (error) {
+      console.error('Error:', error.response ? error.response.data : error.message);
+    }
+  };
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -79,13 +100,7 @@ const handleSubmit = async (e) => {
           setIsFirstTimeGoogleUser(true);
           setGoogleUserInfo(userInfo.data);
         } else {
-          const userData = response.data.user;
-          setLoggedInUser(userData);
-          setUser(userData); // Pass the entire user object
-          console.log('Token received:', response.data.token);
-          localStorage.setItem('token', response.data.token);
-          console.log('Token stored in localStorage:', localStorage.getItem('token'));
-          setIsModalOpen(false);
+          await handleLoginSuccess(response.data.token, response.data.user);
         }
       } catch (error) {
         console.error('Google login error:', error.response?.data || error.message);
@@ -93,13 +108,6 @@ const handleSubmit = async (e) => {
     },
     onError: (error) => console.log('Login Failed:', error)
   });
-
-  const handleLogout = () => {
-    setLoggedInUser(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    navigate('/'); // Redirect to home page
-  };
 
   const handleFirstTimeGoogleUser = async (e) => {
     e.preventDefault();
@@ -111,19 +119,20 @@ const handleSubmit = async (e) => {
         username,
         country: country.value
       });
-
-      const userData = response.data.user;
-      setLoggedInUser(userData);
-      setUser(userData); // Pass the entire user object
-      console.log('Token received:', response.data.token);
-      localStorage.setItem('token', response.data.token);
-      console.log('Token stored in localStorage:', localStorage.getItem('token'));
+      await handleLoginSuccess(response.data.token, response.data.user);
       setIsFirstTimeGoogleUser(false);
-      setIsModalOpen(false);
     } catch (error) {
       console.error('Error completing profile:', error.response?.data || error.message);
     }
   };
+
+  const handleLogout = () => {
+    setLoggedInUser(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    navigate('/'); // Redirect to home page
+  };
+
 
   const renderAuthForm = () => (
     <div className="bg-white p-8 rounded-lg shadow-md w-96">

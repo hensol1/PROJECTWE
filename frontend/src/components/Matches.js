@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api';
 import { format, addDays, subDays, parseISO } from 'date-fns';
-import AccuracyComparison from './AccuracyComparison'; // Import the new component
+import AccuracyComparison from './AccuracyComparison';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
@@ -32,15 +32,13 @@ const Matches = ({ user }) => {
     }, {});
   };
 
-  useEffect(() => {
-    fetchMatches(currentDate);
-  }, [currentDate]);
+  
 
-  const fetchMatches = async (date) => {
+  const fetchMatches = useCallback(async (date) => {
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       console.log('Fetching matches for date:', formattedDate);
-      const response = await api.get(`/api/matches?date=${formattedDate}`);
+      const response = await api.fetchMatches(formattedDate);
       console.log('Fetched matches:', response.data);
       
       const groupedMatches = response.data.matches.reduce((acc, match) => {
@@ -59,10 +57,15 @@ const Matches = ({ user }) => {
       setTotalPredictions(response.data.totalPredictions);
       setCollapsedLeagues({});
     } catch (error) {
-      console.error('Error fetching matches:', error.response ? error.response.data : error.message);
-      setMatches({});
+      console.error('Error fetching matches:', error);
+      setMatches([]);
     }
-  };
+  }, []);
+  
+    useEffect(() => {
+    fetchMatches(currentDate);
+  }, [currentDate, user, fetchMatches]); // Add user as a dependency
+
 
   const fetchAllMatches = async () => {
     try {
@@ -192,41 +195,87 @@ const handleVote = async (matchId, vote) => {
     return null;
   }, [handleVote]);
 
-const renderPredictions = useCallback((match) => {
-  const getTeamPrediction = (prediction) => {
-    switch(prediction) {
-      case 'HOME_TEAM':
-        return (
-          <>
-            {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-3 h-3 inline-block ml-0.5" />
-          </>
-        );
-      case 'AWAY_TEAM':
-        return (
-          <>
-            {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-3 h-3 inline-block ml-0.5" />
-          </>
-        );
-      case 'DRAW':
-        return 'Draw';
-      default:
-        return 'No prediction';
-    }
-  };
+  const renderPredictions = useCallback((match) => {
+    const getTeamPrediction = (prediction) => {
+      switch(prediction) {
+        case 'HOME_TEAM':
+          return (
+            <>
+              {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+            </>
+          );
+        case 'AWAY_TEAM':
+          return (
+            <>
+              {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+            </>
+          );
+        case 'DRAW':
+          return 'Draw';
+        default:
+          return 'No prediction';
+      }
+    };
 
-  return (
-    <div className="mt-1 text-xs flex justify-between">
-      <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-        Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
-      </p>
-      {match.aiPrediction && (
-        <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-          AI: {getTeamPrediction(match.aiPrediction)}
-        </p>
-      )}
-    </div>
-  );
-}, []);
+    const getUserVote = () => {
+      if (!match.userVote) return null;
+
+      let highlightColor = 'bg-yellow-100';
+      if (match.status === 'FINISHED') {
+        const homeScore = match.score.fullTime.home;
+        const awayScore = match.score.fullTime.away;
+        const result = homeScore > awayScore ? 'home' : (awayScore > homeScore ? 'away' : 'draw');
+        highlightColor = match.userVote === result ? 'bg-green-100' : 'bg-red-100';
+      }
+
+      let voteContent;
+      switch(match.userVote) {
+        case 'home':
+          voteContent = (
+            <>
+              {match.homeTeam.name} <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+            </>
+          );
+          break;
+        case 'away':
+          voteContent = (
+            <>
+              {match.awayTeam.name} <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-3 h-3 inline-block ml-0.5" />
+            </>
+          );
+          break;
+        case 'draw':
+          voteContent = 'Draw';
+          break;
+        default:
+          return null;
+      }
+
+      return (
+        <div className="flex justify-center mt-1">
+          <span className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded ${highlightColor}`}>
+            Your vote: {voteContent}
+          </span>
+        </div>
+      );
+    };
+
+    return (
+      <div className="mt-1 text-xs space-y-1">
+        <div className="flex justify-between">
+          <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+            Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
+          </p>
+          {match.aiPrediction && (
+            <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+              AI: {getTeamPrediction(match.aiPrediction)}
+            </p>
+          )}
+        </div>
+        {getUserVote()}
+      </div>
+    );
+  }, []);
 
   const toggleLeague = (competition) => {
     setCollapsedLeagues(prev => ({

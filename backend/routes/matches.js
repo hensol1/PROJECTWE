@@ -5,6 +5,7 @@ const User = require('../models/User');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
 const auth = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
 
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
@@ -68,10 +69,33 @@ const getAIAccuracy = async () => {
   return stat;
 };
 
+// Optional authentication middleware
+const optionalAuth = (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  console.log('Token received in optionalAuth:', token);
+  
+  if (!token) {
+    console.log('No token provided, continuing as unauthenticated user');
+    return next();
+  }
 
-router.get('/', async (req, res) => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token decoded successfully:', decoded);
+    req.user = { id: decoded.userId };
+    console.log('User set on request:', req.user);
+    next();
+  } catch (err) {
+    console.error('Error decoding token:', err);
+    next();
+  }
+};
+
+router.get('/', optionalAuth, async (req, res) => {
   const { date } = req.query;
-  const userId = req.user ? req.user.id : null; // Get user ID if logged in
+  
+  const userId = req.user ? req.user.id : null;
+  console.log('User ID from request:', userId);
   const queryDate = new Date(date);
   queryDate.setUTCHours(0, 0, 0, 0);
   const nextDay = new Date(queryDate);
@@ -80,23 +104,22 @@ router.get('/', async (req, res) => {
   const nextDayString = nextDay.toISOString().split('T')[0];
 
   try {
-    const [matches, stats] = await Promise.all([
+    const [matches, stats, user] = await Promise.all([
       Match.find({
         utcDate: {
           $gte: queryDateString,
           $lt: nextDayString
         }
       }),
-      calculateAccuracy()
+      calculateAccuracy(),
+      userId ? User.findById(userId, 'votes') : null
     ]);
 
     console.log(`Found ${matches.length} matches for date ${queryDateString}`);
+    console.log('User retrieved from database:', user);
 
-    let userVotes = null;
-    if (userId) {
-      const user = await User.findById(userId, 'votes');
-      userVotes = user ? user.votes : null;
-    }
+    const userVotes = user ? user.votes : [];
+    console.log('User votes:', userVotes);
 
     // Define the order of statuses
     const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
@@ -151,12 +174,10 @@ router.get('/', async (req, res) => {
                                     matchObj.aiPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
       }
 
-      // Check if the user has voted for this match
-      if (userVotes) {
-        const userVote = userVotes.find(v => v.matchId === match.id);
-        if (userVote) {
-          matchObj.userVote = userVote.vote;
-        }
+      // Add user's vote to the match object
+      const userVote = userVotes.find(v => v.matchId === match.id);
+      if (userVote) {
+        matchObj.userVote = userVote.vote;
       }
 
       if (match.status === 'FINISHED') {
@@ -178,6 +199,17 @@ router.get('/', async (req, res) => {
         
         if (match.aiPrediction) {
           matchObj.aiPredictionCorrect = match.aiPrediction === actualResult;
+        }
+      }
+
+      // Add user's vote to the match object if user is logged in
+      if (userId) {
+        const userVote = userVotes.find(v => v.matchId === match.id);
+        if (userVote) {
+          matchObj.userVote = userVote.vote;
+          console.log(`User vote for match ${match.id}:`, userVote.vote);
+        } else {
+          console.log(`No user vote found for match ${match.id}`);
         }
       }
 

@@ -20,17 +20,10 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-api.voteForMatch = (matchId, vote) => {
-  return api.post(`/api/matches/${matchId}/vote`, { vote });
-};
-
+api.voteForMatch = (matchId, vote) => api.post(`/api/matches/${matchId}/vote`, { vote });
 api.getUserProfile = () => api.get('/api/user/profile');
-
-// Add this new function for AI predictions
-api.makeAIPrediction = (matchId, prediction) => {
-  return api.post(`/api/admin/${matchId}/predict`, { prediction });
-};
-
 api.getUserStats = () => api.get('/api/user/stats');
+api.makeAIPrediction = (matchId, prediction) => api.post(`/api/admin/${matchId}/predict`, { prediction });
+api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
 
 export default api;
