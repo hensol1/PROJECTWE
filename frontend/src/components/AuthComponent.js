@@ -17,6 +17,8 @@ const AuthComponent = ({ setUser }) => {
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [isFirstTimeGoogleUser, setIsFirstTimeGoogleUser] = useState(false);
   const [googleUserInfo, setGoogleUserInfo] = useState(null);
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
   const countries = useMemo(() => countryList().getData(), []);
   
@@ -32,29 +34,26 @@ const AuthComponent = ({ setUser }) => {
       };
       setLoggedInUser(userData);
       setUser(userData);
-      console.log('User data fetched and set:', userData);
+      console.log('User data fetched:', userData);
     } catch (error) {
       console.error('Error fetching user data:', error);
       handleLogout();
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchUserData();
-    }
-  }, []);
-
   const handleLoginSuccess = async (token, userData) => {
     localStorage.setItem('token', token);
     console.log('Token stored in localStorage:', token);
-    setIsModalOpen(false);
-    await fetchUserData(); // This will set both loggedInUser and user states
+    setMessage({ text: 'Login successful!', type: 'success' });
+    setIsLoading(true);
+    await fetchUserData();
+    setIsLoading(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage({ text: '', type: '' });
+    setIsLoading(true);
     try {
       const response = await api.post(`/api/auth/${isLogin ? 'login' : 'register'}`, {
         username,
@@ -65,9 +64,28 @@ const AuthComponent = ({ setUser }) => {
       await handleLoginSuccess(response.data.token, response.data.user);
     } catch (error) {
       console.error('Error:', error.response ? error.response.data : error.message);
+      setMessage({ 
+        text: error.response?.data?.message || 'An error occurred. Please try again.', 
+        type: 'error' 
+      });
     }
+    setIsLoading(false);
   };
 
+  const handleProceed = () => {
+    setIsModalOpen(false);
+    setMessage({ text: '', type: '' });
+  };
+
+  const handleLogout = () => {
+    setLoggedInUser(null);
+    setUser(null);
+    localStorage.removeItem('token');
+    setMessage({ text: 'You have been successfully logged out.', type: 'info' });
+    setIsModalOpen(true);
+    navigate('/');
+  };
+  
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
@@ -89,9 +107,13 @@ const AuthComponent = ({ setUser }) => {
         }
       } catch (error) {
         console.error('Google login error:', error.response?.data || error.message);
+        setMessage({ text: 'Failed to login with Google. Please try again.', type: 'error' });
       }
     },
-    onError: (error) => console.log('Login Failed:', error)
+    onError: (error) => {
+      console.log('Login Failed:', error);
+      setMessage({ text: 'Google login failed. Please try again.', type: 'error' });
+    }
   });
 
   const handleFirstTimeGoogleUser = async (e) => {
@@ -108,21 +130,35 @@ const AuthComponent = ({ setUser }) => {
       setIsFirstTimeGoogleUser(false);
     } catch (error) {
       console.error('Error completing profile:', error.response?.data || error.message);
+      setMessage({ text: 'Failed to complete profile. Please try again.', type: 'error' });
     }
-  };
-
-  const handleLogout = () => {
-    setLoggedInUser(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    navigate('/'); // Redirect to home page
   };
 
 
   const renderAuthForm = () => (
     <div className="bg-white p-8 rounded-lg shadow-md w-96">
       <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Sign In' : 'Register'}</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {message.text && (
+        <div className={`${
+          message.type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
+          message.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
+          'bg-blue-100 border-blue-400 text-blue-700'
+        } border px-4 py-3 rounded relative mb-4`} role="alert">
+          <span className="block sm:inline">{message.text}</span>
+        </div>
+      )}
+      {message.type === 'success' || message.type === 'info' ? (
+        <div className="text-center">
+          <button
+            onClick={handleProceed}
+            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading...' : 'Proceed'}
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           placeholder="Username"
@@ -158,28 +194,39 @@ const AuthComponent = ({ setUser }) => {
             />
           </>
         )}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
-        >
-          {isLogin ? 'Sign In' : 'Register'}
-        </button>
-      </form>
-      <button
-        onClick={() => googleLogin()}
-        className="w-full mt-4 bg-red-500 text-white py-2 rounded-md hover:bg-red-600"
-      >
-        Sign in with Google
-      </button>
-      <p className="mt-4 text-center">
-        {isLogin ? "Don't have an account? " : "Already have an account? "}
-        <button
-          onClick={() => setIsLogin(!isLogin)}
-          className="text-blue-500 hover:underline"
-        >
-          {isLogin ? 'Register' : 'Sign In'}
-        </button>
-      </p>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Register')}
+          </button>
+        </form>
+      )}
+      {!message.text && (
+        <>
+          <button
+            onClick={() => googleLogin()}
+            className="w-full mt-4 bg-red-500 text-white py-2 rounded-md hover:bg-red-600"
+            disabled={isLoading}
+          >
+            Sign in with Google
+          </button>
+          <p className="mt-4 text-center">
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setMessage({ text: '', type: '' });
+              }}
+              className="text-blue-500 hover:underline"
+              disabled={isLoading}
+            >
+              {isLogin ? 'Register' : 'Sign In'}
+            </button>
+          </p>
+        </>
+      )}
     </div>
   );
 
@@ -235,12 +282,17 @@ const AuthComponent = ({ setUser }) => {
                 ) : (
                   renderAuthForm()
                 )}
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
+                {!message.text && (
+                  <button
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setMessage({ text: '', type: '' });
+                    }}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
           )}
