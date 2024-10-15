@@ -6,7 +6,7 @@ import api from '../api';
 import Select from 'react-select';
 import countryList from 'react-select-country-list';
 
-const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
+const AuthComponent = ({ setUser }) => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
@@ -32,7 +32,7 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
       };
       setLoggedInUser(userData);
       setUser(userData);
-      console.log('User data fetched:', userData);
+      console.log('User data fetched and set:', userData);
     } catch (error) {
       console.error('Error fetching user data:', error);
       handleLogout();
@@ -46,26 +46,11 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
     }
   }, []);
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await api.getUserProfile();
-      setLoggedInUser(response.data);
-      setUser(response.data);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      handleLogout();
-    }
-  };
-
-
   const handleLoginSuccess = async (token, userData) => {
-    setLoggedInUser(userData);
-    setUser(userData);
-    console.log('Token received:', token);
     localStorage.setItem('token', token);
-    console.log('Token stored in localStorage:', localStorage.getItem('token'));
+    console.log('Token stored in localStorage:', token);
     setIsModalOpen(false);
-    await fetchUserData(); // Fetch full user data including votes
+    await fetchUserData(); // This will set both loggedInUser and user states
   };
 
   const handleSubmit = async (e) => {
@@ -203,6 +188,7 @@ const AuthComponent = ({ setUser }) => {  // Add setUser as a prop here
       {loggedInUser ? (
         <div className="flex items-center">
           <p className="mr-2">Welcome, {loggedInUser.username}!</p>
+          {loggedInUser.isAdmin && <p className="mr-2">(Admin)</p>}
           <button
             onClick={handleLogout}
             className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"

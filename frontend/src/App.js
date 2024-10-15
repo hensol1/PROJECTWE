@@ -22,12 +22,18 @@ function App() {
   const fetchUserProfile = async () => {
     try {
       const response = await api.getUserProfile();
+      console.log('User profile fetched:', response.data);
       setUser(response.data);
+      console.log('User state set:', response.data);
     } catch (error) {
       console.error('Error fetching user profile:', error);
       localStorage.removeItem('token');
     }
   };
+
+  useEffect(() => {
+    console.log('User state updated:', user);
+  }, [user]);
 
   return (
     <GoogleOAuthProvider clientId={config.googleClientId}>

@@ -24,6 +24,7 @@ const AdminPage = () => {
       setMatches(groupedMatches);
     } catch (error) {
       console.error('Error fetching matches:', error);
+      alert('Failed to fetch matches. Please try again.');
     }
   };
 
@@ -33,11 +34,19 @@ const AdminPage = () => {
 
   const handlePrediction = async (matchId, prediction) => {
     try {
-      await api.makeAIPrediction(matchId, prediction);
+      console.log('Attempting to make prediction:', { matchId, prediction });
+      const response = await api.makeAIPrediction(matchId, prediction);
+      console.log('Prediction response:', response.data);
+      alert('AI prediction recorded successfully');
       fetchMatches(currentDate);
     } catch (error) {
       console.error('Error making AI prediction:', error);
-      alert('Failed to record AI prediction');
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        alert(`Failed to record AI prediction: ${error.response.data.message}`);
+      } else {
+        alert('Failed to record AI prediction. Please try again.');
+      }
     }
   };
 

@@ -23,7 +23,10 @@ api.interceptors.request.use(
 api.voteForMatch = (matchId, vote) => api.post(`/api/matches/${matchId}/vote`, { vote });
 api.getUserProfile = () => api.get('/api/user/profile');
 api.getUserStats = () => api.get('/api/user/stats');
-api.makeAIPrediction = (matchId, prediction) => api.post(`/api/admin/${matchId}/predict`, { prediction });
+api.makeAIPrediction = (matchId, prediction) => {
+  console.log('Making AI prediction:', { matchId, prediction });
+  return api.post(`/api/admin/${matchId}/predict`, { prediction });
+};
 api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
 
 export default api;
