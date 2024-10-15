@@ -250,15 +250,12 @@ router.get('/all', async (req, res) => {
 });
 
 // Updated route for voting with improved error handling
-router.post('/:matchId/vote', auth, async (req, res) => {
-  console.log('Vote route called, user:', req.user);
-
+router.post('/:matchId/vote', async (req, res) => {
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
-    const userId = req.user.id;
-
-    console.log(`Received vote request: matchId=${matchId}, vote=${vote}, userId=${userId}`);
+    const userId = req.user ? req.user.id : null;
+    const userIP = req.ip;
 
     if (!['home', 'draw', 'away'].includes(vote)) {
       return res.status(400).json({ message: 'Invalid vote' });
@@ -266,73 +263,39 @@ router.post('/:matchId/vote', auth, async (req, res) => {
 
     const match = await Match.findOne({ id: matchId });
     if (!match) {
-      console.log(`Match not found: ${matchId}`);
       return res.status(404).json({ message: 'Match not found' });
     }
-
-    console.log(`Match found: ${match.id}, status: ${match.status}`);
 
     if (match.status !== 'TIMED' && match.status !== 'SCHEDULED') {
       return res.status(400).json({ message: 'Voting is not allowed for this match' });
     }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      console.log(`User not found: ${userId}`);
-      return res.status(404).json({ message: 'User not found' });
+    // Check if the user or IP has already voted
+    if (userId && match.voters.includes(userId)) {
+      return res.status(400).json({ message: 'You have already voted for this match' });
+    }
+    if (!userId && match.voterIPs.includes(userIP)) {
+      return res.status(400).json({ message: 'You have already voted for this match' });
     }
 
-    console.log(`User found: ${user.username}`);
-
-    // Check if user has already voted for this match
-    const existingVoteIndex = user.votes.findIndex(v => v.matchId === matchId);
-    const hasVoted = match.voters.includes(userId);
-
-    if (existingVoteIndex !== -1) {
-      // Update existing vote
-      const oldVote = user.votes[existingVoteIndex].vote;
-      match.votes[oldVote]--;
-      match.votes[vote]++;
-      user.votes[existingVoteIndex].vote = vote;
-      console.log(`Updated existing vote for user ${user.username} on match ${matchId}`);
-    } else {
-      // Add new vote
-      match.votes[vote]++;
-      if (!hasVoted) {
-        match.voters.push(userId);
+    // Record the vote
+    match.votes[vote]++;
+    if (userId) {
+      match.voters.push(userId);
+      const user = await User.findById(userId);
+      if (user) {
+        user.votes.push({ matchId, vote });
+        await user.save();
       }
-      user.votes.push({ matchId, vote });
-      console.log(`Added new vote for user ${user.username} on match ${matchId}`);
+    } else {
+      match.voterIPs.push(userIP);
     }
 
-    user.totalVotes = user.votes.length;
-    let leagueStat = user.leagueStats.find(stat => stat.leagueId === match.competition.id);
-    if (!leagueStat) {
-      leagueStat = {
-        leagueId: match.competition.id,
-        leagueName: match.competition.name,
-        totalVotes: 0,
-        correctVotes: 0
-      };
-      user.leagueStats.push(leagueStat);
-    }
-    leagueStat.totalVotes++;
+    await match.save();
 
-    await Promise.all([user.save(), match.save()]);
-
-    // Calculate percentages
-    const totalVotes = match.votes.home + match.votes.draw + match.votes.away;
-    const percentages = {
-      home: totalVotes > 0 ? Math.round((match.votes.home / totalVotes) * 100) : 0,
-      draw: totalVotes > 0 ? Math.round((match.votes.draw / totalVotes) * 100) : 0,
-      away: totalVotes > 0 ? Math.round((match.votes.away / totalVotes) * 100) : 0
-    };
-
-    console.log(`Vote recorded successfully for match ${matchId}`);
     res.json({
       message: 'Vote recorded successfully',
-      votes: match.votes,
-      percentages: percentages
+      votes: match.votes
     });
   } catch (error) {
     console.error('Error recording vote:', error);

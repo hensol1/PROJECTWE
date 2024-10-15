@@ -47,7 +47,8 @@ const MatchSchema = new mongoose.Schema({
     draw: { type: Number, default: 0 },
     away: { type: Number, default: 0 }
   },
-  voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  voterIPs: [{ type: String }]
 }, { 
   collection: 'matches',
   toJSON: { getters: true }
