@@ -13,11 +13,15 @@ router.get('/profile', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({
+    const userData = {
       username: user.username,
       email: user.email,
-      country: user.country
-    });
+      country: user.country,
+      isAdmin: user.isAdmin
+    };
+
+    console.log('Sending user profile:', userData);
+    res.json(userData);
   } catch (error) {
     console.error('Error fetching user profile:', error);
     res.status(500).json({ message: 'Server error' });
