@@ -20,7 +20,9 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-api.voteForMatch = (matchId, vote) => api.post(`/api/matches/${matchId}/vote`, { vote });
+api.voteForMatch = (matchId, vote) => {
+  return api.post(`/api/matches/${matchId}/vote`, { vote });
+};
 api.getUserProfile = () => api.get('/api/user/profile');
 api.getUserStats = () => api.get('/api/user/stats');
 api.makeAIPrediction = (matchId, prediction) => {
@@ -28,5 +30,7 @@ api.makeAIPrediction = (matchId, prediction) => {
   return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
 api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
+
+
 
 export default api;

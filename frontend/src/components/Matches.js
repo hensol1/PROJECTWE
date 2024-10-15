@@ -5,12 +5,12 @@ import AccuracyComparison from './AccuracyComparison';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
+  const [userVotes, setUserVotes] = useState({});
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [fanAccuracy, setFanAccuracy] = useState(0);
   const [aiAccuracy, setAIAccuracy] = useState(0);
   const [totalPredictions, setTotalPredictions] = useState(0);
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
-  const [userVotes, setUserVotes] = useState({});
 
   const sortMatches = (matches) => {
     const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
@@ -67,29 +67,6 @@ const Matches = ({ user }) => {
   }, [currentDate, user, fetchMatches]); // Add user as a dependency
 
 
-  const fetchAllMatches = async () => {
-    try {
-      console.log('Fetching all matches');
-      const response = await api.get('/api/matches/all');
-      console.log('Fetched all matches:', response.data);
-      
-      const groupedMatches = response.data.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
-        }
-        acc[match.competition.name].push(match);
-        return acc;
-      }, {});
-
-      setMatches(groupedMatches);
-      // Reset collapsed state when fetching all matches
-      setCollapsedLeagues({});
-    } catch (error) {
-      console.error('Error fetching all matches:', error.response ? error.response.data : error.message);
-      setMatches({});
-    }
-  };
-
   const handleDateChange = (days) => {
     setCurrentDate(prevDate => {
       const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
@@ -123,72 +100,60 @@ const Matches = ({ user }) => {
     );
   };
 
-  const handleVote = async (matchId, vote) => {
-    try {
-      const response = await api.voteForMatch(matchId, vote);
-      setMatches(prevMatches => {
-        const updatedMatches = { ...prevMatches };
-        for (let league in updatedMatches) {
-          updatedMatches[league] = updatedMatches[league].map(match => 
-            match.id === matchId ? { 
-              ...match, 
-              votes: response.data.votes,
-              voteCounts: {
-                home: response.data.votes.home,
-                draw: response.data.votes.draw,
-                away: response.data.votes.away
-              },
-              userVote: vote
-            } : match
-          );
-        }
-        return updatedMatches;
-      });
-      // Optionally, you can show a success message here
-    } catch (error) {
-      console.error('Error voting:', error);
-      alert('Failed to record vote. You may have already voted for this match.');
-    }
+const handleVote = async (matchId, vote) => {
+  try {
+    const response = await api.voteForMatch(matchId, vote);
+    setMatches(prevMatches => {
+      const updatedMatches = { ...prevMatches };
+      for (let league in updatedMatches) {
+        updatedMatches[league] = updatedMatches[league].map(match => 
+          match.id === matchId ? { 
+            ...match, 
+            votes: response.data.votes,
+            voteCounts: {
+              home: response.data.votes.home,
+              draw: response.data.votes.draw,
+              away: response.data.votes.away
+            },
+            userVote: response.data.userVote
+          } : match
+        );
+      }
+      return updatedMatches;
+    });
+    alert('Vote recorded successfully!');
+  } catch (error) {
+    console.error('Error voting:', error);
+    alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
+  }
+};
+
+const renderVoteButtons = useCallback((match) => {
+  const hasVoted = match.userVote;
+  const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+  
+  const getPercentage = (voteCount) => {
+    return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
   };
   
-  
-  const renderVoteButtons = useCallback((match) => {
-    const hasVoted = match.userVote;
-    const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
-    
-    const getPercentage = (voteCount) => {
-      return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-    };
-    
-    if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
-      return (
-        <div className="flex justify-center mt-2">
+  if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
+    return (
+      <div className="flex justify-center mt-2">
+        {['home', 'draw', 'away'].map((voteType) => (
           <button 
-            onClick={() => handleVote(match.id, 'home')} 
-            className={`bg-blue-500 text-white px-1 py-0.5 rounded-l text-xs ${hasVoted ? 'cursor-default' : ''}`}
+            key={voteType}
+            onClick={() => handleVote(match.id, voteType)} 
+            className={`bg-${voteType === 'draw' ? 'gray' : voteType === 'home' ? 'blue' : 'red'}-500 text-white px-1 py-0.5 ${voteType === 'home' ? 'rounded-l' : voteType === 'away' ? 'rounded-r' : ''} text-xs ${hasVoted ? 'cursor-default' : ''}`}
             disabled={hasVoted}
           >
-            Home {hasVoted ? `${getPercentage(match.voteCounts.home)}%` : ''}
+            {voteType.charAt(0).toUpperCase() + voteType.slice(1)} {hasVoted ? `${getPercentage(match.voteCounts[voteType])}%` : ''}
           </button>
-          <button 
-            onClick={() => handleVote(match.id, 'draw')} 
-            className={`bg-gray-500 text-white px-1 py-0.5 text-xs ${hasVoted ? 'cursor-default' : ''}`}
-            disabled={hasVoted}
-          >
-            Draw {hasVoted ? `${getPercentage(match.voteCounts.draw)}%` : ''}
-          </button>
-          <button 
-            onClick={() => handleVote(match.id, 'away')} 
-            className={`bg-red-500 text-white px-1 py-0.5 rounded-r text-xs ${hasVoted ? 'cursor-default' : ''}`}
-            disabled={hasVoted}
-          >
-            Away {hasVoted ? `${getPercentage(match.voteCounts.away)}%` : ''}
-          </button>
-        </div>
-      );
-    }
-    return null;
-  }, [handleVote]);
+        ))}
+      </div>
+    );
+  }
+  return null;
+}, [handleVote]);
 
   const renderPredictions = useCallback((match) => {
     const getTeamPrediction = (prediction) => {

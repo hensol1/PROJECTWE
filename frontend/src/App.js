@@ -11,29 +11,33 @@ import config from './config';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchUserProfile();
-    }
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const profileResponse = await api.getUserProfile();
+          const statsResponse = await api.getUserStats();
+          setUser({
+            ...profileResponse.data,
+            stats: statsResponse.data
+          });
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          localStorage.removeItem('token');
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchUserData();
   }, []);
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await api.getUserProfile();
-      console.log('User profile fetched:', response.data);
-      setUser(response.data);
-      console.log('User state set:', response.data);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      localStorage.removeItem('token');
-    }
-  };
-
-  useEffect(() => {
-    console.log('User state updated:', user);
-  }, [user]);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <GoogleOAuthProvider clientId={config.googleClientId}>
@@ -62,11 +66,11 @@ function App() {
               <Route path="/" element={<Matches user={user} />} />
               <Route 
                 path="/profile" 
-                element={user ? <UserProfile /> : <Navigate to="/" />} 
+                element={user ? <UserProfile user={user} /> : <Navigate to="/" />} 
               />
               <Route 
                 path="/stats" 
-                element={user ? <UserStats /> : <Navigate to="/" />} 
+                element={user ? <UserStats user={user} /> : <Navigate to="/" />} 
               />
               {user && user.isAdmin && (
                 <Route path="/admin" element={<AdminPage />} />

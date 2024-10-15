@@ -250,12 +250,14 @@ router.get('/all', async (req, res) => {
 });
 
 // Updated route for voting with improved error handling
-router.post('/:matchId/vote', async (req, res) => {
+router.post('/:matchId/vote', optionalAuth, async (req, res) => {
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
     const userId = req.user ? req.user.id : null;
     const userIP = req.ip;
+
+    console.log('Vote attempt:', { matchId, vote, userId, userIP });
 
     if (!['home', 'draw', 'away'].includes(vote)) {
       return res.status(400).json({ message: 'Invalid vote' });
@@ -271,10 +273,11 @@ router.post('/:matchId/vote', async (req, res) => {
     }
 
     // Check if the user or IP has already voted
-    if (userId && match.voters.includes(userId)) {
-      return res.status(400).json({ message: 'You have already voted for this match' });
-    }
-    if (!userId && match.voterIPs.includes(userIP)) {
+    if (userId) {
+      if (match.voters.includes(userId)) {
+        return res.status(400).json({ message: 'You have already voted for this match' });
+      }
+    } else if (match.voterIPs.includes(userIP)) {
       return res.status(400).json({ message: 'You have already voted for this match' });
     }
 
@@ -295,7 +298,8 @@ router.post('/:matchId/vote', async (req, res) => {
 
     res.json({
       message: 'Vote recorded successfully',
-      votes: match.votes
+      votes: match.votes,
+      userVote: vote
     });
   } catch (error) {
     console.error('Error recording vote:', error);

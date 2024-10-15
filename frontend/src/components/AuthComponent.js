@@ -6,7 +6,7 @@ import api from '../api';
 import Select from 'react-select';
 import countryList from 'react-select-country-list';
 
-const AuthComponent = ({ setUser }) => {
+const AuthComponent = ({ setUser, user }) => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
@@ -14,7 +14,6 @@ const AuthComponent = ({ setUser }) => {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState('');
-  const [loggedInUser, setLoggedInUser] = useState(null);
   const [isFirstTimeGoogleUser, setIsFirstTimeGoogleUser] = useState(false);
   const [googleUserInfo, setGoogleUserInfo] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -22,24 +21,24 @@ const AuthComponent = ({ setUser }) => {
 
   const countries = useMemo(() => countryList().getData(), []);
   
-  const fetchUserData = async () => {
-    try {
-      const [profileResponse, statsResponse] = await Promise.all([
-        api.getUserProfile(),
-        api.getUserStats()
-      ]);
-      const userData = {
-        ...profileResponse.data,
-        stats: statsResponse.data
-      };
-      setLoggedInUser(userData);
-      setUser(userData);
-      console.log('User data fetched:', userData);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      handleLogout();
-    }
-  };
+const fetchUserData = async () => {
+  try {
+    const [profileResponse, statsResponse] = await Promise.all([
+      api.getUserProfile(),
+      api.getUserStats()
+    ]);
+    const userData = {
+      ...profileResponse.data,
+      stats: statsResponse.data
+    };
+    setUser(userData); // Only update the user state in App.js
+    console.log('User data fetched:', userData);
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    handleLogout();
+  }
+};
+
 
   const handleLoginSuccess = async (token, userData) => {
     localStorage.setItem('token', token);
@@ -77,14 +76,14 @@ const AuthComponent = ({ setUser }) => {
     setMessage({ text: '', type: '' });
   };
 
-  const handleLogout = () => {
-    setLoggedInUser(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    setMessage({ text: 'You have been successfully logged out.', type: 'info' });
-    setIsModalOpen(true);
-    navigate('/');
-  };
+const handleLogout = () => {
+  setUser(null);
+  localStorage.removeItem('token');
+  setMessage({ text: 'You have been successfully logged out.', type: 'info' });
+  setIsModalOpen(true);
+  navigate('/');
+};
+
   
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -230,20 +229,20 @@ const AuthComponent = ({ setUser }) => {
     </div>
   );
 
-  return (
-    <div className="relative">
-      {loggedInUser ? (
-        <div className="flex items-center">
-          <p className="mr-2">Welcome, {loggedInUser.username}!</p>
-          {loggedInUser.isAdmin && <p className="mr-2">(Admin)</p>}
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"
-          >
-            Logout
-          </button>
-        </div>
-      ) : (
+return (
+  <div className="relative">
+    {user ? (
+      <div className="flex items-center">
+        <p className="mr-2">Welcome, {user.username}!</p>
+        {user.isAdmin && <p className="mr-2">(Admin)</p>}
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"
+        >
+          Logout
+        </button>
+      </div>
+    ) : (
         <>
           <button
             onClick={() => setIsModalOpen(true)}
