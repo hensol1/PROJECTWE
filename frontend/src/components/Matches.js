@@ -121,7 +121,6 @@ const handleVote = async (matchId, vote) => {
       }
       return updatedMatches;
     });
-    alert('Vote recorded successfully!');
   } catch (error) {
     console.error('Error voting:', error);
     alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
