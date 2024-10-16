@@ -1,6 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
-const AccuracyComparison = ({ fanAccuracy, aiAccuracy, }) => {
+const AccuracyBox = ({ label, animatedAccuracy, isWinning }) => {
+  const color = isWinning ? '#22c55e' : '#ef4444'; // green-500 and red-500 hex values
+  
+  return (
+    <div className="flex flex-col items-center">
+      <span className="text-xs font-bold mb-1">{label}</span>
+      <div 
+        className="w-28 h-16 border-2 rounded-md flex items-center justify-center bg-white"
+        style={{ borderColor: color }}
+      >
+        <span 
+          className="text-xl font-bold transition-all duration-100 ease-out"
+          style={{ color: color }}
+        >
+          {animatedAccuracy.toFixed(1)}%
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const AccuracyComparison = ({ fanAccuracy, aiAccuracy }) => {
   const [animatedFanAccuracy, setAnimatedFanAccuracy] = useState(0);
   const [animatedAiAccuracy, setAnimatedAiAccuracy] = useState(0);
 
@@ -24,28 +45,21 @@ const AccuracyComparison = ({ fanAccuracy, aiAccuracy, }) => {
     return () => clearInterval(interval);
   }, [fanAccuracy, aiAccuracy]);
 
+  const isFanWinning = fanAccuracy > aiAccuracy;
 
   return (
-    <div className="flex justify-center items-center space-x-2 my-4">
-      <div className="flex flex-col items-center">
-        <span className="text-sm font-bold mb-1">FANS</span>
-        <div className="w-32 h-32 border-2 border-blue-500 rounded-lg flex flex-col items-center justify-center bg-white">
-          <span className="text-2xl font-bold text-blue-500 transition-all duration-100 ease-out">
-            {animatedFanAccuracy.toFixed(1)}%
-          </span>
-        </div>
-      </div>
-      
+    <div className="flex justify-center items-center space-x-4 my-4">
+      <AccuracyBox 
+        label="FANS" 
+        animatedAccuracy={animatedFanAccuracy} 
+        isWinning={isFanWinning} 
+      />
       <div className="text-xl font-bold">VS</div>
-      
-      <div className="flex flex-col items-center">
-        <span className="text-sm font-bold mb-1">AI</span>
-        <div className="w-32 h-32 border-2 border-red-500 rounded-lg flex flex-col items-center justify-center bg-white">
-          <span className="text-2xl font-bold text-red-500 transition-all duration-100 ease-out">
-            {animatedAiAccuracy.toFixed(1)}%
-          </span>
-        </div>
-      </div>
+      <AccuracyBox 
+        label="AI" 
+        animatedAccuracy={animatedAiAccuracy} 
+        isWinning={!isFanWinning} 
+      />
     </div>
   );
 };
