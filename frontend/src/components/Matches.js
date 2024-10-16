@@ -12,6 +12,7 @@ const Matches = ({ user }) => {
   const [totalPredictions, setTotalPredictions] = useState(0);
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [selectedContinent, setSelectedContinent] = useState('All');
+  const [isLoading, setIsLoading] = useState(true);
 
   const continentalLeagues = {
     Europe: [2, 3, 39, 40, 61, 62, 78, 79, 81, 88, 94, 103, 106, 113, 119, 135, 140, 143, 144, 172, 179, 197, 203, 207, 210, 218, 235, 271, 283, 286, 318, 327, 333, 345, 373, 383, 848],
@@ -45,6 +46,7 @@ const Matches = ({ user }) => {
   };
 
   const fetchMatches = useCallback(async (date) => {
+    setIsLoading(true);
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       console.log('Fetching matches for date:', formattedDate);
@@ -70,6 +72,8 @@ const Matches = ({ user }) => {
     } catch (error) {
       console.error('Error fetching matches:', error);
       setMatches({});
+    } finally {
+      setIsLoading(false);
     }
   }, []);
   
@@ -322,7 +326,11 @@ const renderVoteButtons = useCallback((match) => {
         ))}
       </div>
 
-      {hasMatches ? (
+      {isLoading ? (
+        <div className="text-center py-4">
+          <p className="text-gray-600 text-lg">Loading matches...</p>
+        </div>
+      ) : hasMatches ? (
         sortedLeagues.map(([leagueKey, competitionMatches]) => {
           const [leagueName, leagueId] = leagueKey.split('_');
           return (
