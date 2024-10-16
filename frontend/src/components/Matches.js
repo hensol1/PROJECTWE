@@ -11,11 +11,23 @@ const Matches = ({ user }) => {
   const [aiAccuracy, setAIAccuracy] = useState(0);
   const [totalPredictions, setTotalPredictions] = useState(0);
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
+  const [selectedContinent, setSelectedContinent] = useState('All');
+
+  const continentalLeagues = {
+    Europe: [2, 3, 39, 40, 61, 62, 78, 79, 81, 88, 94, 103, 106, 113, 119, 135, 140, 143, 144, 172, 179, 197, 203, 207, 210, 218, 235, 271, 283, 286, 318, 327, 333, 345, 373, 383, 848],
+    International: [4, 5, 6, 10, 34],
+    Americas: [11, 13, 71, 128, 253],
+    Asia: [17, 30, 169, 188],
+    Africa: [12, 20, 29]
+  };
+  
+  const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
+
 
   const sortMatches = (matches) => {
     const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
-    return Object.entries(matches).reduce((acc, [competition, competitionMatches]) => {
-      acc[competition] = competitionMatches.sort((a, b) => {
+    return Object.entries(matches).reduce((acc, [leagueKey, competitionMatches]) => {
+      acc[leagueKey] = competitionMatches.sort((a, b) => {
         const statusA = statusOrder.indexOf(a.status);
         const statusB = statusOrder.indexOf(b.status);
         
@@ -32,8 +44,6 @@ const Matches = ({ user }) => {
     }, {});
   };
 
-  
-
   const fetchMatches = useCallback(async (date) => {
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
@@ -42,10 +52,11 @@ const Matches = ({ user }) => {
       console.log('Fetched matches:', response.data);
       
       const groupedMatches = response.data.matches.reduce((acc, match) => {
-        if (!acc[match.competition.name]) {
-          acc[match.competition.name] = [];
+        const leagueKey = `${match.competition.name}_${match.competition.id}`;
+        if (!acc[leagueKey]) {
+          acc[leagueKey] = [];
         }
-        acc[match.competition.name].push(match);
+        acc[leagueKey].push(match);
         return acc;
       }, {});
 
@@ -58,13 +69,13 @@ const Matches = ({ user }) => {
       setCollapsedLeagues({});
     } catch (error) {
       console.error('Error fetching matches:', error);
-      setMatches([]);
+      setMatches({});
     }
   }, []);
   
-    useEffect(() => {
+  useEffect(() => {
     fetchMatches(currentDate);
-  }, [currentDate, user, fetchMatches]); // Add user as a dependency
+  }, [currentDate, user, fetchMatches]);
 
 
   const handleDateChange = (days) => {
@@ -74,6 +85,49 @@ const Matches = ({ user }) => {
       return newDate;
     });
   };
+
+  const toggleLeague = (leagueKey) => {
+    setCollapsedLeagues(prev => ({
+      ...prev,
+      [leagueKey]: !prev[leagueKey]
+    }));
+  };
+
+  const getLeagueContinent = (leagueId) => {
+    for (const [continent, leagues] of Object.entries(continentalLeagues)) {
+      if (leagues.includes(leagueId)) {
+        return continent;
+      }
+    }
+    return 'Other';
+  };
+
+  const filteredMatches = Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
+    const [, leagueId] = leagueKey.split('_');
+    const continent = getLeagueContinent(parseInt(leagueId));
+    if (selectedContinent === 'All' || continent === selectedContinent) {
+      acc[leagueKey] = leagueMatches;
+    }
+    return acc;
+  }, {});
+
+  const sortedLeagues = Object.entries(filteredMatches).sort((a, b) => {
+    const [, aId] = a[0].split('_');
+    const [, bId] = b[0].split('_');
+    const aIndex = priorityLeagues.indexOf(parseInt(aId));
+    const bIndex = priorityLeagues.indexOf(parseInt(bId));
+    
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    } else if (aIndex !== -1) {
+      return -1;
+    } else if (bIndex !== -1) {
+      return 1;
+    } else {
+      return a[0].localeCompare(b[0]);
+    }
+  });
+
 
   const formatMatchDate = (dateString) => {
     const date = parseISO(dateString);
@@ -236,13 +290,6 @@ const renderVoteButtons = useCallback((match) => {
     );
   }, []);
 
-  const toggleLeague = (competition) => {
-    setCollapsedLeagues(prev => ({
-      ...prev,
-      [competition]: !prev[competition]
-    }));
-  };
-
   return (
     <div className="max-w-3xl mx-auto px-2">
       <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
@@ -257,19 +304,35 @@ const renderVoteButtons = useCallback((match) => {
         </button>
       </div>
 
-      {Object.entries(matches).map(([competition, competitionMatches]) => (
-        <div key={competition} className="mb-2">
-          <button 
-            className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
-            onClick={() => toggleLeague(competition)}
+      <div className="flex justify-center space-x-2 my-4">
+        {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map(continent => (
+          <button
+            key={continent}
+            onClick={() => setSelectedContinent(continent)}
+            className={`px-2 py-1 rounded ${
+              selectedContinent === continent ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
+            }`}
           >
-            <img src={competitionMatches[0].competition.emblem} alt={competition} className="w-5 h-5 mr-1" />
-            {competition}
-            <span className="ml-auto">{collapsedLeagues[competition] ? '▼' : '▲'}</span>
+            {continent}
           </button>
-          {!collapsedLeagues[competition] && (
-            <div className="space-y-1">
-{competitionMatches.map(match => (
+        ))}
+      </div>
+
+      {sortedLeagues.map(([leagueKey, competitionMatches]) => {
+        const [leagueName, leagueId] = leagueKey.split('_');
+        return (
+          <div key={leagueKey} className="mb-2">
+            <button 
+              className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
+              onClick={() => toggleLeague(leagueKey)}
+            >
+              <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
+              {leagueName}
+              <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+            </button>
+            {!collapsedLeagues[leagueKey] && (
+              <div className="space-y-1">
+                {competitionMatches.map(match => (
   <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
     <div className="flex items-center justify-between text-xs">
       <div className="flex items-center justify-start w-5/12">
@@ -298,11 +361,12 @@ const renderVoteButtons = useCallback((match) => {
     {renderVoteButtons(match)}
     {renderPredictions(match)}
   </div>
-))}
-            </div>
-          )}
-        </div>
-      ))}
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
