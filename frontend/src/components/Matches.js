@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api';
-import { format, addDays, subDays, parseISO } from 'date-fns';
+import { format, addDays, subDays, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import AccuracyComparison from './AccuracyComparison';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
-  const [userVotes, setUserVotes] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
   const [fanAccuracy, setFanAccuracy] = useState(0);
   const [aiAccuracy, setAIAccuracy] = useState(0);
@@ -13,6 +13,7 @@ const Matches = ({ user }) => {
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [selectedContinent, setSelectedContinent] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
+  const [userTimeZone, setUserTimeZone] = useState('');
 
   const continentalLeagues = {
     Europe: [2, 3, 39, 40, 61, 62, 78, 79, 81, 88, 94, 103, 106, 113, 119, 135, 140, 143, 144, 172, 179, 197, 203, 207, 210, 218, 235, 271, 283, 286, 318, 327, 333, 345, 373, 383, 848],
@@ -24,6 +25,9 @@ const Matches = ({ user }) => {
   
   const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
 
+  useEffect(() => {
+    setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, []);
 
   const sortMatches = (matches) => {
     const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
@@ -48,21 +52,36 @@ const Matches = ({ user }) => {
   const fetchMatches = useCallback(async (date) => {
     setIsLoading(true);
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      console.log('Fetching matches for date:', formattedDate);
-      const response = await api.fetchMatches(formattedDate);
+      const startDate = subDays(date, 1);
+      const endDate = addDays(date, 1);
+      const formattedStartDate = format(zonedTimeToUtc(startOfDay(startDate), userTimeZone), 'yyyy-MM-dd');
+      const formattedEndDate = format(zonedTimeToUtc(endOfDay(endDate), userTimeZone), 'yyyy-MM-dd');
+      
+      console.log(`Fetching matches from ${formattedStartDate} to ${formattedEndDate}`);
+      const response = await api.fetchMatches(formattedStartDate, formattedEndDate);
       console.log('Fetched matches:', response.data);
       
       const groupedMatches = response.data.matches.reduce((acc, match) => {
+        const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+        const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
         const leagueKey = `${match.competition.name}_${match.competition.id}`;
-        if (!acc[leagueKey]) {
-          acc[leagueKey] = [];
+        if (!acc[dateKey]) {
+          acc[dateKey] = {};
         }
-        acc[leagueKey].push(match);
+        if (!acc[dateKey][leagueKey]) {
+          acc[dateKey][leagueKey] = [];
+        }
+        acc[dateKey][leagueKey].push({
+          ...match,
+          localDate: matchLocalDate
+        });
         return acc;
       }, {});
 
-      const sortedMatches = sortMatches(groupedMatches);
+      const sortedMatches = Object.entries(groupedMatches).reduce((acc, [date, leagues]) => {
+        acc[date] = sortMatches(leagues);
+        return acc;
+      }, {});
 
       setMatches(sortedMatches);
       setFanAccuracy(response.data.fanAccuracy);
@@ -75,12 +94,13 @@ const Matches = ({ user }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [userTimeZone]);
 
   useEffect(() => {
-    fetchMatches(currentDate);
-  }, [currentDate, user, fetchMatches]);
-
+    if (userTimeZone) {
+      fetchMatches(currentDate);
+    }
+  }, [currentDate, user, fetchMatches, userTimeZone]);
 
   const handleDateChange = (days) => {
     setCurrentDate(prevDate => {
@@ -88,7 +108,7 @@ const Matches = ({ user }) => {
       console.log('New date:', format(newDate, 'yyyy-MM-dd'));
       return newDate;
     });
-    setSelectedContinent('All'); // Reset continent to 'All' when date changes
+    setSelectedContinent('All');
   };
 
   const toggleLeague = (leagueKey) => {
@@ -107,7 +127,10 @@ const Matches = ({ user }) => {
     return 'Other';
   };
 
-  const filteredMatches = Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
+  const currentDateKey = format(currentDate, 'yyyy-MM-dd');
+  const matchesForCurrentDate = matches[currentDateKey] || {};
+
+  const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
     const [, leagueId] = leagueKey.split('_');
     const continent = getLeagueContinent(parseInt(leagueId));
     if (selectedContinent === 'All' || continent === selectedContinent) {
@@ -135,11 +158,10 @@ const Matches = ({ user }) => {
 
   const hasMatches = sortedLeagues.length > 0;
 
-
-  const formatMatchDate = (dateString) => {
-    const date = parseISO(dateString);
+  const formatMatchDate = (date) => {
     return format(date, 'HH:mm');
   };
+
 
   const renderMatchStatus = (match) => {
     const statusStyle = (status) => {
@@ -297,97 +319,97 @@ const renderVoteButtons = useCallback((match) => {
     );
   }, []);
 
-  return (
-    <div className="max-w-3xl mx-auto px-2">
-      <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
+return (
+  <div className="max-w-3xl mx-auto px-2">
+    <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
 
-      <div className="flex justify-between items-center my-2">
-        <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
-          Previous Day
-        </button>
-        <h2 className="text-lg font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
-        <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
-          Next Day
-        </button>
-      </div>
-
-      <div className="flex flex-wrap justify-center items-center gap-1 my-2">
-        {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map(continent => (
-          <button
-            key={continent}
-            onClick={() => setSelectedContinent(continent)}
-            className={`px-2 py-1 rounded text-xs sm:text-sm ${
-              selectedContinent === continent 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-            }`}
-          >
-            {continent}
-          </button>
-        ))}
-      </div>
-
-      {isLoading ? (
-        <div className="text-center py-4">
-          <p className="text-gray-600 text-lg">Loading matches...</p>
-        </div>
-      ) : hasMatches ? (
-        sortedLeagues.map(([leagueKey, competitionMatches]) => {
-          const [leagueName, leagueId] = leagueKey.split('_');
-          return (
-            <div key={leagueKey} className="mb-2">
-              <button 
-                className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
-                onClick={() => toggleLeague(leagueKey)}
-              >
-                <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
-                {leagueName}
-                <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
-              </button>
-              {!collapsedLeagues[leagueKey] && (
-                <div className="space-y-1">
-                  {competitionMatches.map(match => (
-  <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
-    <div className="flex items-center justify-between text-xs">
-      <div className="flex items-center justify-start w-5/12">
-        <div className="w-4 h-4 flex-shrink-0 mr-1">
-          <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-full h-full object-contain" />
-        </div>
-        <span className="font-semibold truncate">{match.homeTeam.name}</span>
-      </div>
-      <div className="text-center w-2/12 flex flex-col items-center">
-        <div className="mb-1">
-          {renderMatchStatus(match)}
-        </div>
-        <span className="font-bold">
-          {match.status === 'SCHEDULED' || match.status === 'TIMED'
-            ? formatMatchDate(match.utcDate)
-            : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
-        </span>
-      </div>
-      <div className="flex items-center justify-end w-5/12">
-        <span className="font-semibold truncate">{match.awayTeam.name}</span>
-        <div className="w-4 h-4 flex-shrink-0 ml-1">
-          <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-full h-full object-contain" />
-        </div>
-      </div>
+    <div className="flex justify-between items-center my-2">
+      <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
+        Previous Day
+      </button>
+      <h2 className="text-lg font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
+      <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
+        Next Day
+      </button>
     </div>
-    {renderVoteButtons(match)}
-    {renderPredictions(match)}
+
+    <div className="flex flex-wrap justify-center items-center gap-1 my-2">
+      {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map(continent => (
+        <button
+          key={continent}
+          onClick={() => setSelectedContinent(continent)}
+          className={`px-2 py-1 rounded text-xs sm:text-sm ${
+            selectedContinent === continent 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+          }`}
+        >
+          {continent}
+        </button>
+      ))}
+    </div>
+
+    {isLoading ? (
+      <div className="text-center py-4">
+        <p className="text-gray-600 text-lg">Loading matches...</p>
+      </div>
+    ) : Object.keys(matchesForCurrentDate).length > 0 ? (
+      sortedLeagues.map(([leagueKey, competitionMatches]) => {
+        const [leagueName, leagueId] = leagueKey.split('_');
+        return (
+          <div key={leagueKey} className="mb-2">
+            <button 
+              className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
+              onClick={() => toggleLeague(leagueKey)}
+            >
+              <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
+              {leagueName}
+              <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+            </button>
+            {!collapsedLeagues[leagueKey] && (
+              <div className="space-y-1">
+                {competitionMatches.map(match => (
+                  <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center justify-start w-5/12">
+                        <div className="w-4 h-4 flex-shrink-0 mr-1">
+                          <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-full h-full object-contain" />
+                        </div>
+                        <span className="font-semibold truncate">{match.homeTeam.name}</span>
+                      </div>
+                      <div className="text-center w-2/12 flex flex-col items-center">
+                        <div className="mb-1">
+                          {renderMatchStatus(match)}
+                        </div>
+                        <span className="font-bold">
+                          {match.status === 'SCHEDULED' || match.status === 'TIMED'
+                            ? formatMatchDate(match.localDate)
+                            : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-end w-5/12">
+                        <span className="font-semibold truncate">{match.awayTeam.name}</span>
+                        <div className="w-4 h-4 flex-shrink-0 ml-1">
+                          <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-full h-full object-contain" />
+                        </div>
+                      </div>
+                    </div>
+                    {renderVoteButtons(match)}
+                    {renderPredictions(match)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })
+    ) : (
+      <div className="text-center py-4">
+        <p className="text-gray-600 text-lg">No matches today for {selectedContinent === 'All' ? 'any continent' : selectedContinent}</p>
+      </div>
+    )}
   </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })
-      ) : (
-        <div className="text-center py-4">
-          <p className="text-gray-600 text-lg">No matches today for {selectedContinent === 'All' ? 'any continent' : selectedContinent}</p>
-        </div>
-      )}
-    </div>
-  );
+);
 };
 
 export default Matches;

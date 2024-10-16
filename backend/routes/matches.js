@@ -6,6 +6,7 @@ const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
 const auth = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
+const { startOfDay, endOfDay, parseISO } = require('date-fns');
 
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
@@ -92,30 +93,35 @@ const optionalAuth = (req, res, next) => {
 };
 
 router.get('/', optionalAuth, async (req, res) => {
-  const { date } = req.query;
+  const { startDate, endDate } = req.query;
   
   const userId = req.user ? req.user.id : null;
   console.log('User ID from request:', userId);
-  const queryDate = new Date(date);
-  queryDate.setUTCHours(0, 0, 0, 0);
-  const nextDay = new Date(queryDate);
-  nextDay.setUTCDate(queryDate.getUTCDate() + 1);
-  const queryDateString = queryDate.toISOString().split('T')[0];
-  const nextDayString = nextDay.toISOString().split('T')[0];
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: 'Both startDate and endDate are required' });
+  }
 
   try {
+    const start = startOfDay(parseISO(startDate));
+    const end = endOfDay(parseISO(endDate));
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
     const [matches, stats, user] = await Promise.all([
       Match.find({
         utcDate: {
-          $gte: queryDateString,
-          $lt: nextDayString
+          $gte: start.toISOString(),
+          $lte: end.toISOString()
         }
       }),
       calculateAccuracy(),
       userId ? User.findById(userId, 'votes') : null
     ]);
 
-    console.log(`Found ${matches.length} matches for date ${queryDateString}`);
+    console.log(`Found ${matches.length} matches from ${startDate} to ${endDate}`);
     console.log('User retrieved from database:', user);
 
     const userVotes = user ? user.votes : [];
