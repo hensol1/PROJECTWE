@@ -128,6 +128,8 @@ const Matches = ({ user }) => {
     }
   });
 
+  const hasMatches = sortedLeagues.length > 0;
+
 
   const formatMatchDate = (dateString) => {
     const date = parseISO(dateString);
@@ -320,21 +322,22 @@ const renderVoteButtons = useCallback((match) => {
         ))}
       </div>
 
-      {sortedLeagues.map(([leagueKey, competitionMatches]) => {
-        const [leagueName, leagueId] = leagueKey.split('_');
-        return (
-          <div key={leagueKey} className="mb-2">
-            <button 
-              className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
-              onClick={() => toggleLeague(leagueKey)}
-            >
-              <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
-              {leagueName}
-              <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
-            </button>
-            {!collapsedLeagues[leagueKey] && (
-              <div className="space-y-1">
-                {competitionMatches.map(match => (
+      {hasMatches ? (
+        sortedLeagues.map(([leagueKey, competitionMatches]) => {
+          const [leagueName, leagueId] = leagueKey.split('_');
+          return (
+            <div key={leagueKey} className="mb-2">
+              <button 
+                className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
+                onClick={() => toggleLeague(leagueKey)}
+              >
+                <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
+                {leagueName}
+                <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+              </button>
+              {!collapsedLeagues[leagueKey] && (
+                <div className="space-y-1">
+                  {competitionMatches.map(match => (
   <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
     <div className="flex items-center justify-between text-xs">
       <div className="flex items-center justify-start w-5/12">
@@ -363,12 +366,17 @@ const renderVoteButtons = useCallback((match) => {
     {renderVoteButtons(match)}
     {renderPredictions(match)}
   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })
+      ) : (
+        <div className="text-center py-4">
+          <p className="text-gray-600 text-lg">No matches today for {selectedContinent === 'All' ? 'any continent' : selectedContinent}</p>
+        </div>
+      )}
     </div>
   );
 };
