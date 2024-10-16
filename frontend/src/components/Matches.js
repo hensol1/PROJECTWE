@@ -76,7 +76,7 @@ const Matches = ({ user }) => {
       setIsLoading(false);
     }
   }, []);
-  
+
   useEffect(() => {
     fetchMatches(currentDate);
   }, [currentDate, user, fetchMatches]);
@@ -88,6 +88,7 @@ const Matches = ({ user }) => {
       console.log('New date:', format(newDate, 'yyyy-MM-dd'));
       return newDate;
     });
+    setSelectedContinent('All'); // Reset continent to 'All' when date changes
   };
 
   const toggleLeague = (leagueKey) => {
