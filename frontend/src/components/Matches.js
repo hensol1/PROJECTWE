@@ -304,13 +304,15 @@ const renderVoteButtons = useCallback((match) => {
         </button>
       </div>
 
-      <div className="flex justify-center space-x-2 my-4">
+      <div className="flex flex-wrap justify-center items-center gap-1 my-2">
         {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map(continent => (
           <button
             key={continent}
             onClick={() => setSelectedContinent(continent)}
-            className={`px-2 py-1 rounded ${
-              selectedContinent === continent ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
+            className={`px-2 py-1 rounded text-xs sm:text-sm ${
+              selectedContinent === continent 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
             }`}
           >
             {continent}
