@@ -183,32 +183,36 @@ const Matches = ({ user }) => {
     );
   };
 
-const handleVote = async (matchId, vote) => {
-  try {
-    const response = await api.voteForMatch(matchId, vote);
-    setMatches(prevMatches => {
-      const updatedMatches = { ...prevMatches };
-      for (let league in updatedMatches) {
-        updatedMatches[league] = updatedMatches[league].map(match => 
-          match.id === matchId ? { 
-            ...match, 
-            votes: response.data.votes,
-            voteCounts: {
-              home: response.data.votes.home,
-              draw: response.data.votes.draw,
-              away: response.data.votes.away
-            },
-            userVote: response.data.userVote
-          } : match
-        );
-      }
-      return updatedMatches;
-    });
-  } catch (error) {
-    console.error('Error voting:', error);
-    alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
-  }
-};
+  const handleVote = async (matchId, vote) => {
+    try {
+      const response = await api.voteForMatch(matchId, vote);
+      setMatches(prevMatches => {
+        const updatedMatches = { ...prevMatches };
+        const currentDate = format(new Date(), 'yyyy-MM-dd');
+        
+        for (let date in updatedMatches) {
+          for (let league in updatedMatches[date]) {
+            updatedMatches[date][league] = updatedMatches[date][league].map(match => 
+              match.id === matchId ? { 
+                ...match, 
+                votes: response.data.votes,
+                voteCounts: {
+                  home: response.data.votes.home,
+                  draw: response.data.votes.draw,
+                  away: response.data.votes.away
+                },
+                userVote: response.data.userVote
+              } : match
+            );
+          }
+        }
+        return updatedMatches;
+      });
+    } catch (error) {
+      console.error('Error voting:', error);
+      alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
+    }
+  };
 
 const renderVoteButtons = useCallback((match) => {
   const hasVoted = match.userVote;
@@ -349,26 +353,26 @@ return (
       ))}
     </div>
 
-    {isLoading ? (
-      <div className="text-center py-4">
-        <p className="text-gray-600 text-lg">Loading matches...</p>
-      </div>
-    ) : Object.keys(matchesForCurrentDate).length > 0 ? (
-      sortedLeagues.map(([leagueKey, competitionMatches]) => {
-        const [leagueName, leagueId] = leagueKey.split('_');
-        return (
-          <div key={leagueKey} className="mb-2">
-            <button 
-              className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
-              onClick={() => toggleLeague(leagueKey)}
-            >
-              <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
-              {leagueName}
-              <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
-            </button>
-            {!collapsedLeagues[leagueKey] && (
-              <div className="space-y-1">
-                {competitionMatches.map(match => (
+      {isLoading ? (
+        <div className="text-center py-4">
+          <p className="text-gray-600 text-lg">Loading matches...</p>
+        </div>
+      ) : hasMatches ? (
+        sortedLeagues.map(([leagueKey, competitionMatches]) => {
+          const [leagueName, leagueId] = leagueKey.split('_');
+          return (
+            <div key={leagueKey} className="mb-2">
+              <button 
+                className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
+                onClick={() => toggleLeague(leagueKey)}
+              >
+                <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
+                {leagueName}
+                <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+              </button>
+              {!collapsedLeagues[leagueKey] && (
+                <div className="space-y-1">
+                  {competitionMatches.map(match => (
                   <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center justify-start w-5/12">
@@ -397,19 +401,21 @@ return (
                     {renderVoteButtons(match)}
                     {renderPredictions(match)}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })
-    ) : (
-      <div className="text-center py-4">
-        <p className="text-gray-600 text-lg">No matches today for {selectedContinent === 'All' ? 'any continent' : selectedContinent}</p>
-      </div>
-    )}
-  </div>
-);
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })
+      ) : (
+        <div className="text-center py-4">
+          <p className="text-gray-600 text-lg">
+            No matches found for {selectedContinent === 'All' ? 'any continent' : selectedContinent} on {format(currentDate, 'dd MMM yyyy')}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Matches;
