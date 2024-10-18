@@ -57,7 +57,9 @@ async function recalculateUserStats(user) {
   const wilsonScore = calculateWilsonScore(correctVotes, finishedVotes);
   user.wilsonScore = wilsonScore;
 
-  await user.save();
+  user.increment();
+  await user.save({ validateBeforeSave: false });
+
   return user;
 }
 
