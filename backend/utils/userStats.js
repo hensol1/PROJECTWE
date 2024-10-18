@@ -2,7 +2,12 @@ const User = require('../models/User');
 const Match = require('../models/Match');
 const calculateWilsonScore = require('./wilsonScore');
 
-async function recalculateUserStats(user) {
+async function recalculateUserStats(userId) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const votes = user.votes;
   let totalVotes = 0;
   let correctVotes = 0;
@@ -48,21 +53,36 @@ async function recalculateUserStats(user) {
     }
   }
 
-  user.totalVotes = totalVotes;
-  user.finishedVotes = finishedVotes;
-  user.correctVotes = correctVotes;
-  user.leagueStats = Object.values(leagueStats);
-
-  // Recalculate Wilson score based on finished votes only
   const wilsonScore = calculateWilsonScore(correctVotes, finishedVotes);
-  user.wilsonScore = wilsonScore;
 
-  user.increment();
-  await user.save({ validateBeforeSave: false });
+  const updatedUser = await User.findOneAndUpdate(
+    { _id: userId },
+    {
+      $set: {
+        totalVotes,
+        finishedVotes,
+        correctVotes,
+        leagueStats: Object.values(leagueStats),
+        wilsonScore,
+        votes
+      }
+    },
+    { new: true, runValidators: true }
+  );
 
-  return user;
+  return updatedUser;
+}
+
+async function safelyUpdateUser(userId, updateData) {
+  const updatedUser = await User.findOneAndUpdate(
+    { _id: userId },
+    { $set: updateData },
+    { new: true, runValidators: true }
+  );
+  return updatedUser;
 }
 
 module.exports = {
-  recalculateUserStats
+  recalculateUserStats,
+  safelyUpdateUser
 };

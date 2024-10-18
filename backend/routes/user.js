@@ -3,8 +3,7 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Match = require('../models/Match');
-const calculateWilsonScore = require('../utils/wilsonScore');
-const { recalculateUserStats } = require('../utils/userStats');
+const { recalculateUserStats, safelyUpdateUser } = require('../utils/userStats');
 
 // Existing profile route
 router.get('/profile', auth, async (req, res) => {
@@ -33,14 +32,11 @@ router.get('/profile', auth, async (req, res) => {
 // New stats route
 router.get('/stats', auth, async (req, res) => {
   try {
-    let user = await User.findById(req.user.id).select('-password');
+    const user = await recalculateUserStats(req.user.id);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    // Recalculate user stats
-    user = await recalculateUserStats(user);
 
     // Fetch league emblems
     const leagueEmblems = await Match.aggregate([
@@ -89,7 +85,7 @@ router.get('/stats', auth, async (req, res) => {
 
     res.json({
       totalVotes: user.totalVotes,
-      finishedVotes: user.finishedVotes, // Make sure this line is included
+      finishedVotes: user.finishedVotes,
       correctVotes: user.correctVotes,
       accuracy: user.finishedVotes > 0 ? (user.correctVotes / user.finishedVotes) * 100 : 0,
       leagueStats: leagueStatsArray,
