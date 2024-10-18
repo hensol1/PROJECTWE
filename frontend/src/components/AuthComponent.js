@@ -31,24 +31,34 @@ const fetchUserData = async () => {
       ...profileResponse.data,
       stats: statsResponse.data
     };
-    setUser(userData); // Only update the user state in App.js
-    console.log('User data fetched:', userData);
+    setUser(userData);
+    // Ensure we're using the correct property for the user ID
+    const userId = userData._id || userData.id;
+    if (userId) {
+      localStorage.setItem('userId', userId);
+      console.log('User ID stored in localStorage:', userId);
+    } else {
+      console.error('User ID not found in userData:', userData);
+    }
+    console.log('User data fetched and ID stored:', userData);
+    console.log('All localStorage items after fetching user data:', { ...localStorage });
   } catch (error) {
     console.error('Error fetching user data:', error);
     handleLogout();
   }
 };
-
-
-  const handleLoginSuccess = async (token, userData) => {
-    localStorage.setItem('token', token);
-    console.log('Token stored in localStorage:', token);
-    setMessage({ text: 'Login successful!', type: 'success' });
-    setIsLoading(true);
-    await fetchUserData();
-    setIsLoading(false);
-  };
-
+  
+const handleLoginSuccess = async (token, userData) => {
+  localStorage.setItem('token', token);
+  localStorage.setItem('userId', userData._id || userData.id);
+  console.log('Token and userId stored in localStorage:', token, userData._id || userData.id);
+  console.log('All localStorage items after login:', { ...localStorage });
+  setMessage({ text: 'Login successful!', type: 'success' });
+  setIsLoading(true);
+  await fetchUserData();
+  setIsLoading(false);
+};
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ text: '', type: '' });
@@ -76,13 +86,14 @@ const fetchUserData = async () => {
     setMessage({ text: '', type: '' });
   };
 
-const handleLogout = () => {
-  setUser(null);
-  localStorage.removeItem('token');
-  setMessage({ text: 'You have been successfully logged out.', type: 'info' });
-  setIsModalOpen(true);
-  navigate('/');
-};
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId'); // Add this line to remove user ID
+    setMessage({ text: 'You have been successfully logged out.', type: 'info' });
+    setIsModalOpen(true);
+    navigate('/');
+  };
 
   
   const googleLogin = useGoogleLogin({

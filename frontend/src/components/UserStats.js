@@ -15,9 +15,11 @@ const UserStats = () => {
     const fetchStats = async () => {
       try {
         const response = await api.getUserStats();
+        console.log('Received stats:', response.data); // Add this line for debugging
         setStats(response.data);
         setLoading(false);
       } catch (err) {
+        console.error('Error fetching stats:', err); // Add this line for debugging
         setError('Failed to load stats');
         setLoading(false);
       }
@@ -54,8 +56,9 @@ const UserStats = () => {
       
       <div className="mb-6 text-center">
         <p><strong>Total Votes:</strong> {stats.totalVotes}</p>
+        <p><strong>Finished Matches:</strong> {stats.finishedVotes}</p>
         <p><strong>Correct Votes:</strong> {stats.correctVotes}</p>
-        <p><strong>Overall Accuracy:</strong> {stats.accuracy.toFixed(1)}%</p>
+        <p><strong>Overall Accuracy:</strong> {stats.finishedVotes > 0 ? ((stats.correctVotes / stats.finishedVotes) * 100).toFixed(1) : 0}%</p>
       </div>
 
       <div className="mb-4 flex justify-center">

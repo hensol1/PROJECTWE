@@ -12,8 +12,9 @@ const AdminPage = () => {
 
   const fetchMatches = async (date) => {
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      const response = await api.get(`/api/matches?date=${formattedDate}`);
+      const startDate = format(date, 'yyyy-MM-dd');
+      const endDate = format(addDays(date, 1), 'yyyy-MM-dd');
+      const response = await api.fetchMatches(startDate, endDate);
       const groupedMatches = response.data.matches.reduce((acc, match) => {
         if (!acc[match.competition.name]) {
           acc[match.competition.name] = [];

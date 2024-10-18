@@ -36,14 +36,11 @@ const Matches = ({ user }) => {
         const statusA = statusOrder.indexOf(a.status);
         const statusB = statusOrder.indexOf(b.status);
         
-        if (statusA === statusB) {
-          return new Date(a.utcDate) - new Date(b.utcDate);
+        if (statusA !== statusB) {
+          return statusA - statusB;
         }
         
-        if (statusA === -1) return 1;
-        if (statusB === -1) return -1;
-        
-        return statusA - statusB;
+        return new Date(a.utcDate) - new Date(b.utcDate);
       });
       return acc;
     }, {});
@@ -140,8 +137,21 @@ const Matches = ({ user }) => {
   }, {});
 
   const sortedLeagues = Object.entries(filteredMatches).sort((a, b) => {
-    const [, aId] = a[0].split('_');
-    const [, bId] = b[0].split('_');
+    const [leagueKeyA, matchesA] = a;
+    const [leagueKeyB, matchesB] = b;
+    const [, aId] = leagueKeyA.split('_');
+    const [, bId] = leagueKeyB.split('_');
+
+    // First, sort by match status
+    const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
+    const statusA = Math.min(...matchesA.map(match => statusOrder.indexOf(match.status)));
+    const statusB = Math.min(...matchesB.map(match => statusOrder.indexOf(match.status)));
+
+    if (statusA !== statusB) {
+      return statusA - statusB;
+    }
+
+    // Then, sort by priority leagues
     const aIndex = priorityLeagues.indexOf(parseInt(aId));
     const bIndex = priorityLeagues.indexOf(parseInt(bId));
     
@@ -151,9 +161,10 @@ const Matches = ({ user }) => {
       return -1;
     } else if (bIndex !== -1) {
       return 1;
-    } else {
-      return a[0].localeCompare(b[0]);
     }
+
+    // Finally, sort alphabetically by league name
+    return leagueKeyA.localeCompare(leagueKeyB);
   });
 
   const hasMatches = sortedLeagues.length > 0;

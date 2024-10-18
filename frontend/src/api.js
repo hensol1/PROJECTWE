@@ -31,4 +31,6 @@ api.makeAIPrediction = (matchId, prediction) => {
 };
 api.fetchMatches = (startDate, endDate) => api.get(`/api/matches?startDate=${startDate}&endDate=${endDate}`);
 
+api.getLeaderboard = () => api.get('/api/user/leaderboard');
+
 export default api;

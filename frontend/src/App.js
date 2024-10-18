@@ -6,6 +6,7 @@ import Matches from './components/Matches';
 import UserProfile from './components/UserProfile';
 import UserStats from './components/UserStats';
 import AdminPage from './components/AdminPage';
+import Leaderboard from './components/Leaderboard';
 import api from './api';
 import config from './config';
 
@@ -49,21 +50,25 @@ function App() {
               <AuthComponent setUser={setUser} user={user} />
             </div>
           </header>
-          {user && (
-            <nav className="bg-gray-200 shadow-sm py-2 px-4">
-              <div className="container mx-auto flex justify-center items-center space-x-4">
-                <Link to="/" className="text-blue-500 hover:text-blue-700">Home</Link>
-                <Link to="/profile" className="text-blue-500 hover:text-blue-700">Profile</Link>
-                <Link to="/stats" className="text-blue-500 hover:text-blue-700">Stats</Link>
-                {user.isAdmin && (
-                  <Link to="/admin" className="text-blue-500 hover:text-blue-700">Admin</Link>
-                )}
-              </div>
-            </nav>
-          )}
+          <nav className="bg-gray-200 shadow-sm py-2 px-4">
+            <div className="container mx-auto flex justify-center items-center space-x-4">
+              <Link to="/" className="text-blue-500 hover:text-blue-700">Home</Link>
+              <Link to="/leaderboard" className="text-blue-500 hover:text-blue-700">Leaderboard</Link>
+              {user && (
+                <>
+                  <Link to="/profile" className="text-blue-500 hover:text-blue-700">Profile</Link>
+                  <Link to="/stats" className="text-blue-500 hover:text-blue-700">Stats</Link>
+                  {user.isAdmin && (
+                    <Link to="/admin" className="text-blue-500 hover:text-blue-700">Admin</Link>
+                  )}
+                </>
+              )}
+            </div>
+          </nav>
           <main className="flex-grow container mx-auto p-4">
             <Routes>
               <Route path="/" element={<Matches user={user} />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route 
                 path="/profile" 
                 element={user ? <UserProfile user={user} /> : <Navigate to="/" />} 
