@@ -23,24 +23,25 @@ const UserSchema = new mongoose.Schema({
     type: String,
     sparse: true
   },
-    isAdmin: {
+  isAdmin: {
     type: Boolean,
     default: false
   },
-
   votes: [{
     matchId: String,
     vote: String,
     isCorrect: { type: Boolean, default: null }
   }],
   totalVotes: { type: Number, default: 0 },
+  finishedVotes: { type: Number, default: 0 },
   correctVotes: { type: Number, default: 0 },
   leagueStats: [{
     leagueId: String,
     leagueName: String,
     totalVotes: { type: Number, default: 0 },
     correctVotes: { type: Number, default: 0 }
-  }]
+  }],
+  wilsonScore: { type: Number, default: 0 }
 });
 
 module.exports = mongoose.model('User', UserSchema);

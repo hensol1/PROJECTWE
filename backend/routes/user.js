@@ -3,6 +3,8 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Match = require('../models/Match');
+const calculateWilsonScore = require('../utils/wilsonScore');
+const { recalculateUserStats } = require('../utils/userStats');
 
 // Existing profile route
 router.get('/profile', auth, async (req, res) => {
@@ -31,11 +33,14 @@ router.get('/profile', auth, async (req, res) => {
 // New stats route
 router.get('/stats', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    let user = await User.findById(req.user.id).select('-password');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Recalculate user stats
+    user = await recalculateUserStats(user);
 
     // Fetch league emblems
     const leagueEmblems = await Match.aggregate([
@@ -46,47 +51,12 @@ router.get('/stats', auth, async (req, res) => {
         } 
       }
     ]);
-
     const leagueEmblemMap = new Map(leagueEmblems.map(league => [league._id.toString(), league.emblem]));
 
-    // Fetch detailed vote history and recalculate statistics
-    let totalVotes = 0;
-    let correctVotes = 0;
-    const leagueStats = {};
-
+    // Fetch detailed vote history
     const voteHistory = await Promise.all(user.votes.map(async (vote) => {
       const match = await Match.findOne({ id: vote.matchId });
       if (!match) return null;
-
-      let isCorrect = null;
-      if (match.status === 'FINISHED') {
-        totalVotes++;
-        const homeScore = match.score.fullTime.home;
-        const awayScore = match.score.fullTime.away;
-        
-        isCorrect = (
-          (vote.vote === 'home' && homeScore > awayScore) ||
-          (vote.vote === 'away' && awayScore > homeScore) ||
-          (vote.vote === 'draw' && homeScore === awayScore)
-        );
-
-        if (isCorrect) {
-          correctVotes++;
-        }
-
-        // Update league stats
-        if (!leagueStats[match.competition.id]) {
-          leagueStats[match.competition.id] = { 
-            name: match.competition.name,
-            totalVotes: 0, 
-            correctVotes: 0 
-          };
-        }
-        leagueStats[match.competition.id].totalVotes++;
-        if (isCorrect) {
-          leagueStats[match.competition.id].correctVotes++;
-        }
-      }
 
       return {
         matchId: vote.matchId,
@@ -96,7 +66,7 @@ router.get('/stats', auth, async (req, res) => {
         score: match.score.fullTime,
         date: match.utcDate,
         status: match.status,
-        isCorrect,
+        isCorrect: vote.isCorrect,
         competition: {
           name: match.competition.name,
           emblem: match.competition.emblem
@@ -109,27 +79,55 @@ router.get('/stats', auth, async (req, res) => {
       .filter(vote => vote !== null)
       .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Calculate overall accuracy
-    const accuracy = totalVotes > 0 ? (correctVotes / totalVotes) * 100 : 0;
-
     // Prepare league stats for response
-    const leagueStatsArray = Object.entries(leagueStats).map(([leagueId, stats]) => ({
-      leagueName: stats.name,
-      leagueId,
+    const leagueStatsArray = user.leagueStats.map(stats => ({
+      leagueName: stats.leagueName,
+      leagueId: stats.leagueId,
       accuracy: stats.totalVotes > 0 ? (stats.correctVotes / stats.totalVotes) * 100 : 0,
-      leagueEmblem: leagueEmblemMap.get(leagueId) || ''
+      leagueEmblem: leagueEmblemMap.get(stats.leagueId) || ''
     }));
 
     res.json({
-      totalVotes,
-      correctVotes,
-      accuracy,
+      totalVotes: user.totalVotes,
+      finishedVotes: user.finishedVotes, // Make sure this line is included
+      correctVotes: user.correctVotes,
+      accuracy: user.finishedVotes > 0 ? (user.correctVotes / user.finishedVotes) * 100 : 0,
       leagueStats: leagueStatsArray,
       voteHistory: filteredVoteHistory
     });
   } catch (error) {
     console.error('Error fetching user stats:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/leaderboard', async (req, res) => {
+  console.log('Leaderboard route hit');
+  try {
+    console.log('Fetching users');
+    const users = await User.find({ finishedVotes: { $gte: 10 } }, '_id username country totalVotes finishedVotes correctVotes wilsonScore');
+    console.log(`Found ${users.length} users with 10+ finished votes`);
+    
+    const leaderboardData = users.map(user => {
+      const accuracy = user.finishedVotes > 0 ? (user.correctVotes / user.finishedVotes) * 100 : 0;
+      return {
+        _id: user._id,
+        username: user.username,
+        country: user.country,
+        finishedVotes: user.finishedVotes,
+        correctVotes: user.correctVotes,
+        accuracy: accuracy.toFixed(2),
+        score: user.wilsonScore.toFixed(4)
+      };
+    });
+
+    const sortedLeaderboard = leaderboardData.sort((a, b) => b.score - a.score);
+
+    console.log('Sending leaderboard response:', sortedLeaderboard);
+    res.json(sortedLeaderboard);
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

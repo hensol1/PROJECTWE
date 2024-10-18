@@ -51,7 +51,8 @@ const MatchSchema = new mongoose.Schema({
   voterIPs: [{ type: String }]
 }, { 
   collection: 'matches',
-  toJSON: { getters: true }
+  toJSON: { getters: true },
+  processed: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('Match', MatchSchema);

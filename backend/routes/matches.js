@@ -7,6 +7,7 @@ const AIPredictionStat = require('../models/AIPredictionStat');
 const auth = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
 const { startOfDay, endOfDay, parseISO } = require('date-fns');
+const { recalculateUserStats } = require('../utils/userStats');
 
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
@@ -91,6 +92,35 @@ const optionalAuth = (req, res, next) => {
     next();
   }
 };
+
+async function updateCorrectVotes(match) {
+  const actualResult = match.score.winner || 
+    (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+     match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+
+  const voters = await User.find({ 'votes.matchId': match.id });
+  
+  for (const user of voters) {
+    const vote = user.votes.find(v => v.matchId === match.id);
+    if (vote) {
+      const isCorrect = (
+        (vote.vote === 'home' && actualResult === 'HOME_TEAM') ||
+        (vote.vote === 'away' && actualResult === 'AWAY_TEAM') ||
+        (vote.vote === 'draw' && actualResult === 'DRAW')
+      );
+      
+      if (isCorrect) {
+        user.correctVotes++;
+        vote.isCorrect = true;
+      } else {
+        vote.isCorrect = false;
+      }
+      
+      await user.save();
+    }
+  }
+}
+
 
 router.get('/', optionalAuth, async (req, res) => {
   const { startDate, endDate } = req.query;
@@ -294,6 +324,7 @@ router.post('/:matchId/vote', optionalAuth, async (req, res) => {
       const user = await User.findById(userId);
       if (user) {
         user.votes.push({ matchId, vote });
+        user.totalVotes++; // Increment total votes
         await user.save();
       }
     } else {
@@ -313,6 +344,8 @@ router.post('/:matchId/vote', optionalAuth, async (req, res) => {
   }
 });
 
+
+
 // Add a new route to manually trigger fan accuracy recalculation
 router.post('/recalculate-accuracy', auth, async (req, res) => {
   try {
@@ -325,6 +358,73 @@ router.post('/recalculate-accuracy', auth, async (req, res) => {
     res.status(500).json({ message: 'Error recalculating fan accuracy', error: error.message });
   }
 });
+
+// Add this new route to update match results and trigger correct votes update
+router.put('/:matchId/update-result', auth, async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { status, score } = req.body;
+
+    const match = await Match.findOne({ id: matchId });
+    if (!match) {
+      return res.status(404).json({ message: 'Match not found' });
+    }
+
+    match.status = status;
+    match.score = score;
+
+    await match.save();
+
+    if (status === 'FINISHED') {
+      await updateCorrectVotes(match);
+    }
+
+    res.json({ message: 'Match result updated successfully', match });
+  } catch (error) {
+    console.error('Error updating match result:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Add this admin route to update all correct votes
+router.post('/update-all-correct-votes', async (req, res) => {
+  try {
+    const users = await User.find({});
+    let updatedCount = 0;
+
+    for (const user of users) {
+      await recalculateUserStats(user);
+      updatedCount++;
+    }
+
+    res.json({ message: `Updated stats for ${updatedCount} users` });
+  } catch (error) {
+    console.error('Error updating all correct votes:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Add this new route
+router.post('/update-all-user-stats', auth, async (req, res) => {
+  if (!req.user.isAdmin) {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+
+  try {
+    const users = await User.find({});
+    
+    for (const user of users) {
+      await recalculateUserStats(user);
+    }
+
+    res.json({ message: `Updated stats for ${users.length} users` });
+  } catch (error) {
+    console.error('Error updating all user stats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 
 
 module.exports = router;

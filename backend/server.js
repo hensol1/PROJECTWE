@@ -6,6 +6,7 @@ const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
 
 dotenv.config();
+require('./scheduledTasks');  // Add this line
 
 const app = express();
 
@@ -16,7 +17,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   optionsSuccessStatus: 200
-
 }));
 
 // Middleware
@@ -33,9 +33,8 @@ mongoose.connect(process.env.MONGODB_URI, {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/matches', require('./routes/matches'));
-app.use('/api/user', require('./routes/user'));
-app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
