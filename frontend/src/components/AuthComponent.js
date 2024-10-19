@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
@@ -145,9 +145,10 @@ const handleLoginSuccess = async (token, userData) => {
   };
 
 
+
   const renderAuthForm = () => (
     <div className="bg-white p-8 rounded-lg shadow-md w-96">
-      <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Sign In' : 'Register'}</h2>
+      <h2 className="text-2xl font-bold mb-6">Sign In</h2>
       {message.text && (
         <div className={`${
           message.type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
@@ -169,70 +170,53 @@ const handleLoginSuccess = async (token, userData) => {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-        />
-        {!isLogin && (
-          <>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-            <Select
-              options={countries}
-              value={country}
-              onChange={(value) => setCountry(value)}
-              placeholder="Select a country"
-              className="w-full"
-            />
-          </>
-        )}
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
             disabled={isLoading}
           >
-            {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Register')}
+            {isLoading ? 'Loading...' : 'Sign In'}
           </button>
         </form>
       )}
       {!message.text && (
         <>
-          <button
-            onClick={() => googleLogin()}
-            className="w-full mt-4 bg-red-500 text-white py-2 rounded-md hover:bg-red-600"
-            disabled={isLoading}
-          >
-            Sign in with Google
-          </button>
+          <div className="mt-4">
+            <button
+              className="flex items-center justify-center gap-3 w-full py-2 px-4 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              onClick={() => googleLogin()}
+            >
+              <img src="https://docs.material-tailwind.com/icons/google.svg" alt="google" className="h-6 w-6" />
+              Continue with Google
+            </button>
+          </div>
           <p className="mt-4 text-center">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            Don't have an account? {' '}
             <button
               onClick={() => {
-                setIsLogin(!isLogin);
+                setIsLogin(false);
                 setMessage({ text: '', type: '' });
               }}
               className="text-blue-500 hover:underline"
               disabled={isLoading}
             >
-              {isLogin ? 'Register' : 'Sign In'}
+              Register
             </button>
           </p>
         </>
@@ -240,20 +224,20 @@ const handleLoginSuccess = async (token, userData) => {
     </div>
   );
 
-return (
-  <div className="relative">
-    {user ? (
-      <div className="flex items-center">
-        <p className="mr-2">Welcome, {user.username}!</p>
-        {user.isAdmin && <p className="mr-2">(Admin)</p>}
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"
-        >
-          Logout
-        </button>
-      </div>
-    ) : (
+  return (
+    <div className="relative">
+      {user ? (
+        <div className="flex items-center">
+          <p className="mr-2">Welcome, {user.username}!</p>
+          {user.isAdmin && <p className="mr-2">(Admin)</p>}
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"
+          >
+            Logout
+          </button>
+        </div>
+      ) : (
         <>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -263,47 +247,47 @@ return (
           </button>
           {isModalOpen && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-              <div className="bg-white p-8 rounded-lg">
-                {isFirstTimeGoogleUser ? (
-                  <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
-                    <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
-                    <input
-                      type="text"
-                      placeholder="Choose a username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                    <Select
-                      options={countries}
-                      value={country}
-                      onChange={(value) => setCountry(value)}
-                      placeholder="Select a country"
-                      className="w-full"
-                    />
+                <div className="bg-white p-8 rounded-lg">
+                  {isFirstTimeGoogleUser ? (
+                    <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
+                      <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
+                      <input
+                        type="text"
+                        placeholder="Choose a username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <Select
+                        options={countries}
+                        value={country}
+                        onChange={(value) => setCountry(value)}
+                        placeholder="Select a country"
+                        className="w-full"
+                      />
+                      <button
+                        type="submit"
+                        className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+                      >
+                        Complete Profile
+                      </button>
+                    </form>
+                  ) : (
+                    renderAuthForm()
+                  )}
+                  {!message.text && (
                     <button
-                      type="submit"
-                      className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        setMessage({ text: '', type: '' });
+                      }}
+                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
                     >
-                      Complete Profile
+                      ✕
                     </button>
-                  </form>
-                ) : (
-                  renderAuthForm()
-                )}
-                {!message.text && (
-                  <button
-                    onClick={() => {
-                      setIsModalOpen(false);
-                      setMessage({ text: '', type: '' });
-                    }}
-                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
+                  )}
+                </div>
             </div>
           )}
         </>

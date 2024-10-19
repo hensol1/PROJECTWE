@@ -239,14 +239,18 @@ router.get('/', optionalAuth, async (req, res) => {
       }
 
       // Add user's vote to the match object if user is logged in
-      if (userId) {
-        const userVote = userVotes.find(v => v.matchId === match.id);
+      if (userId && user) {
+        const userVote = user.votes.find(v => v.matchId === match.id);
         if (userVote) {
           matchObj.userVote = userVote.vote;
           console.log(`User vote for match ${match.id}:`, userVote.vote);
         } else {
           console.log(`No user vote found for match ${match.id}`);
         }
+        
+        // Add information about whether the user is in the voters array
+        matchObj.userInVotersArray = match.voters.includes(userId);
+        console.log(`User in voters array for match ${match.id}:`, matchObj.userInVotersArray);
       }
 
       return matchObj;
@@ -301,49 +305,74 @@ router.post('/:matchId/vote', optionalAuth, async (req, res) => {
 
     const match = await Match.findOne({ id: matchId });
     if (!match) {
+      console.log(`Match not found: ${matchId}`);
       return res.status(404).json({ message: 'Match not found' });
     }
 
+    console.log(`Match status: ${match.status}`);
+    console.log(`Match voters:`, match.voters);
+    console.log(`Match voterIPs:`, match.voterIPs);
+
     if (match.status !== 'TIMED' && match.status !== 'SCHEDULED') {
-      return res.status(400).json({ message: 'Voting is not allowed for this match' });
+      return res.status(400).json({ message: `Voting is not allowed for this match. Current status: ${match.status}` });
     }
 
+    let isUpdatingVote = false;
     // Check if the user or IP has already voted
     if (userId) {
       if (match.voters.includes(userId)) {
-        return res.status(400).json({ message: 'You have already voted for this match' });
+        isUpdatingVote = true;
+        console.log(`User ${userId} is updating their vote for match ${matchId}`);
       }
     } else if (match.voterIPs.includes(userIP)) {
       return res.status(400).json({ message: 'You have already voted for this match' });
     }
 
-    // Record the vote
+    // Update or record the vote
+    if (isUpdatingVote) {
+      // Remove the old vote
+      Object.keys(match.votes).forEach(key => {
+        if (match.votes[key] > 0) match.votes[key]--;
+      });
+    } else {
+      if (userId) {
+        match.voters.push(userId);
+      } else {
+        match.voterIPs.push(userIP);
+      }
+    }
     match.votes[vote]++;
+
     if (userId) {
-      match.voters.push(userId);
       const user = await User.findById(userId);
       if (user) {
-        user.votes.push({ matchId, vote });
-        user.totalVotes++; // Increment total votes
+        const existingVoteIndex = user.votes.findIndex(v => v.matchId === matchId);
+        if (existingVoteIndex !== -1) {
+          console.log(`Updating existing vote for user ${userId} on match ${matchId}`);
+          user.votes[existingVoteIndex].vote = vote;
+        } else {
+          console.log(`Adding new vote for user ${userId} on match ${matchId}`);
+          user.votes.push({ matchId, vote });
+          if (!isUpdatingVote) user.totalVotes++; // Increment total votes only for new votes
+        }
         await user.save();
+      } else {
+        console.log(`User ${userId} not found`);
       }
-    } else {
-      match.voterIPs.push(userIP);
     }
 
     await match.save();
 
     res.json({
-      message: 'Vote recorded successfully',
+      message: isUpdatingVote ? 'Vote updated successfully' : 'Vote recorded successfully',
       votes: match.votes,
       userVote: vote
     });
   } catch (error) {
     console.error('Error recording vote:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
-
 
 
 // Add a new route to manually trigger fan accuracy recalculation
