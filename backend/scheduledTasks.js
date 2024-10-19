@@ -35,8 +35,8 @@ cron.schedule('*/15 * * * *', updateFinishedMatches);
 // Run updateFinishedMatches every 15 minutes
 cron.schedule('*/15 * * * *', updateFinishedMatches);
 
-// Run fetchMatches every 15 minutes from 12 PM to 2 AM
-cron.schedule('*/15 12-23,0-2 * * *', () => {
+// Run fetchMatches every 30 minutes from 12 PM to 2 AM
+cron.schedule('*/30 12-23,0-2 * * *', () => {
   console.log('Running fetchMatches to update match data');
   fetchMatches().catch(error => {
     console.error('Error in fetchMatches:', error);
