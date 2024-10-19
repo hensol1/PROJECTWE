@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { format, parseISO } from 'date-fns';
+import { BiTrophy, BiHistory } from "react-icons/bi";
 
 const UserStats = () => {
   const [stats, setStats] = useState(null);
@@ -15,11 +16,11 @@ const UserStats = () => {
     const fetchStats = async () => {
       try {
         const response = await api.getUserStats();
-        console.log('Received stats:', response.data); // Add this line for debugging
+        console.log('Received stats:', response.data);
         setStats(response.data);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching stats:', err); // Add this line for debugging
+        console.error('Error fetching stats:', err);
         setError('Failed to load stats');
         setLoading(false);
       }
@@ -61,19 +62,37 @@ const UserStats = () => {
         <p><strong>Overall Accuracy:</strong> {stats.finishedVotes > 0 ? ((stats.correctVotes / stats.finishedVotes) * 100).toFixed(1) : 0}%</p>
       </div>
 
-      <div className="mb-4 flex justify-center">
-        <button
-          onClick={() => setActiveTab('league')}
-          className={`px-4 py-2 mr-2 rounded ${activeTab === 'league' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-        >
-          League Statistics
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`px-4 py-2 rounded ${activeTab === 'history' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-        >
-          Vote History
-        </button>
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+          <button
+            onClick={() => setActiveTab('league')}
+            className={`
+              px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+              flex items-center justify-center
+              ${activeTab === 'league'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:bg-gray-200'
+              }
+            `}
+          >
+            <BiTrophy className="mr-1 sm:mr-2" />
+            League Statistics
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`
+              px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+              flex items-center justify-center
+              ${activeTab === 'history'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:bg-gray-200'
+              }
+            `}
+          >
+            <BiHistory className="mr-1 sm:mr-2" />
+            Vote History
+          </button>
+        </div>
       </div>
 
       {activeTab === 'league' && (
