@@ -434,30 +434,54 @@ const renderMatches = (matches) => {
         </div>
       ) : (
         <>
-          <div className="flex justify-center mb-4 sm:mb-6">
-            <div className="inline-flex bg-gray-100 p-0.5 sm:p-1 rounded-lg shadow-md">
-              {['live', 'finished', 'scheduled'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`
-                    px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md sm:rounded-lg transition-all duration-200 ease-in-out
-                    flex items-center justify-center
-                    ${activeTab === tab
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-200'
-                    }
-                    ${tab === 'live' ? 'animate-pulse' : ''}
-                  `}
-                >
-                  {tab === 'live' && (
-                    <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1 sm:mr-2 animate-pulse"></span>
-                  )}
-                  {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
-                  {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+          <div className="flex flex-col space-y-4 mb-4">
+            {/* Match type tabs */}
+            <div className="flex justify-center">
+              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+                {['live', 'finished', 'scheduled'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`
+                      px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+                      flex items-center justify-center
+                      ${activeTab === tab
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-200'
+                      }
+                      ${tab === 'live' ? 'animate-pulse' : ''}
+                    `}
+                  >
+                    {tab === 'live' && (
+                      <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1 sm:mr-2 animate-pulse"></span>
+                    )}
+                    {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
+                    {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Continent tabs */}
+            <div className="flex justify-center">
+              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+                {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map((continent) => (
+                  <button
+                    key={continent}
+                    onClick={() => setSelectedContinent(continent)}
+                    className={`
+                      px-2 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+                      ${selectedContinent === continent
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-200'
+                      }
+                    `}
+                  >
+                    {continent}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -469,22 +493,6 @@ const renderMatches = (matches) => {
             <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
               Next Day
             </button>
-          </div>
-
-          <div className="flex flex-wrap justify-center items-center gap-1 my-2">
-            {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map(continent => (
-              <button
-                key={continent}
-                onClick={() => setSelectedContinent(continent)}
-                className={`px-2 py-1 rounded text-xs sm:text-sm ${
-                  selectedContinent === continent 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
-              >
-                {continent}
-              </button>
-            ))}
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-2 sm:p-4">
