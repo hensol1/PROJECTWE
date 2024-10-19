@@ -4,6 +4,7 @@ import { format, addDays, subDays, parseISO, startOfDay, endOfDay } from 'date-f
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import AccuracyComparison from './AccuracyComparison';
 import { BiAlarm, BiAlarmOff } from "react-icons/bi";
+import CustomButton from './CustomButton';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
@@ -101,14 +102,21 @@ const Matches = ({ user }) => {
     }
   }, [currentDate, user, fetchMatches, userTimeZone]);
 
-  const handleDateChange = (days) => {
+  const handleDateChange = useCallback((days) => {
     setCurrentDate(prevDate => {
       const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
       console.log('New date:', format(newDate, 'yyyy-MM-dd'));
       return newDate;
     });
     setSelectedContinent('All');
-  };
+    
+    // Set the appropriate tab based on whether we're going to a previous or future date
+    if (days < 0) {
+      setActiveTab('finished');
+    } else if (days > 0) {
+      setActiveTab('scheduled');
+    }
+  }, []);
 
   const toggleLeague = (leagueKey) => {
     setCollapsedLeagues(prev => ({
@@ -485,15 +493,21 @@ const renderMatches = (matches) => {
             </div>
           </div>
 
-          <div className="flex justify-between items-center my-4">
-            <button onClick={() => handleDateChange(-1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
-              Previous Day
-            </button>
-            <h2 className="text-lg font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
-            <button onClick={() => handleDateChange(1)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-lg transition duration-200 text-sm">
-              Next Day
-            </button>
-          </div>
+      <div className="flex justify-between items-center my-4 sm:px-4 md:px-12 lg:px-20">
+        <div className="sm:flex-grow sm:flex sm:justify-end sm:pr-4">
+          <CustomButton onClick={() => handleDateChange(-1)}>
+            Previous Day
+          </CustomButton>
+        </div>
+        <h2 className="text-sm sm:text-lg font-bold text-gray-800 sm:flex-shrink-0">
+          {format(currentDate, 'dd MMM yyyy')}
+        </h2>
+        <div className="sm:flex-grow sm:flex sm:justify-start sm:pl-4">
+          <CustomButton onClick={() => handleDateChange(1)}>
+            Next Day
+          </CustomButton>
+        </div>
+      </div>
 
           <div className="bg-white rounded-lg shadow-md p-2 sm:p-4">
             {renderTabContent()}
