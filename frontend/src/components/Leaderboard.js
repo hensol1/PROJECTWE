@@ -7,6 +7,7 @@ const Leaderboard = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [userRank, setUserRank] = useState(null);
+  const [showTooltip, setShowTooltip] = useState(false);
   const itemsPerPage = 15;
 
   const fetchLeaderboard = async () => {
@@ -48,13 +49,13 @@ const Leaderboard = () => {
     }
   };
 
-useEffect(() => {
-  const timer = setTimeout(() => {
-    fetchLeaderboard();
-  }, 1000); // 1 second delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchLeaderboard();
+    }, 1000); // 1 second delay
 
-  return () => clearTimeout(timer);
-}, []);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -132,6 +133,28 @@ useEffect(() => {
             {i + 1}
           </button>
         ))}
+      </div>
+
+      <div className="mt-4 text-center relative">
+        <span 
+          className="text-blue-500 cursor-pointer underline"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          How the scoring system works
+        </span>
+        {showTooltip && (
+          <div className="absolute z-10 p-4 bg-gray-800 text-white text-sm rounded-lg shadow-lg max-w-xs mx-auto left-0 right-0 bottom-full mb-2">
+            <p className="mb-2">We use a fair ranking system called the Wilson score. Here's how it works:</p>
+            <ul className="list-disc pl-4">
+              <li>It balances your accuracy with the number of predictions you've made.</li>
+              <li>Making more predictions gives a more reliable score.</li>
+              <li>High accuracy with few predictions won't unfairly outrank consistent predictors.</li>
+              <li>It rewards both accuracy and participation.</li>
+              <li>Keep predicting to improve your rank!</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
