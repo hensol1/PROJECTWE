@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api';
-import { format, addDays, subDays, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format, addDays, subDays, parseISO, startOfDay, endOfDay, isToday } from 'date-fns';
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import AccuracyComparison from './AccuracyComparison';
 import { BiAlarm, BiAlarmOff } from "react-icons/bi";
@@ -78,16 +78,21 @@ const Matches = ({ user }) => {
         return acc;
       }, {});
 
-      const sortedMatches = Object.entries(groupedMatches).reduce((acc, [date, leagues]) => {
-        acc[date] = sortMatches(leagues);
-        return acc;
-      }, {});
-
-      setMatches(sortedMatches);
+      setMatches(groupedMatches);
       setFanAccuracy(response.data.fanAccuracy);
       setAIAccuracy(response.data.aiAccuracy);
       setTotalPredictions(response.data.totalPredictions);
       setCollapsedLeagues({});
+
+      // Check if it's today and set the appropriate tab
+      if (isToday(date)) {
+        const todayKey = format(date, 'yyyy-MM-dd');
+        const todayMatches = groupedMatches[todayKey] || {};
+        const hasLiveMatches = Object.values(todayMatches).some(leagueMatches => 
+          leagueMatches.some(match => ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE'].includes(match.status))
+        );
+        setActiveTab(hasLiveMatches ? 'live' : 'scheduled');
+      }
     } catch (error) {
       console.error('Error fetching matches:', error);
       setMatches({});
@@ -95,6 +100,10 @@ const Matches = ({ user }) => {
       setIsLoading(false);
     }
   }, [userTimeZone]);
+
+  useEffect(() => {
+    setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, []);
 
   useEffect(() => {
     if (userTimeZone) {
@@ -110,7 +119,6 @@ const Matches = ({ user }) => {
     });
     setSelectedContinent('All');
     
-    // Set the appropriate tab based on whether we're going to a previous or future date
     if (days < 0) {
       setActiveTab('finished');
     } else if (days > 0) {
