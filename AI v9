@@ -1,0 +1,135 @@
+# Project Overview: "We Know Better" (Updated)
+
+"We Know Better" is a web application for football (soccer) match predictions. It allows both registered and unregistered users to view upcoming matches and make predictions, while tracking the accuracy of fan and AI predictions.
+
+## Updated Project Structure:
+```
+we-know-better/
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AuthComponent.js
+│   │   │   ├── Matches.js
+│   │   │   ├── UserProfile.js
+│   │   │   ├── UserStats.js
+│   │   │   ├── AdminPage.js
+│   │   │   ├── AccuracyComparison.js
+│   │   │   └── Leaderboard.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   ├── index.css
+│   │   ├── config.js
+│   │   └── api.js
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── .env
+├── backend/
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── matches.js
+│   │   ├── user.js
+│   │   └── admin.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Match.js
+│   │   ├── FanPredictionStat.js
+│   │   └── AIPredictionStat.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   └── admin.js
+│   ├── utils/
+│   │   ├── wilsonScore.js
+│   │   └── userStats.js
+│   ├── fetchMatches.js
+│   ├── scheduledTasks.js
+│   ├── server.js
+│   ├── package.json
+│   └── .env
+└── README.md
+```
+
+## Key Components and Features:
+
+### Frontend (React.js):
+
+1. `App.js`: Main component with navigation and user state management.
+2. `AuthComponent.js`: Handles user authentication (login, register, Google sign-in) with a modal interface.
+3. `Matches.js`: 
+   - Fetches and displays football matches for a date range.
+   - Allows voting on match outcomes for both registered and unregistered users.
+   - Shows fan and AI predictions.
+   - Displays user votes with dynamic styling.
+   - Implements continental filtering of matches.
+   - Handles timezone differences for match display.
+4. `UserProfile.js`: Displays basic user information for registered users.
+5. `UserStats.js`: Shows user statistics, league stats, and vote history for registered users.
+6. `AdminPage.js`: Allows admins to make AI predictions for matches.
+7. `AccuracyComparison.js`: Displays a comparison of fan and AI prediction accuracies.
+8. `Leaderboard.js`: Displays user rankings based on prediction accuracy and Wilson score.
+9. `api.js`: Axios instance for making API calls with authentication.
+
+### Backend (Node.js with Express.js):
+
+1. `server.js`: Main entry point for the backend, sets up Express, middleware, and CORS.
+2. `routes/auth.js`: Handles authentication routes (register, login, Google auth).
+3. `routes/matches.js`: 
+   - Handles fetching matches for a date range.
+   - Processes voting for both registered and unregistered users.
+   - Uses IP addresses to track votes from unregistered users.
+   - Calculates fan and AI prediction accuracy.
+4. `routes/user.js`: Handles user profile data, statistics for registered users, and the leaderboard functionality.
+5. `routes/admin.js`: Handles admin-specific routes, including making AI predictions.
+6. `models/User.js`: Mongoose schema for the User model, including vote history and league stats.
+7. `models/Match.js`: Mongoose schema for the Match model, including vote counts, AI prediction, and arrays for both registered voters and voter IPs.
+8. `models/FanPredictionStat.js`: Mongoose schema for storing cumulative fan prediction statistics.
+9. `models/AIPredictionStat.js`: Mongoose schema for storing cumulative AI prediction statistics.
+10. `middleware/auth.js`: Authentication middleware for protecting routes.
+11. `middleware/admin.js`: Admin middleware for protecting admin-only routes.
+12. `utils/wilsonScore.js`: Utility function for calculating Wilson score.
+13. `utils/userStats.js`: Utility functions for recalculating user statistics.
+14. `fetchMatches.js`: New file that handles fetching match data from the API-Football service and updating the database.
+15. `scheduledTasks.js`: Manages scheduled tasks using node-cron, including regular updates of match data and user statistics.
+
+## Recent Updates and Changes:
+
+1. Implemented a leaderboard feature using Wilson score for ranking users.
+2. Added user ranking display in the leaderboard for logged-in users.
+3. Updated the User model to include a finishedVotes field for more accurate statistics.
+4. Enhanced the AuthComponent to properly store user ID in localStorage.
+5. Implemented pagination in the Leaderboard component to display 15 users per page.
+6. Added country flags to the leaderboard display.
+7. Improved mobile responsiveness of the leaderboard table.
+8. Converted Python script for fetching matches to JavaScript (fetchMatches.js).
+9. Implemented scheduled tasks using node-cron for regular updates of match data and user statistics.
+10. Added functionality to fetch matches every 15 minutes between 12 PM and 2 AM.
+11. Integrated automatic updating of user statistics when matches finish.
+
+## Key Features:
+
+1. Open Voting System: Both registered and unregistered users can vote on match outcomes.
+2. User Authentication: Registration, login, and Google sign-in for additional features.
+3. Match Display: View matches for specific date ranges with the ability to navigate between days.
+4. Continental Filtering: Filter matches by continent (Europe, Americas, Asia, Africa, International).
+5. Fan Predictions: Display of current fan prediction based on all votes.
+6. AI Predictions: Admins can make AI predictions for matches.
+7. Cumulative Accuracy: Calculation and display of overall fan and AI prediction accuracy.
+8. User Profile: Display of basic user information for registered users.
+9. User Stats: Detailed view of registered user's voting history, league-specific stats, and overall accuracy.
+10. Admin Functionality: Ability to make AI predictions for matches.
+11. Mobile Responsiveness: Optimized layout for both desktop and mobile devices.
+12. Dynamic User Vote Display: Visually appealing and informative display of user votes with real-time updates.
+13. IP-based Vote Tracking: Ensures one vote per unregistered user based on IP address.
+14. Timezone Handling: Correct display of match times based on user's local timezone.
+15. Leaderboard: Ranking of users based on prediction accuracy and Wilson score.
+16. User Ranking: Display of logged-in user's rank in the leaderboard.
+17. Automated Match Data Updates: Regular fetching and updating of match data from API-Football.
+18. Scheduled User Stats Updates: Automatic recalculation of user statistics when matches finish.
+
+## Deployment:
+
+- Frontend: Deployed on Vercel
+- Backend: Deployed on Render
+
