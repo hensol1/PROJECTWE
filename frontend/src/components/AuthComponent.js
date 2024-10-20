@@ -6,7 +6,7 @@ import api from '../api';
 import Select from 'react-select';
 import countryList from 'react-select-country-list';
 
-const AuthComponent = ({ setUser, user }) => {
+const AuthComponent = ({ setUser, user, CustomButton }) => {  // Add CustomButton here
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
@@ -230,26 +230,25 @@ const handleLoginSuccess = async (token, userData) => {
         <div className="flex items-center">
           <p className="mr-2">Welcome, {user.username}!</p>
           {user.isAdmin && <p className="mr-2">(Admin)</p>}
-          <button
+          <CustomButton
             onClick={handleLogout}
-            className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 text-sm"
+            className="bg-red-500 hover:bg-red-600"
           >
             Logout
-          </button>
+          </CustomButton>
         </div>
       ) : (
         <>
-          <button
+          <CustomButton
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-sm"
           >
             Sign In
-          </button>
+          </CustomButton>
           {isModalOpen && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                <div className="bg-white p-8 rounded-lg">
-                  {isFirstTimeGoogleUser ? (
-                    <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
+              <div className="bg-white p-8 rounded-lg">
+                {isFirstTimeGoogleUser ? (
+                  <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
                       <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
                       <input
                         type="text"
@@ -272,22 +271,22 @@ const handleLoginSuccess = async (token, userData) => {
                       >
                         Complete Profile
                       </button>
-                    </form>
-                  ) : (
-                    renderAuthForm()
-                  )}
-                  {!message.text && (
-                    <button
-                      onClick={() => {
-                        setIsModalOpen(false);
-                        setMessage({ text: '', type: '' });
-                      }}
-                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+                  </form>
+                ) : (
+                  renderAuthForm()
+                )}
+                {!message.text && (
+                  <button
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setMessage({ text: '', type: '' });
+                    }}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </>
