@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IoHomeOutline, IoPersonOutline, IoTrophyOutline, IoStatsChartOutline, IoSettingsOutline } from 'react-icons/io5';
+import { IoHomeOutline, IoTrophyOutline, IoPersonOutline, IoStatsChartOutline } from 'react-icons/io5';
 
 const IconMenu = ({ user }) => {
   const location = useLocation();
@@ -12,17 +12,16 @@ const IconMenu = ({ user }) => {
       { name: 'Profile', path: '/profile', Icon: IoPersonOutline },
       { name: 'Stats', path: '/stats', Icon: IoStatsChartOutline },
     ] : []),
-    ...(user?.isAdmin ? [{ name: 'Admin', path: '/admin', Icon: IoSettingsOutline }] : []),
   ];
 
   return (
-    <div className="flex justify-center space-x-4 py-2">
+    <div className="flex justify-evenly sm:justify-center sm:space-x-8 max-w-md mx-auto">
       {icons.map(({ name, path, Icon }) => (
         <Link
           key={name}
           to={path}
           className={`
-            w-10 h-10 rounded-full shadow-md flex justify-center items-center text-xl
+            w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow-md flex justify-center items-center text-lg sm:text-xl
             transition-all duration-500 ease-in-out cursor-pointer
             ${location.pathname === path 
               ? 'text-blue-500 shadow-inner' 

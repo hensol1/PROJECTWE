@@ -7,8 +7,7 @@ import UserProfile from './components/UserProfile';
 import UserStats from './components/UserStats';
 import AdminPage from './components/AdminPage';
 import Leaderboard from './components/Leaderboard';
-import CustomButton from './components/CustomButton';
-import IconMenu from './components/IconMenu'; // Add this line
+import IconMenu from './components/IconMenu';
 import api from './api';
 import config from './config';
 
@@ -47,14 +46,18 @@ function App() {
       <Router>
         <div className="bg-gray-100 min-h-screen flex flex-col">
           <header className="bg-white shadow-sm py-2 px-4">
-            <div className="container mx-auto flex justify-between items-center">
-              <h1 className="text-lg font-bold text-gray-800">We Know Better</h1>
-              <AuthComponent setUser={setUser} user={user} CustomButton={CustomButton} />
+            <div className="container mx-auto flex items-center">
+              <div className="w-1/4 sm:w-1/3">
+                <h1 className="text-sm sm:text-lg font-bold text-gray-800">We Know Better</h1>
+              </div>
+              <div className="w-1/2 sm:w-1/3 flex justify-center">
+                <IconMenu user={user} />
+              </div>
+              <div className="w-1/4 sm:w-1/3 flex justify-end">
+                <AuthComponent setUser={setUser} user={user} />
+              </div>
             </div>
           </header>
-          <nav className="bg-gray-200 shadow-sm">
-            <IconMenu user={user} />
-          </nav>
           <main className="flex-grow container mx-auto p-4">
             <Routes>
               <Route path="/" element={<Matches user={user} />} />

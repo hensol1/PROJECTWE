@@ -5,8 +5,10 @@ import axios from 'axios';
 import api from '../api';
 import Select from 'react-select';
 import countryList from 'react-select-country-list';
+import { VscAccount } from "react-icons/vsc";
+import { IoExitOutline } from "react-icons/io5";
 
-const AuthComponent = ({ setUser, user, CustomButton }) => {  // Add CustomButton here
+const AuthComponent = ({ setUser, user }) => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
@@ -224,75 +226,77 @@ const handleLoginSuccess = async (token, userData) => {
     </div>
   );
 
-  return (
-    <div className="relative">
-      {user ? (
-        <div className="flex items-center">
-          <p className="mr-2">Welcome, {user.username}!</p>
-          {user.isAdmin && <p className="mr-2">(Admin)</p>}
-          <CustomButton
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600"
-          >
-            Logout
-          </CustomButton>
-        </div>
-      ) : (
-        <>
-          <CustomButton
-            onClick={() => setIsModalOpen(true)}
-          >
-            Sign In
-          </CustomButton>
-          {isModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-              <div className="bg-white p-8 rounded-lg">
-                {isFirstTimeGoogleUser ? (
-                  <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
-                      <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
-                      <input
-                        type="text"
-                        placeholder="Choose a username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      />
-                      <Select
-                        options={countries}
-                        value={country}
-                        onChange={(value) => setCountry(value)}
-                        placeholder="Select a country"
-                        className="w-full"
-                      />
-                      <button
-                        type="submit"
-                        className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
-                      >
-                        Complete Profile
-                      </button>
-                  </form>
-                ) : (
-                  renderAuthForm()
-                )}
-                {!message.text && (
-                  <button
-                    onClick={() => {
-                      setIsModalOpen(false);
-                      setMessage({ text: '', type: '' });
-                    }}
-                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
+return (
+  <div>
+    {user ? (
+      <button
+        onClick={handleLogout}
+        className="w-10 h-10 rounded-full shadow-md flex justify-center items-center text-xl
+                   transition-all duration-500 ease-in-out cursor-pointer
+                   text-gray-600 hover:text-red-500"
+        aria-label="Logout"
+      >
+        <IoExitOutline />
+      </button>
+    ) : (
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="w-10 h-10 rounded-full shadow-md flex justify-center items-center text-xl
+                   transition-all duration-500 ease-in-out cursor-pointer
+                   text-gray-600 hover:text-blue-500"
+        aria-label="Sign In"
+      >
+        <VscAccount />
+      </button>
+    )}
+    {isModalOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white p-8 rounded-lg">
+          {isFirstTimeGoogleUser ? (
+            <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
+              <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
+              <input
+                type="text"
+                placeholder="Choose a username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <Select
+                options={countries}
+                value={country}
+                onChange={(value) => setCountry(value)}
+                placeholder="Select a country"
+                className="w-full"
+              />
+              <button
+                type="submit"
+                className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+              >
+                Complete Profile
+              </button>
+            </form>
+          ) : (
+            renderAuthForm()
           )}
-        </>
-      )}
-    </div>
-  );
+          {!message.text && (
+            <button
+              onClick={() => {
+                setIsModalOpen(false);
+                setMessage({ text: '', type: '' });
+              }}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+);
+
 };
 
 export default AuthComponent;
