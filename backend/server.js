@@ -2,11 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const authRoutes = require('./routes/auth');
+const matchesRoutes = require('./routes/matches');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
+const accuracyRoutes = require('./routes/accuracy');
 
 dotenv.config();
-require('./scheduledTasks');  // Add this line
+require('./scheduledTasks');
 
 const app = express();
 
@@ -31,10 +34,11 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/matches', require('./routes/matches'));
+app.use('/api/auth', authRoutes);
+app.use('/api/matches', matchesRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/accuracy', accuracyRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -51,8 +55,4 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-// Unhandled promise rejection handler
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Application specific logging, throwing an error, or other logic here
-});
+module.exports = app;

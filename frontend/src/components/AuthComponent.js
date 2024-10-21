@@ -63,15 +63,19 @@ const handleLoginSuccess = async (token, userData) => {
   
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted:', { isLogin, username, password, email, country });
     setMessage({ text: '', type: '' });
     setIsLoading(true);
     try {
-      const response = await api.post(`/api/auth/${isLogin ? 'login' : 'register'}`, {
+      const endpoint = isLogin ? 'login' : 'register';
+      console.log(`Sending request to: /api/auth/${endpoint}`);
+      const response = await api.post(`/api/auth/${endpoint}`, {
         username,
         password,
         email,
         country: country.value
       });
+      console.log('Response received:', response.data);
       await handleLoginSuccess(response.data.token, response.data.user);
     } catch (error) {
       console.error('Error:', error.response ? error.response.data : error.message);
@@ -150,7 +154,7 @@ const handleLoginSuccess = async (token, userData) => {
 
   const renderAuthForm = () => (
     <div className="bg-white p-8 rounded-lg shadow-md w-96">
-      <h2 className="text-2xl font-bold mb-6">Sign In</h2>
+      <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Sign In' : 'Register'}</h2>
       {message.text && (
         <div className={`${
           message.type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
@@ -180,6 +184,16 @@ const handleLoginSuccess = async (token, userData) => {
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
+          {!isLogin && (
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          )}
           <input
             type="password"
             placeholder="Password"
@@ -188,12 +202,21 @@ const handleLoginSuccess = async (token, userData) => {
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
           />
+          {!isLogin && (
+            <Select
+              options={countries}
+              value={country}
+              onChange={(value) => setCountry(value)}
+              placeholder="Select a country"
+              className="w-full"
+            />
+          )}
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
             disabled={isLoading}
           >
-            {isLoading ? 'Loading...' : 'Sign In'}
+            {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Register')}
           </button>
         </form>
       )}
@@ -209,16 +232,16 @@ const handleLoginSuccess = async (token, userData) => {
             </button>
           </div>
           <p className="mt-4 text-center">
-            Don't have an account? {' '}
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button
               onClick={() => {
-                setIsLogin(false);
+                setIsLogin(!isLogin);
                 setMessage({ text: '', type: '' });
               }}
               className="text-blue-500 hover:underline"
               disabled={isLoading}
             >
-              Register
+              {isLogin ? 'Register' : 'Sign In'}
             </button>
           </p>
         </>

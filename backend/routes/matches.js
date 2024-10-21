@@ -4,10 +4,10 @@ const Match = require('../models/Match');
 const User = require('../models/User');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
-const auth = require('../middleware/auth');
-const jwt = require('jsonwebtoken');
 const { startOfDay, endOfDay, parseISO } = require('date-fns');
 const { recalculateUserStats } = require('../utils/userStats');
+const optionalAuth = require('../middleware/optionalAuth');
+const auth = require('../middleware/auth'); // Make sure this exists
 
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
@@ -71,27 +71,6 @@ const getAIAccuracy = async () => {
   return stat;
 };
 
-// Optional authentication middleware
-const optionalAuth = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  console.log('Token received in optionalAuth:', token);
-  
-  if (!token) {
-    console.log('No token provided, continuing as unauthenticated user');
-    return next();
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Token decoded successfully:', decoded);
-    req.user = { id: decoded.userId };
-    console.log('User set on request:', req.user);
-    next();
-  } catch (err) {
-    console.error('Error decoding token:', err);
-    next();
-  }
-};
 
 async function updateCorrectVotes(match) {
   const actualResult = match.score.winner || 
@@ -123,61 +102,40 @@ async function updateCorrectVotes(match) {
 
 
 router.get('/', optionalAuth, async (req, res) => {
-  const { startDate, endDate } = req.query;
+  const { date } = req.query;
   
   const userId = req.user ? req.user.id : null;
   console.log('User ID from request:', userId);
 
-  if (!startDate || !endDate) {
-    return res.status(400).json({ message: 'Both startDate and endDate are required' });
+  if (!date) {
+    return res.status(400).json({ message: 'Date is required' });
   }
 
   try {
-    const start = startOfDay(parseISO(startDate));
-    const end = endOfDay(parseISO(endDate));
+    const start = startOfDay(parseISO(date));
+    const end = endOfDay(parseISO(date));
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({ message: 'Invalid date format' });
     }
 
-    const [matches, stats, user] = await Promise.all([
+    const [matches, user] = await Promise.all([
       Match.find({
         utcDate: {
           $gte: start.toISOString(),
           $lte: end.toISOString()
         }
       }),
-      calculateAccuracy(),
       userId ? User.findById(userId, 'votes') : null
     ]);
 
-    console.log(`Found ${matches.length} matches from ${startDate} to ${endDate}`);
+    console.log(`Found ${matches.length} matches for ${date}`);
     console.log('User retrieved from database:', user);
 
     const userVotes = user ? user.votes : [];
     console.log('User votes:', userVotes);
 
-    // Define the order of statuses
-    const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
-
-    // Sort the matches
-    const sortedMatches = matches.sort((a, b) => {
-      const statusA = statusOrder.indexOf(a.status);
-      const statusB = statusOrder.indexOf(b.status);
-      
-      if (statusA === statusB) {
-        // If statuses are the same, sort by utcDate
-        return new Date(a.utcDate) - new Date(b.utcDate);
-      }
-      
-      // If status is not in the list, put it at the end
-      if (statusA === -1) return 1;
-      if (statusB === -1) return -1;
-      
-      return statusA - statusB;
-    });
-
-    const processedMatches = sortedMatches.map(match => {
+    const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
       
       // Use the votes stored in the match document
@@ -198,76 +156,17 @@ router.get('/', optionalAuth, async (req, res) => {
         matchObj.fanPrediction = null;
       }
       
-      // Update fan prediction to include team information
-      if (matchObj.fanPrediction) {
-        matchObj.fanPredictionTeam = matchObj.fanPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
-                                     matchObj.fanPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
-      }
-
-      // Update AI prediction to include team information
-      if (matchObj.aiPrediction) {
-        matchObj.aiPredictionTeam = matchObj.aiPrediction === 'HOME_TEAM' ? matchObj.homeTeam : 
-                                    matchObj.aiPrediction === 'AWAY_TEAM' ? matchObj.awayTeam : null;
-      }
-
       // Add user's vote to the match object
       const userVote = userVotes.find(v => v.matchId === match.id);
       if (userVote) {
         matchObj.userVote = userVote.vote;
       }
 
-      if (match.status === 'FINISHED') {
-        let actualResult;
-        if (match.score.winner === null) {
-          const { home: homeScore, away: awayScore } = match.score.fullTime;
-          if (homeScore > awayScore) {
-            actualResult = 'HOME_TEAM';
-          } else if (awayScore > homeScore) {
-            actualResult = 'AWAY_TEAM';
-          } else {
-            actualResult = 'DRAW';
-          }
-        } else {
-          actualResult = match.score.winner;
-        }
-        
-        matchObj.fanPredictionCorrect = matchObj.fanPrediction === actualResult;
-        
-        if (match.aiPrediction) {
-          matchObj.aiPredictionCorrect = match.aiPrediction === actualResult;
-        }
-      }
-
-      // Add user's vote to the match object if user is logged in
-      if (userId && user) {
-        const userVote = user.votes.find(v => v.matchId === match.id);
-        if (userVote) {
-          matchObj.userVote = userVote.vote;
-          console.log(`User vote for match ${match.id}:`, userVote.vote);
-        } else {
-          console.log(`No user vote found for match ${match.id}`);
-        }
-        
-        // Add information about whether the user is in the voters array
-        matchObj.userInVotersArray = match.voters.includes(userId);
-        console.log(`User in voters array for match ${match.id}:`, matchObj.userInVotersArray);
-      }
-
       return matchObj;
     });
 
-    const fanAccuracy = stats.fanStat.totalPredictions > 0
-      ? (stats.fanStat.correctPredictions / stats.fanStat.totalPredictions) * 100
-      : 0;
-
-    const aiAccuracy = stats.aiStat.totalPredictions > 0
-      ? (stats.aiStat.correctPredictions / stats.aiStat.totalPredictions) * 100
-      : 0;
-
     res.json({ 
-      matches: processedMatches, 
-      fanAccuracy,
-      aiAccuracy
+      matches: processedMatches
     });
   } catch (error) {
     console.error('Error fetching matches:', error);

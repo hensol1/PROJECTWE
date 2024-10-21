@@ -29,8 +29,8 @@ api.makeAIPrediction = (matchId, prediction) => {
   console.log('Making AI prediction:', { matchId, prediction });
   return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
-api.fetchMatches = (startDate, endDate) => api.get(`/api/matches?startDate=${startDate}&endDate=${endDate}`);
-
+api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
 api.getLeaderboard = () => api.get('/api/user/leaderboard');
+api.fetchAccuracy = () => api.get('/api/accuracy');
 
 export default api;

@@ -3,6 +3,7 @@ const Match = require('./models/Match');
 const User = require('./models/User');
 const { recalculateUserStats } = require('./utils/userStats');
 const fetchMatches = require('./fetchMatches');
+const { updateAccuracyCache } = require('./routes/accuracy');
 
 async function updateFinishedMatches() {
   console.log('Running scheduled task: updateFinishedMatches');
@@ -24,13 +25,13 @@ async function updateFinishedMatches() {
     }
 
     console.log(`Processed ${finishedMatches.length} finished matches`);
+    
+    // Update accuracy cache after processing finished matches
+    await updateAccuracyCache();
   } catch (error) {
     console.error('Error in updateFinishedMatches:', error);
   }
 }
-
-// Run the task every 15 minutes
-cron.schedule('*/15 * * * *', updateFinishedMatches);
 
 // Run updateFinishedMatches every 15 minutes
 cron.schedule('*/15 * * * *', updateFinishedMatches);
@@ -41,6 +42,12 @@ cron.schedule('*/30 12-23,0-2 * * *', () => {
   fetchMatches().catch(error => {
     console.error('Error in fetchMatches:', error);
   });
+});
+
+// Add a new scheduled task to update accuracy cache every hour
+cron.schedule('0 * * * *', async () => {
+  console.log('Running hourly accuracy cache update');
+  await updateAccuracyCache();
 });
 
 module.exports = {

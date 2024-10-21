@@ -17,6 +17,8 @@ const Matches = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [userTimeZone, setUserTimeZone] = useState('');
   const [activeTab, setActiveTab] = useState("live");
+  const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
+
 
   const continentalLeagues = {
     Europe: [2, 3, 39, 40, 61, 62, 78, 79, 81, 88, 94, 103, 106, 113, 119, 135, 140, 143, 144, 172, 179, 197, 203, 207, 210, 218, 235, 271, 283, 286, 318, 327, 333, 345, 373, 383, 848],
@@ -49,16 +51,22 @@ const Matches = ({ user }) => {
     }, {});
   };
 
+  const fetchAccuracyData = useCallback(async () => {
+    try {
+      const response = await api.fetchAccuracy();
+      setAccuracyData(response.data);
+    } catch (error) {
+      console.error('Error fetching accuracy data:', error);
+    }
+  }, []);
+
   const fetchMatches = useCallback(async (date) => {
     setIsLoading(true);
     try {
-      const startDate = subDays(date, 1);
-      const endDate = addDays(date, 1);
-      const formattedStartDate = format(zonedTimeToUtc(startOfDay(startDate), userTimeZone), 'yyyy-MM-dd');
-      const formattedEndDate = format(zonedTimeToUtc(endOfDay(endDate), userTimeZone), 'yyyy-MM-dd');
+      const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
       
-      console.log(`Fetching matches from ${formattedStartDate} to ${formattedEndDate}`);
-      const response = await api.fetchMatches(formattedStartDate, formattedEndDate);
+      console.log(`Fetching matches for ${formattedDate}`);
+      const response = await api.fetchMatches(formattedDate);
       console.log('Fetched matches:', response.data);
       
       const groupedMatches = response.data.matches.reduce((acc, match) => {
@@ -78,24 +86,16 @@ const Matches = ({ user }) => {
         return acc;
       }, {});
 
-      setMatches(groupedMatches);
-      setFanAccuracy(response.data.fanAccuracy);
-      setAIAccuracy(response.data.aiAccuracy);
-      setTotalPredictions(response.data.totalPredictions);
-      setCollapsedLeagues({});
-
-      // Check if it's today and set the appropriate tab
-      if (isToday(date)) {
-        const todayKey = format(date, 'yyyy-MM-dd');
-        const todayMatches = groupedMatches[todayKey] || {};
-        const hasLiveMatches = Object.values(todayMatches).some(leagueMatches => 
-          leagueMatches.some(match => ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE'].includes(match.status))
-        );
-        setActiveTab(hasLiveMatches ? 'live' : 'scheduled');
-      }
+      setMatches(prevMatches => ({
+        ...prevMatches,
+        [formattedDate]: groupedMatches[formattedDate] || {}
+      }));
     } catch (error) {
       console.error('Error fetching matches:', error);
-      setMatches({});
+      setMatches(prevMatches => ({
+        ...prevMatches,
+        [format(date, 'yyyy-MM-dd')]: {}
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -108,23 +108,31 @@ const Matches = ({ user }) => {
   useEffect(() => {
     if (userTimeZone) {
       fetchMatches(currentDate);
+      fetchAccuracyData();
     }
-  }, [currentDate, user, fetchMatches, userTimeZone]);
+  }, [currentDate, user, fetchMatches, fetchAccuracyData, userTimeZone]);
 
-  const handleDateChange = useCallback((days) => {
-    setCurrentDate(prevDate => {
-      const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
-      console.log('New date:', format(newDate, 'yyyy-MM-dd'));
-      return newDate;
-    });
-    setSelectedContinent('All');
+const handleDateChange = useCallback((days) => {
+  setCurrentDate(prevDate => {
+    const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
+    const formattedNewDate = format(newDate, 'yyyy-MM-dd');
+    console.log('New date:', formattedNewDate);
     
-    if (days < 0) {
-      setActiveTab('finished');
-    } else if (days > 0) {
-      setActiveTab('scheduled');
+    // Check if we already have matches for this date
+    if (!matches[formattedNewDate]) {
+      fetchMatches(newDate);
     }
-  }, []);
+    
+    return newDate;
+  });
+  setSelectedContinent('All');
+  
+  if (days < 0) {
+    setActiveTab('finished');
+  } else if (days > 0) {
+    setActiveTab('scheduled');
+  }
+}, [matches, fetchMatches]);
 
   const toggleLeague = (leagueKey) => {
     setCollapsedLeagues(prev => ({
@@ -346,14 +354,22 @@ const renderPredictions = useCallback((match) => {
     );
   };
 
+  const isPredictionCorrect = (prediction) => {
+    if (match.status !== 'FINISHED') return false;
+    const homeScore = match.score.fullTime.home;
+    const awayScore = match.score.fullTime.away;
+    const actualResult = homeScore > awayScore ? 'HOME_TEAM' : (awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW');
+    return prediction === actualResult;
+  };
+
   return (
     <div className="mt-1 text-xs space-y-1">
       <div className="flex justify-between">
-        <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.fanPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+        <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (isPredictionCorrect(match.fanPrediction) ? 'bg-green-100' : 'bg-red-100') : ''}`}>
           Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
         </p>
         {match.aiPrediction && (
-          <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (match.aiPredictionCorrect ? 'bg-green-100' : 'bg-red-100') : ''}`}>
+          <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (isPredictionCorrect(match.aiPrediction) ? 'bg-green-100' : 'bg-red-100') : ''}`}>
             AI: {getTeamPrediction(match.aiPrediction)}
           </p>
         )}
@@ -442,7 +458,7 @@ const renderMatches = (matches) => {
 
   return (
     <div className="max-w-3xl mx-auto px-2">
-      <AccuracyComparison fanAccuracy={fanAccuracy} aiAccuracy={aiAccuracy} />
+      <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
 
       {isLoading ? (
         <div className="text-center py-4">
