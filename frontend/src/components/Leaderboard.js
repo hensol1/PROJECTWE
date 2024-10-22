@@ -119,17 +119,17 @@ return (
         Your rank: {userRank}
       </div>
     )}      
-<table className="w-full table-fixed">
+<table className="w-full table-fixed text-center">
   <thead>
     <tr className="bg-gray-100 text-xs sm:text-base">
-      <th className="py-1 px-1 sm:py-2 sm:px-4 text-left w-[10%]">#</th>
+      <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[10%]">#</th>
       <th className="py-1 px-1 sm:py-2 sm:px-4 text-left w-[30%]">User</th>
-      <th className="py-1 px-1 sm:py-2 sm:px-4 text-left w-[20%]">
+      <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[20%]">
         <span className="hidden sm:inline">Matches</span>
         <span className="sm:hidden">Matches</span>
       </th>
-      <th className="py-1 px-1 sm:py-2 sm:px-4 text-left w-[15%]">Acc</th>
-      <th className="py-1 px-1 sm:py-2 sm:px-4 text-left w-[25%]">Score</th>
+      <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[15%]">Acc</th>
+      <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[25%]">Score</th>
     </tr>
   </thead>
   <tbody className="text-xs sm:text-base">
@@ -139,11 +139,11 @@ return (
         className={`${index % 2 === 0 ? 'bg-gray-50' : ''} 
           ${user._id === localStorage.getItem('userId') ? 'bg-blue-50' : ''}`}
       >
-        <td className="py-1 px-1 sm:py-2 sm:px-4">
+        <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
           {indexOfFirstItem + index + 1}
         </td>
         <td className="py-1 px-1 sm:py-2 sm:px-4">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center justify-start space-x-1">
             <img 
               src={`https://flagcdn.com/24x18/${user.country.toLowerCase()}.png`}
               alt={`${user.country} flag`}
@@ -152,13 +152,13 @@ return (
             <span className="truncate">{user.username}</span>
           </div>
         </td>
-        <td className="py-1 px-1 sm:py-2 sm:px-4">
+        <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
           {user.finishedVotes}
         </td>
-        <td className="py-1 px-1 sm:py-2 sm:px-4">
+        <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
           {user.accuracy}%
         </td>
-        <td className="py-1 px-1 sm:py-2 sm:px-4 font-medium">
+        <td className="py-1 px-1 sm:py-2 sm:px-4 text-center font-medium">
           {user.score}
         </td>
       </tr>
