@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
 import { InfoIcon } from 'lucide-react';
+import api from '../api';
 
 const AccuracyBox = ({ label, animatedAccuracy, isWinning }) => {
   const color = isWinning ? '#22c55e' : '#ef4444';
@@ -24,25 +24,40 @@ const AccuracyBox = ({ label, animatedAccuracy, isWinning }) => {
 };
 
 const AccuracyComparison = () => {
-  const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0, lastUpdated: new Date() });
+  const [accuracyData, setAccuracyData] = useState({
+    fanAccuracy: 0,
+    aiAccuracy: 0,
+    lastUpdated: new Date()
+  });
   const [animatedFanAccuracy, setAnimatedFanAccuracy] = useState(0);
   const [animatedAiAccuracy, setAnimatedAiAccuracy] = useState(0);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
-    const fetchAccuracy = async () => {
+    const fetchAccuracyData = async () => {
       try {
+        setIsLoading(true);
         const response = await api.fetchAccuracy();
+        
+        // Use the data property from the response
         setAccuracyData(response.data);
         setError(null);
       } catch (error) {
         console.error('Error fetching accuracy data:', error);
-        setError('Failed to load accuracy data. Please try again later.');
+        setError(error.message || 'Failed to load accuracy data. Please try again later.');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchAccuracy();
+    fetchAccuracyData();
+    
+    // Set up auto-refresh every 5 minutes
+    const refreshInterval = setInterval(fetchAccuracyData, 5 * 60 * 1000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   useEffect(() => {
@@ -54,8 +69,12 @@ const AccuracyComparison = () => {
 
     const interval = setInterval(() => {
       currentStep++;
-      setAnimatedFanAccuracy((prev) => Math.min(prev + fanStep, accuracyData.fanAccuracy));
-      setAnimatedAiAccuracy((prev) => Math.min(prev + aiStep, accuracyData.aiAccuracy));
+      setAnimatedFanAccuracy((prev) => 
+        Math.min(prev + fanStep, accuracyData.fanAccuracy)
+      );
+      setAnimatedAiAccuracy((prev) => 
+        Math.min(prev + aiStep, accuracyData.aiAccuracy)
+      );
 
       if (currentStep >= steps) {
         clearInterval(interval);
@@ -65,8 +84,26 @@ const AccuracyComparison = () => {
     return () => clearInterval(interval);
   }, [accuracyData]);
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-24">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
   if (error) {
-    return <div className="text-center text-red-500">{error}</div>;
+    return (
+      <div className="text-center text-red-500 p-4">
+        <p>{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-2 text-sm text-blue-500 hover:text-blue-600"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   const isFanWinning = accuracyData.fanAccuracy > accuracyData.aiAccuracy;
@@ -103,7 +140,8 @@ const AccuracyComparison = () => {
                   ✕
                 </button>
                 <p className="text-sm text-gray-700 mb-2">
-                  This comparison shows the prediction accuracy of Fans vs AI for football matches. The percentages represent how often each group correctly predicts the match outcomes.
+                  This comparison shows the prediction accuracy of Fans vs AI for football matches. 
+                  The percentages represent how often each group correctly predicts the match outcomes.
                 </p>
                 <p className="text-xs text-gray-500">
                   Last updated: {new Date(accuracyData.lastUpdated).toLocaleString()}

@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { MongoClient } = require('mongodb');
-const { format, subDays } = require('date-fns');
+const { format } = require('date-fns');
 
 // API-Football Configuration
 const API_KEY = "5f3eb3a125615327d83d13e16a1a7f77";
@@ -126,21 +126,16 @@ function filterMatchesByLeague(matches) {
 
 async function main() {
     const currentDate = new Date();
-    const yesterday = subDays(currentDate, 1);
+    console.log(`Fetching matches for today (${format(currentDate, 'yyyy-MM-dd')})`);
     
-    console.log(`Current date: ${format(currentDate, 'yyyy-MM-dd')}`);
-    console.log(`Fetching matches for today (${format(currentDate, 'yyyy-MM-dd')}) and yesterday (${format(yesterday, 'yyyy-MM-dd')})`);
-    
-    for (const date of [yesterday, currentDate]) {
-        const matches = await fetchMatches(date);
-        if (matches) {
-            const filteredMatches = filterMatchesByLeague(matches);
-            console.log(`Filtered ${filteredMatches.length} out of ${matches.length} matches for allowed leagues`);
-            const processedMatches = filteredMatches.map(processMatchData);
-            await updateMatchesInMongoDB(processedMatches);
-        } else {
-            console.log(`No matches found for ${format(date, 'yyyy-MM-dd')}`);
-        }
+    const matches = await fetchMatches(currentDate);
+    if (matches) {
+        const filteredMatches = filterMatchesByLeague(matches);
+        console.log(`Filtered ${filteredMatches.length} out of ${matches.length} matches for allowed leagues`);
+        const processedMatches = filteredMatches.map(processMatchData);
+        await updateMatchesInMongoDB(processedMatches);
+    } else {
+        console.log(`No matches found for ${format(currentDate, 'yyyy-MM-dd')}`);
     }
 }
 

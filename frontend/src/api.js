@@ -9,6 +9,7 @@ const api = axios.create({
   }
 });
 
+// Request interceptor for authentication
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -20,17 +21,58 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Match related endpoints
 api.voteForMatch = (matchId, vote) => {
   return api.post(`/api/matches/${matchId}/vote`, { vote });
 };
+
+api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
+
+// User related endpoints
 api.getUserProfile = () => api.get('/api/user/profile');
 api.getUserStats = () => api.get('/api/user/stats');
+api.getLeaderboard = () => api.get('/api/user/leaderboard');
+
+// Admin related endpoints
 api.makeAIPrediction = (matchId, prediction) => {
   console.log('Making AI prediction:', { matchId, prediction });
   return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
-api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
-api.getLeaderboard = () => api.get('/api/user/leaderboard');
-api.fetchAccuracy = () => api.get('/api/accuracy');
+
+api.triggerFetchMatches = () => api.post('/api/admin/fetch-matches');
+api.recalculateStats = () => api.post('/api/admin/recalculate-stats');
+
+// Accuracy endpoint
+api.fetchAccuracy = async () => {
+  try {
+    const response = await api.get('/api/accuracy');
+    return response.data.data ? response.data : {
+      data: {
+        fanAccuracy: response.data.fanAccuracy || 0,
+        aiAccuracy: response.data.aiAccuracy || 0,
+        lastUpdated: response.data.lastUpdated || new Date()
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching accuracy:', error);
+    throw new Error(
+      error.response?.data?.message || 
+      'Failed to fetch accuracy data. Please try again later.'
+    );
+  }
+};
 
 export default api;

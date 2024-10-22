@@ -48,11 +48,12 @@ const MatchSchema = new mongoose.Schema({
     away: { type: Number, default: 0 }
   },
   voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  voterIPs: [{ type: String }]
+  voterIPs: [{ type: String }],
+  // Add processed field here in the schema definition
+  processed: { type: Boolean, default: false }
 }, { 
   collection: 'matches',
-  toJSON: { getters: true },
-  processed: { type: Boolean, default: false }
+  toJSON: { getters: true }
 });
 
 module.exports = mongoose.model('Match', MatchSchema);

@@ -3,7 +3,10 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 const Match = require('../models/Match');
+const fetchMatches = require('../fetchMatches');
+const { recalculateAllStats } = require('../utils/statsProcessor');
 
+// Existing prediction route
 router.post('/:matchId/predict', [auth, admin], async (req, res) => {
   console.log('Admin prediction route called');
   console.log('Request body:', req.body);
@@ -39,6 +42,99 @@ router.post('/:matchId/predict', [auth, admin], async (req, res) => {
   } catch (error) {
     console.error('Error recording AI prediction:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// New route to process finished matches
+router.post('/process-finished', [auth, admin], async (req, res) => {
+  try {
+    const finishedMatches = await Match.find({ 
+      status: 'FINISHED',
+      processed: false
+    });
+
+    console.log(`Found ${finishedMatches.length} unprocessed matches to process`);
+
+    let successCount = 0;
+    const results = [];
+
+    for (const match of finishedMatches) {
+      const success = await processFinishedMatch(match);
+      if (success) {
+        successCount++;
+        results.push({
+          id: match.id,
+          teams: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
+          status: 'processed'
+        });
+      } else {
+        results.push({
+          id: match.id,
+          teams: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
+          status: 'failed'
+        });
+      }
+    }
+
+    res.json({
+      message: `Processed ${successCount}/${finishedMatches.length} matches`,
+      results
+    });
+  } catch (error) {
+    console.error('Error processing finished matches:', error);
+    res.status(500).json({
+      message: 'Error processing finished matches',
+      error: error.message
+    });
+  }
+});
+
+
+// New route for fetching matches manually
+router.post('/fetch-matches', [auth, admin], async (req, res) => {
+  try {
+    console.log('Manual fetch matches triggered');
+    await fetchMatches();
+    res.json({ message: 'Matches fetched successfully' });
+  } catch (error) {
+    console.error('Error in manual fetch matches:', error);
+    res.status(500).json({ 
+      error: 'Error fetching matches',
+      message: error.message 
+    });
+  }
+});
+
+// New route for updating finished matches manually
+router.post('/update-finished', [auth, admin], async (req, res) => {
+  try {
+    console.log('Manual update finished matches triggered');
+    await updateFinishedMatches();
+    res.json({ message: 'Finished matches updated successfully' });
+  } catch (error) {
+    console.error('Error in manual update finished matches:', error);
+    res.status(500).json({ 
+      error: 'Error updating finished matches',
+      message: error.message 
+    });
+  }
+});
+
+// routes/admin.js
+router.post('/recalculate-stats', [auth, admin], async (req, res) => {
+  try {
+    console.log('Starting full stats recalculation');
+    const stats = await recalculateAllStats();
+    res.json({
+      message: 'Stats recalculated successfully',
+      stats
+    });
+  } catch (error) {
+    console.error('Error recalculating stats:', error);
+    res.status(500).json({
+      error: 'Error recalculating stats',
+      message: error.message
+    });
   }
 });
 

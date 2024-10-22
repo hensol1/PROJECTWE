@@ -11,35 +11,40 @@ const Leaderboard = () => {
   const [showTooltip, setShowTooltip] = useState(false);
   const itemsPerPage = 15;
 
-  const fetchLeaderboard = async () => {
+  // Add local cache
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  const REFRESH_INTERVAL = 60 * 1000; // 1 minute
+
+  const fetchLeaderboard = async (force = false) => {
     try {
+      // Check if we need to fetch
+      const currentTime = Date.now();
+      if (!force && lastFetchTime && currentTime - lastFetchTime < REFRESH_INTERVAL) {
+        console.log('Using cached data');
+        return;
+      }
+
       console.log('Fetching leaderboard');
       const response = await api.getLeaderboard();
       console.log('Leaderboard data received:', response.data);
+      
       setLeaderboard(response.data);
+      setLastFetchTime(currentTime);
 
-      console.log('All localStorage items:', { ...localStorage });
-
+      // Update user rank
       const userId = localStorage.getItem('userId');
-      console.log('User ID from localStorage:', userId);
       if (userId) {
-        // Try to find the user by exact match first
         let userIndex = response.data.findIndex(user => user._id === userId);
         
-        // If not found, try to match the last part of the ID (in case of ObjectId vs string mismatch)
         if (userIndex === -1) {
-          userIndex = response.data.findIndex(user => user._id.endsWith(userId) || userId.endsWith(user._id));
+          userIndex = response.data.findIndex(user => 
+            user._id.endsWith(userId) || userId.endsWith(user._id)
+          );
         }
         
-        console.log('User index in leaderboard:', userIndex);
         if (userIndex !== -1) {
           setUserRank(userIndex + 1);
-          console.log('User rank set:', userIndex + 1);
-        } else {
-          console.log('User not found in leaderboard data');
         }
-      } else {
-        console.log('No userId found in localStorage');
       }
 
       setLoading(false);
@@ -51,18 +56,26 @@ const Leaderboard = () => {
   };
 
   useEffect(() => {
+    // Initial fetch with delay
     const timer = setTimeout(() => {
-      fetchLeaderboard();
-    }, 1000); // 1 second delay
+      fetchLeaderboard(true);
+    }, 1000);
 
-    return () => clearTimeout(timer);
+    // Set up periodic refresh
+    const refreshInterval = setInterval(() => {
+      fetchLeaderboard();
+    }, REFRESH_INTERVAL);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'userId') {
-        console.log('userId changed in localStorage, refetching leaderboard');
-        fetchLeaderboard();
+        fetchLeaderboard(true);
       }
     };
 
@@ -70,8 +83,23 @@ const Leaderboard = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  if (loading) return <div className="text-center mt-8">Loading...</div>;
-  if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center mt-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="text-center mt-8 text-red-500">
+      <p>{error}</p>
+      <button 
+        onClick={() => fetchLeaderboard(true)}
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        Try Again
+      </button>
+    </div>
+  );
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
