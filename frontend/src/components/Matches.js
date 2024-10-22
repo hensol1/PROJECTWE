@@ -18,6 +18,44 @@ const Matches = ({ user }) => {
   const [userTimeZone, setUserTimeZone] = useState('');
   const [activeTab, setActiveTab] = useState("live");
   const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
+  
+  const filterMatchesByStatus = (matches, statuses) => {
+  return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
+    const filteredMatches = leagueMatches.filter(match => statuses.includes(match.status));
+    if (filteredMatches.length > 0) {
+      acc[leagueKey] = filteredMatches;
+    }
+    return acc;
+  }, {});
+};
+  
+
+// Then, define determineActiveTab as a separate useCallback hook
+const determineActiveTab = useCallback((matches) => {
+  // Helper function inside determineActiveTab to avoid dependency issues
+  const hasMatchesWithStatus = (matches, statuses) => {
+    return Object.values(matches).some(leagueMatches => 
+      leagueMatches.some(match => statuses.includes(match.status))
+    );
+  };
+
+  // Check if there are any live matches
+  const hasLiveMatches = hasMatchesWithStatus(matches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
+  
+  // Check if there are any scheduled matches
+  const hasScheduledMatches = hasMatchesWithStatus(matches, ['TIMED', 'SCHEDULED']);
+  
+  // Check if there are any finished matches
+  const hasFinishedMatches = hasMatchesWithStatus(matches, ['FINISHED']);
+  
+  // Return the appropriate tab based on availability
+  if (hasLiveMatches) return 'live';
+  if (hasScheduledMatches) return 'scheduled';
+  if (hasFinishedMatches) return 'finished';
+  
+  // Default to 'live' if somehow no matches are available
+  return 'live';
+}, []); // Empty dependency array since we moved the helper function inside
 
 
   const continentalLeagues = {
@@ -60,57 +98,69 @@ const Matches = ({ user }) => {
     }
   }, []);
 
-  const fetchMatches = useCallback(async (date) => {
-    setIsLoading(true);
-    try {
-      const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
-      
-      console.log(`Fetching matches for ${formattedDate}`);
-      const response = await api.fetchMatches(formattedDate);
-      console.log('Fetched matches:', response.data);
-      
-      const groupedMatches = response.data.matches.reduce((acc, match) => {
-        const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
-        const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
-        const leagueKey = `${match.competition.name}_${match.competition.id}`;
-        if (!acc[dateKey]) {
-          acc[dateKey] = {};
-        }
-        if (!acc[dateKey][leagueKey]) {
-          acc[dateKey][leagueKey] = [];
-        }
-        acc[dateKey][leagueKey].push({
-          ...match,
-          localDate: matchLocalDate
-        });
-        return acc;
-      }, {});
+const fetchMatches = useCallback(async (date) => {
+  setIsLoading(true);
+  try {
+    const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
+    
+    console.log(`Fetching matches for ${formattedDate}`);
+    const response = await api.fetchMatches(formattedDate);
+    console.log('Fetched matches:', response.data);
+    
+    const groupedMatches = response.data.matches.reduce((acc, match) => {
+      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+      const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
+      const leagueKey = `${match.competition.name}_${match.competition.id}`;
+      if (!acc[dateKey]) {
+        acc[dateKey] = {};
+      }
+      if (!acc[dateKey][leagueKey]) {
+        acc[dateKey][leagueKey] = [];
+      }
+      acc[dateKey][leagueKey].push({
+        ...match,
+        localDate: matchLocalDate
+      });
+      return acc;
+    }, {});
 
-      setMatches(prevMatches => ({
+    // Use setState callback to avoid dependency on matches
+    setMatches(prevMatches => {
+      const newMatches = {
         ...prevMatches,
         [formattedDate]: groupedMatches[formattedDate] || {}
-      }));
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      setMatches(prevMatches => ({
-        ...prevMatches,
-        [format(date, 'yyyy-MM-dd')]: {}
-      }));
-    } finally {
-      setIsLoading(false);
+      };
+      return newMatches;
+    });
+    
+    // Set active tab after setting matches
+    if (groupedMatches[formattedDate]) {
+      const appropriateTab = determineActiveTab(groupedMatches[formattedDate]);
+      setActiveTab(appropriateTab);
     }
-  }, [userTimeZone]);
+    
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+    setMatches(prevMatches => ({
+      ...prevMatches,
+      [format(date, 'yyyy-MM-dd')]: {}
+    }));
+  } finally {
+    setIsLoading(false);
+  }
+}, [userTimeZone, determineActiveTab]); // Remove matches from dependencies
 
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
 
-  useEffect(() => {
-    if (userTimeZone) {
-      fetchMatches(currentDate);
-      fetchAccuracyData();
-    }
-  }, [currentDate, user, fetchMatches, fetchAccuracyData, userTimeZone]);
+// Modify the main useEffect
+useEffect(() => {
+  if (userTimeZone) {
+    fetchMatches(currentDate);
+    fetchAccuracyData();
+  }
+}, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData]); // Removed user from dependencies
 
 const handleDateChange = useCallback((days) => {
   setCurrentDate(prevDate => {
@@ -121,18 +171,16 @@ const handleDateChange = useCallback((days) => {
     // Check if we already have matches for this date
     if (!matches[formattedNewDate]) {
       fetchMatches(newDate);
+    } else {
+      // If we already have the matches, still determine the appropriate tab
+      const appropriateTab = determineActiveTab(matches[formattedNewDate] || {});
+      setActiveTab(appropriateTab);
     }
     
     return newDate;
   });
   setSelectedContinent('All');
-  
-  if (days < 0) {
-    setActiveTab('finished');
-  } else if (days > 0) {
-    setActiveTab('scheduled');
-  }
-}, [matches, fetchMatches]);
+}, [matches, fetchMatches, determineActiveTab]);
 
   const toggleLeague = (leagueKey) => {
     setCollapsedLeagues(prev => ({
@@ -152,6 +200,13 @@ const handleDateChange = useCallback((days) => {
 
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
+  
+    // Check for live matches across all continents
+  const allMatchesForCurrentDate = matches[currentDateKey] || {};
+  const hasAnyLiveMatches = Object.values(allMatchesForCurrentDate).some(leagueMatches =>
+    leagueMatches.some(match => ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status))
+  );
+
 
   const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
     const [, leagueId] = leagueKey.split('_');
@@ -162,19 +217,11 @@ const handleDateChange = useCallback((days) => {
     return acc;
   }, {});
 
-  const filterMatchesByStatus = (matches, statuses) => {
-    return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
-      const filteredMatches = leagueMatches.filter(match => statuses.includes(match.status));
-      if (filteredMatches.length > 0) {
-        acc[leagueKey] = filteredMatches;
-      }
-      return acc;
-    }, {});
-  };
 
-  const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
-  const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED']);
-  const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED']);
+// Then continue with your existing code for filtered matches
+const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
+const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED']);
+const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED']);
 
   const sortedLeagues = (matches) => Object.entries(matches).sort((a, b) => {
     const [leagueKeyA, matchesA] = a;
@@ -468,32 +515,36 @@ const renderMatches = (matches) => {
         <>
           <div className="flex flex-col space-y-4 mb-4">
             {/* Match type tabs */}
-            <div className="flex justify-center">
-              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
-                {['live', 'finished', 'scheduled'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`
-                      px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                      flex items-center justify-center
-                      ${activeTab === tab
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-200'
-                      }
-                      ${tab === 'live' ? 'animate-pulse' : ''}
-                    `}
-                  >
-                    {tab === 'live' && (
-                      <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1 sm:mr-2 animate-pulse"></span>
-                    )}
-                    {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
-                    {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+<div className="flex justify-center">
+  <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+    {['live', 'finished', 'scheduled'].map((tab) => (
+      <button
+        key={tab}
+        onClick={() => setActiveTab(tab)}
+        className={`
+          px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+          flex items-center justify-center
+          ${activeTab === tab
+            ? 'bg-white text-blue-600 shadow-sm'
+            : 'text-gray-600 hover:bg-gray-200'
+          }
+        `}
+      >
+        {tab === 'live' && (
+          <span 
+            className={`
+              inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
+              ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
+            `}
+          />
+        )}
+        {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
+        {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
+        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+      </button>
+    ))}
+  </div>
+</div>
 
             {/* Continent tabs */}
             <div className="flex justify-center">
