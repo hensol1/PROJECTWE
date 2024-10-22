@@ -103,10 +103,8 @@ async function updateCorrectVotes(match) {
 
 router.get('/', optionalAuth, async (req, res) => {
   const { date } = req.query;
-  
   const userId = req.user ? req.user.id : null;
-  console.log('User ID from request:', userId);
-
+  
   if (!date) {
     return res.status(400).json({ message: 'Date is required' });
   }
@@ -119,44 +117,69 @@ router.get('/', optionalAuth, async (req, res) => {
       return res.status(400).json({ message: 'Invalid date format' });
     }
 
-    const [matches, user] = await Promise.all([
-      Match.find({
-        utcDate: {
-          $gte: start.toISOString(),
-          $lte: end.toISOString()
+    console.log(`Fetching matches between ${start.toISOString()} and ${end.toISOString()}`);
+
+    // Include matches that:
+    // 1. Start within the date range
+    // 2. OR are currently in progress
+    // 3. OR have recently finished but started within the range
+    const matches = await Match.find({
+      $or: [
+        {
+          utcDate: {
+            $gte: start.toISOString(),
+            $lte: end.toISOString()
+          }
+        },
+        {
+          status: { $in: ['IN_PLAY', 'PAUSED', 'LIVE'] }
+        },
+        {
+          status: 'FINISHED',
+          utcDate: {
+            $gte: start.toISOString(),
+            $lte: end.toISOString()
+          },
+          lastUpdated: {
+            $gte: new Date(Date.now() - 2 * 60 * 60 * 1000) // Last 2 hours
+          }
         }
-      }),
+      ]
+    });
+
+    console.log(`Found ${matches.length} matches. Statuses:`, 
+      matches.reduce((acc, m) => {
+        acc[m.status] = (acc[m.status] || 0) + 1;
+        return acc;
+      }, {})
+    );
+
+    const [user] = await Promise.all([
       userId ? User.findById(userId, 'votes') : null
     ]);
 
-    console.log(`Found ${matches.length} matches for ${date}`);
-    console.log('User retrieved from database:', user);
-
     const userVotes = user ? user.votes : [];
-    console.log('User votes:', userVotes);
 
     const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
-      
-      // Use the votes stored in the match document
       matchObj.voteCounts = match.votes;
 
       // Calculate fan prediction based on majority votes
       const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
       if (totalVotes > 0) {
-        const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
-        if (matchObj.voteCounts.home === maxVotes) {
-          matchObj.fanPrediction = 'HOME_TEAM';
-        } else if (matchObj.voteCounts.away === maxVotes) {
-          matchObj.fanPrediction = 'AWAY_TEAM';
-        } else {
-          matchObj.fanPrediction = 'DRAW';
-        }
+        const maxVotes = Math.max(
+          matchObj.voteCounts.home,
+          matchObj.voteCounts.draw,
+          matchObj.voteCounts.away
+        );
+        matchObj.fanPrediction = 
+          maxVotes === matchObj.voteCounts.home ? 'HOME_TEAM' :
+          maxVotes === matchObj.voteCounts.away ? 'AWAY_TEAM' : 'DRAW';
       } else {
         matchObj.fanPrediction = null;
       }
-      
-      // Add user's vote to the match object
+
+      // Add user's vote
       const userVote = userVotes.find(v => v.matchId === match.id);
       if (userVote) {
         matchObj.userVote = userVote.vote;
@@ -166,8 +189,15 @@ router.get('/', optionalAuth, async (req, res) => {
     });
 
     res.json({ 
-      matches: processedMatches
+      matches: processedMatches,
+      _debug: {
+        requestedDate: date,
+        startTime: start,
+        endTime: end,
+        totalMatches: matches.length
+      }
     });
+
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
