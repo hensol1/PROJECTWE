@@ -103,21 +103,40 @@ async function updateCorrectVotes(match) {
 
 router.get('/', optionalAuth, async (req, res) => {
   const { date } = req.query;
-  
+  const timeZone = req.headers['x-timezone'] || 'UTC';
   const userId = req.user ? req.user.id : null;
-  console.log('User ID from request:', userId);
+  
+  console.log('Match request received:', {
+    requestDate: date,
+    userTimezone: timeZone,
+    userId: userId,
+    serverTime: new Date().toISOString(),
+    serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
 
   if (!date) {
     return res.status(400).json({ message: 'Date is required' });
+  }
+
+  if (!isValid(parseISO(date))) {
+    console.log('Invalid date received:', {
+      date,
+      parseResult: parseISO(date),
+      isValid: isValid(parseISO(date))
+    });
+    return res.status(400).json({ message: 'Invalid date format' });
   }
 
   try {
     const start = startOfDay(parseISO(date));
     const end = endOfDay(parseISO(date));
 
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return res.status(400).json({ message: 'Invalid date format' });
-    }
+    console.log('Date range for query:', {
+      inputDate: date,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      timeZone: timeZone
+    });
 
     const [matches, user] = await Promise.all([
       Match.find({
@@ -129,19 +148,22 @@ router.get('/', optionalAuth, async (req, res) => {
       userId ? User.findById(userId, 'votes') : null
     ]);
 
-    console.log(`Found ${matches.length} matches for ${date}`);
-    console.log('User retrieved from database:', user);
+    console.log('Query results:', {
+      matchCount: matches.length,
+      dateRange: `${start.toISOString()} to ${end.toISOString()}`,
+      sampleMatch: matches.length > 0 ? {
+        id: matches[0].id,
+        utcDate: matches[0].utcDate,
+        status: matches[0].status
+      } : null
+    });
 
     const userVotes = user ? user.votes : [];
-    console.log('User votes:', userVotes);
 
     const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
-      
-      // Use the votes stored in the match document
       matchObj.voteCounts = match.votes;
 
-      // Calculate fan prediction based on majority votes
       const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
       if (totalVotes > 0) {
         const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
@@ -156,7 +178,6 @@ router.get('/', optionalAuth, async (req, res) => {
         matchObj.fanPrediction = null;
       }
       
-      // Add user's vote to the match object
       const userVote = userVotes.find(v => v.matchId === match.id);
       if (userVote) {
         matchObj.userVote = userVote.vote;
@@ -169,10 +190,16 @@ router.get('/', optionalAuth, async (req, res) => {
       matches: processedMatches
     });
   } catch (error) {
-    console.error('Error fetching matches:', error);
+    console.error('Error in /matches route:', {
+      error: error.message,
+      stack: error.stack,
+      date: date,
+      timeZone: timeZone
+    });
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
   }
 });
+
 
 router.get('/all', async (req, res) => {
   try {

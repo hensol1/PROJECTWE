@@ -29,8 +29,15 @@ app.use(express.json());
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  timezone: 'UTC'
 })
-.then(() => console.log('MongoDB connected'))
+.then(() => {
+  console.log('MongoDB Connected with timezone settings:', {
+    mongoTimezone: 'UTC',
+    serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    serverTime: new Date().toISOString()
+  });
+})
 .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes

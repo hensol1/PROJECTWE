@@ -103,9 +103,24 @@ const fetchMatches = useCallback(async (date) => {
   try {
     const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
     
-    console.log(`Fetching matches for ${formattedDate}`);
+    console.log('Component fetching matches:', {
+      inputDate: date,
+      formattedDate,
+      userTimeZone,
+      componentTime: new Date().toISOString()
+    });
+    
     const response = await api.fetchMatches(formattedDate);
-    console.log('Fetched matches:', response.data);
+    
+    console.log('Component received matches:', {
+      matchCount: response.data.matches.length,
+      timeZone: userTimeZone,
+      sampleMatch: response.data.matches.length > 0 ? {
+        id: response.data.matches[0].id,
+        date: response.data.matches[0].utcDate,
+        status: response.data.matches[0].status
+      } : null
+    });
     
     const groupedMatches = response.data.matches.reduce((acc, match) => {
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
@@ -124,7 +139,6 @@ const fetchMatches = useCallback(async (date) => {
       return acc;
     }, {});
 
-    // Use setState callback to avoid dependency on matches
     setMatches(prevMatches => {
       const newMatches = {
         ...prevMatches,
@@ -133,14 +147,17 @@ const fetchMatches = useCallback(async (date) => {
       return newMatches;
     });
     
-    // Set active tab after setting matches
     if (groupedMatches[formattedDate]) {
       const appropriateTab = determineActiveTab(groupedMatches[formattedDate]);
       setActiveTab(appropriateTab);
     }
     
   } catch (error) {
-    console.error('Error fetching matches:', error);
+    console.error('Error in component fetchMatches:', {
+      error: error.message,
+      date: formattedDate,
+      timeZone: userTimeZone
+    });
     setMatches(prevMatches => ({
       ...prevMatches,
       [format(date, 'yyyy-MM-dd')]: {}
@@ -148,7 +165,7 @@ const fetchMatches = useCallback(async (date) => {
   } finally {
     setIsLoading(false);
   }
-}, [userTimeZone, determineActiveTab]); // Remove matches from dependencies
+}, [userTimeZone, determineActiveTab]);
 
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);

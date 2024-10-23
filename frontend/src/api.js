@@ -36,10 +36,33 @@ api.interceptors.response.use(
 
 api.fetchMatches = (date) => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  console.log('Fetching matches:', {
+    date,
+    clientTimeZone: timeZone,
+    clientTime: new Date().toISOString()
+  });
+  
   return api.get(`/api/matches?date=${date}`, {
     headers: {
       'x-timezone': timeZone
     }
+  }).then(response => {
+    console.log('Match fetch response:', {
+      matchCount: response.data.matches.length,
+      sampleMatch: response.data.matches.length > 0 ? {
+        id: response.data.matches[0].id,
+        date: response.data.matches[0].utcDate,
+        status: response.data.matches[0].status
+      } : null
+    });
+    return response;
+  }).catch(error => {
+    console.error('Match fetch error:', {
+      error: error.message,
+      date,
+      timeZone
+    });
+    throw error;
   });
 };
 
