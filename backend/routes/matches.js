@@ -103,6 +103,7 @@ async function updateCorrectVotes(match) {
 
 router.get('/', optionalAuth, async (req, res) => {
   const { date } = req.query;
+  
   const userId = req.user ? req.user.id : null;
   console.log('User ID from request:', userId);
 
@@ -113,55 +114,26 @@ router.get('/', optionalAuth, async (req, res) => {
   try {
     const start = startOfDay(parseISO(date));
     const end = endOfDay(parseISO(date));
-    
-    // Add buffer to catch matches that might be in different timezone
-    const extendedStart = subHours(start, 12);
-    const extendedEnd = addHours(end, 12);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({ message: 'Invalid date format' });
     }
 
-    console.log('Fetching matches between:', {
-      requestedDate: date,
-      extendedStart: extendedStart.toISOString(),
-      extendedEnd: extendedEnd.toISOString()
-    });
-
-    // Find matches within the extended time range
     const [matches, user] = await Promise.all([
       Match.find({
-        $or: [
-          // Matches within the extended time range
-          {
-            utcDate: {
-              $gte: extendedStart.toISOString(),
-              $lte: extendedEnd.toISOString()
-            }
-          },
-          // Recently finished matches from the requested date
-          {
-            utcDate: {
-              $gte: start.toISOString(),
-              $lte: end.toISOString()
-            },
-            status: 'FINISHED',
-            lastUpdated: {
-              $gte: subHours(new Date(), 12).toISOString()
-            }
-          },
-          // Live matches that might have started earlier
-          {
-            status: { $in: ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE'] }
-          }
-        ]
-      }).sort({ utcDate: 1 }),
+        utcDate: {
+          $gte: start.toISOString(),
+          $lte: end.toISOString()
+        }
+      }),
       userId ? User.findById(userId, 'votes') : null
     ]);
 
     console.log(`Found ${matches.length} matches for ${date}`);
+    console.log('User retrieved from database:', user);
 
     const userVotes = user ? user.votes : [];
+    console.log('User votes:', userVotes);
 
     const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
@@ -194,15 +166,7 @@ router.get('/', optionalAuth, async (req, res) => {
     });
 
     res.json({ 
-      matches: processedMatches,
-      _debug: {
-        requestedDate: date,
-        start: start.toISOString(),
-        end: end.toISOString(),
-        extendedStart: extendedStart.toISOString(),
-        extendedEnd: extendedEnd.toISOString(),
-        totalMatches: matches.length
-      }
+      matches: processedMatches
     });
   } catch (error) {
     console.error('Error fetching matches:', error);
