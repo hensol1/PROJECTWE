@@ -28,12 +28,10 @@ app.use(express.json());
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-  timezone: 'UTC'
+  useUnifiedTopology: true
 })
 .then(() => {
-  console.log('MongoDB Connected with timezone settings:', {
-    mongoTimezone: 'UTC',
+  console.log('MongoDB Connected with settings:', {
     serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     serverTime: new Date().toISOString()
   });

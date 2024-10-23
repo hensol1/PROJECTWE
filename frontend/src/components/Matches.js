@@ -100,8 +100,10 @@ const determineActiveTab = useCallback((matches) => {
 
 const fetchMatches = useCallback(async (date) => {
   setIsLoading(true);
+  let formattedDate; // Declare the variable at the function scope
+
   try {
-    const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
+    formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
     
     console.log('Component fetching matches:', {
       inputDate: date,
@@ -155,7 +157,7 @@ const fetchMatches = useCallback(async (date) => {
   } catch (error) {
     console.error('Error in component fetchMatches:', {
       error: error.message,
-      date: formattedDate,
+      date: formattedDate, // Now formattedDate is in scope
       timeZone: userTimeZone
     });
     setMatches(prevMatches => ({
@@ -166,7 +168,8 @@ const fetchMatches = useCallback(async (date) => {
     setIsLoading(false);
   }
 }, [userTimeZone, determineActiveTab]);
-
+  
+  
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
