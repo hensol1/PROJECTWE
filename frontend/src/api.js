@@ -34,6 +34,15 @@ api.interceptors.response.use(
   }
 );
 
+api.fetchMatches = (date) => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return api.get(`/api/matches?date=${date}`, {
+    headers: {
+      'x-timezone': timeZone
+    }
+  });
+};
+
 // Match related endpoints
 api.voteForMatch = (matchId, vote) => {
   return api.post(`/api/matches/${matchId}/vote`, { vote });
