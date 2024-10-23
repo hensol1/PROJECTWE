@@ -286,12 +286,15 @@ const renderMatchStatus = (match) => {
       case 'HALFTIME':
       case 'LIVE': return 'bg-green-500 text-white';
       case 'TIMED':
-      case 'SCHEDULED': return 'bg-blue-500 text-white';
+      case 'SCHEDULED': return ''; // Remove background for TIMED status
       default: return 'bg-gray-200 text-gray-800';
     }
   };
 
   const getMatchMinute = (match) => {
+    // If it's TIMED status, return empty string as we'll show only the time elsewhere
+    if (match.status === 'TIMED') return '';
+    
     if (!match.minute) return match.status;
     
     switch (match.status) {
@@ -307,6 +310,11 @@ const renderMatchStatus = (match) => {
   };
 
   const isLiveStatus = ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status);
+
+  // Don't render the status span for TIMED matches
+  if (match.status === 'TIMED') {
+    return null;
+  }
 
   return (
     <span 
@@ -493,16 +501,18 @@ const renderMatches = (matches) => {
                     </div>
                     <span className="font-semibold truncate">{match.homeTeam.name}</span>
                   </div>
-                  <div className="text-center w-2/12 flex flex-col items-center">
-                    <div className="mb-1">
-                      {renderMatchStatus(match)}
-                    </div>
-                    <span className="font-bold">
-                      {match.status === 'SCHEDULED' || match.status === 'TIMED'
-                        ? formatMatchDate(match.localDate)
-                        : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
-                    </span>
-                  </div>
+          <div className="text-center w-2/12 flex flex-col items-center">
+            {match.status !== 'TIMED' && (
+              <div className="mb-1">
+                {renderMatchStatus(match)}
+              </div>
+            )}
+            <span className="font-bold text-gray-900"> {/* Changed to black/dark gray color */}
+              {match.status === 'SCHEDULED' || match.status === 'TIMED'
+                ? formatMatchDate(match.localDate)
+                : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
+            </span>
+          </div>
                   <div className="flex items-center justify-end w-5/12">
                     <span className="font-semibold truncate">{match.awayTeam.name}</span>
                     <div className="w-4 h-4 flex-shrink-0 ml-1">
