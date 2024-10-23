@@ -102,42 +102,51 @@ const fetchMatches = useCallback(async (date) => {
   setIsLoading(true);
   try {
     const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
-    
     console.log(`Fetching matches for ${formattedDate}`);
+    
     const response = await api.fetchMatches(formattedDate);
     console.log('Fetched matches:', response.data);
-    
+
+    // Group matches by their local date in user's timezone
     const groupedMatches = response.data.matches.reduce((acc, match) => {
-      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+      // Convert UTC date to local date using user's timezone
+      const matchLocalDate = utcToZonedTime(new Date(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
       const leagueKey = `${match.competition.name}_${match.competition.id}`;
+      
       if (!acc[dateKey]) {
         acc[dateKey] = {};
       }
       if (!acc[dateKey][leagueKey]) {
         acc[dateKey][leagueKey] = [];
       }
+      
+      // Add the match with its local date
       acc[dateKey][leagueKey].push({
         ...match,
         localDate: matchLocalDate
       });
+      
       return acc;
     }, {});
 
-    // Use setState callback to avoid dependency on matches
     setMatches(prevMatches => {
-      const newMatches = {
-        ...prevMatches,
-        [formattedDate]: groupedMatches[formattedDate] || {}
-      };
+      const newMatches = { ...prevMatches };
+      
+      // Add all matches from the response
+      Object.entries(groupedMatches).forEach(([dateKey, dateMatches]) => {
+        newMatches[dateKey] = {
+          ...(newMatches[dateKey] || {}),
+          ...dateMatches
+        };
+      });
+
       return newMatches;
     });
-    
-    // Set active tab after setting matches
-    if (groupedMatches[formattedDate]) {
-      const appropriateTab = determineActiveTab(groupedMatches[formattedDate]);
-      setActiveTab(appropriateTab);
-    }
+
+    const requestedDateMatches = groupedMatches[formattedDate] || {};
+    const appropriateTab = determineActiveTab(requestedDateMatches);
+    setActiveTab(appropriateTab);
     
   } catch (error) {
     console.error('Error fetching matches:', error);
@@ -148,7 +157,7 @@ const fetchMatches = useCallback(async (date) => {
   } finally {
     setIsLoading(false);
   }
-}, [userTimeZone, determineActiveTab]); // Remove matches from dependencies
+}, [userTimeZone, determineActiveTab]);
 
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);

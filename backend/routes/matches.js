@@ -103,71 +103,100 @@ async function updateCorrectVotes(match) {
 
 router.get('/', optionalAuth, async (req, res) => {
   const { date } = req.query;
-  
   const userId = req.user ? req.user.id : null;
-  console.log('User ID from request:', userId);
-
+  
   if (!date) {
     return res.status(400).json({ message: 'Date is required' });
   }
 
   try {
-    const start = startOfDay(parseISO(date));
-    const end = endOfDay(parseISO(date));
+    // Create a wider time window to catch matches around UTC boundaries
+    const queryDate = new Date(date);
+    const start = new Date(queryDate);
+    start.setHours(0, 0, 0, 0);
+    start.setHours(start.getHours() - 12); // Look back 12 hours
 
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return res.status(400).json({ message: 'Invalid date format' });
-    }
+    const end = new Date(queryDate);
+    end.setHours(23, 59, 59, 999);
+    end.setHours(end.getHours() + 12); // Look ahead 12 hours
 
-    const [matches, user] = await Promise.all([
-      Match.find({
-        utcDate: {
-          $gte: start.toISOString(),
-          $lte: end.toISOString()
+    console.log(`Fetching matches between ${start.toISOString()} and ${end.toISOString()}`);
+
+    // Find matches within the expanded time window
+    const matches = await Match.find({
+      $or: [
+        // Matches within the time window
+        {
+          utcDate: {
+            $gte: start.toISOString(),
+            $lte: end.toISOString()
+          }
+        },
+        // Live matches
+        {
+          status: { $in: ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE'] }
+        },
+        // Recently finished matches
+        {
+          status: 'FINISHED',
+          lastUpdated: { $gte: new Date(Date.now() - 6 * 60 * 60 * 1000) }, // Last 6 hours
+          utcDate: {
+            $gte: start.toISOString(),
+            $lte: end.toISOString()
+          }
         }
-      }),
+      ]
+    }).lean();
+
+    console.log(`Found ${matches.length} matches. Statuses:`, 
+      matches.reduce((acc, m) => {
+        acc[m.status] = (acc[m.status] || 0) + 1;
+        return acc;
+      }, {})
+    );
+
+    // Get user votes if authenticated
+    const [user] = await Promise.all([
       userId ? User.findById(userId, 'votes') : null
     ]);
 
-    console.log(`Found ${matches.length} matches for ${date}`);
-    console.log('User retrieved from database:', user);
-
     const userVotes = user ? user.votes : [];
-    console.log('User votes:', userVotes);
 
     const processedMatches = matches.map(match => {
-      const matchObj = match.toObject();
+      // Convert UTC date to user's timezone will happen in frontend
+      const matchDate = new Date(match.utcDate);
       
-      // Use the votes stored in the match document
-      matchObj.voteCounts = match.votes;
+      return {
+        ...match,
+        voteCounts: match.votes || { home: 0, draw: 0, away: 0 },
+        userVote: userVotes.find(v => v.matchId === match.id)?.vote || null,
+        fanPrediction: getFanPrediction(match.votes),
+        utcTimestamp: matchDate.getTime() // Add timestamp for easier frontend processing
+      };
+    });
 
-      // Calculate fan prediction based on majority votes
-      const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
-      if (totalVotes > 0) {
-        const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
-        if (matchObj.voteCounts.home === maxVotes) {
-          matchObj.fanPrediction = 'HOME_TEAM';
-        } else if (matchObj.voteCounts.away === maxVotes) {
-          matchObj.fanPrediction = 'AWAY_TEAM';
-        } else {
-          matchObj.fanPrediction = 'DRAW';
-        }
-      } else {
-        matchObj.fanPrediction = null;
+    console.log('Sending matches response:', {
+      totalMatches: processedMatches.length,
+      dateRequested: date,
+      timeWindow: {
+        start: start.toISOString(),
+        end: end.toISOString()
       }
-      
-      // Add user's vote to the match object
-      const userVote = userVotes.find(v => v.matchId === match.id);
-      if (userVote) {
-        matchObj.userVote = userVote.vote;
-      }
-
-      return matchObj;
     });
 
     res.json({ 
-      matches: processedMatches
+      matches: processedMatches,
+      _debug: {
+        requestedDate: date,
+        timeWindow: {
+          start: start.toISOString(),
+          end: end.toISOString()
+        },
+        totalMatches: processedMatches.length,
+        matchDates: processedMatches.map(m => m.utcDate)
+      }
     });
+
   } catch (error) {
     console.error('Error fetching matches:', error);
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
