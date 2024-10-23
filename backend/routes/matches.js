@@ -4,10 +4,10 @@ const Match = require('../models/Match');
 const User = require('../models/User');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
-const { startOfDay, endOfDay, parseISO } = require('date-fns');
+const { startOfDay, endOfDay, parseISO, isValid } = require('date-fns'); // Added isValid here
 const { recalculateUserStats } = require('../utils/userStats');
 const optionalAuth = require('../middleware/optionalAuth');
-const auth = require('../middleware/auth'); // Make sure this exists
+const auth = require('../middleware/auth');
 
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
@@ -118,18 +118,18 @@ router.get('/', optionalAuth, async (req, res) => {
     return res.status(400).json({ message: 'Date is required' });
   }
 
-  if (!isValid(parseISO(date))) {
-    console.log('Invalid date received:', {
-      date,
-      parseResult: parseISO(date),
-      isValid: isValid(parseISO(date))
-    });
-    return res.status(400).json({ message: 'Invalid date format' });
-  }
-
   try {
-    const start = startOfDay(parseISO(date));
-    const end = endOfDay(parseISO(date));
+    const parsedDate = parseISO(date);
+    if (!isValid(parsedDate)) {
+      console.log('Invalid date received:', {
+        date,
+        parseResult: parsedDate,
+      });
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
+    const start = startOfDay(parsedDate);
+    const end = endOfDay(parsedDate);
 
     console.log('Date range for query:', {
       inputDate: date,

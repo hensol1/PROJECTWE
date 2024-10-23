@@ -11,13 +11,16 @@ const accuracyRoutes = require('./routes/accuracy');
 dotenv.config();
 require('./scheduledTasks');
 
+// Add this line before mongoose.connect
+mongoose.set('strictQuery', false);
+
 const app = express();
 
 // CORS configuration
 app.use(cors({
   origin: ['https://projectwe-tau.vercel.app', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-timezone'],  // Added x-timezone
   credentials: true,
   optionsSuccessStatus: 200
 }));
