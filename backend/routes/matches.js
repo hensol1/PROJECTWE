@@ -4,11 +4,10 @@ const Match = require('../models/Match');
 const User = require('../models/User');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
-const { startOfDay, endOfDay, parseISO, isValid } = require('date-fns'); // Added isValid here
+const { startOfDay, endOfDay, parseISO, isValid, subHours, addHours } = require('date-fns'); // Remove date-fns-tz import
 const { recalculateUserStats } = require('../utils/userStats');
 const optionalAuth = require('../middleware/optionalAuth');
 const auth = require('../middleware/auth');
-const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz'); // Add this import
 
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
@@ -124,36 +123,38 @@ router.get('/', optionalAuth, async (req, res) => {
       return res.status(400).json({ message: 'Invalid date format' });
     }
 
-    // Get the start and end of the user's day in their timezone
-    const userStart = startOfDay(userDate);
-    const userEnd = endOfDay(userDate);
-
-    // Convert the user's timezone boundaries to UTC for the database query
-    const utcStart = zonedTimeToUtc(userStart, timeZone);
-    const utcEnd = zonedTimeToUtc(userEnd, timeZone);
+    // Calculate UTC offset in hours from timezone string
+    const tzOffset = new Date().getTimezoneOffset() / 60;
+    
+    // Adjust date range based on timezone offset
+    const start = subHours(startOfDay(userDate), tzOffset);
+    const end = subHours(endOfDay(userDate), tzOffset);
 
     console.log('Query parameters:', {
       inputDate: date,
       userTimezone: timeZone,
-      utcStart: utcStart.toISOString(),
-      utcEnd: utcEnd.toISOString()
+      startTime: start.toISOString(),
+      endTime: end.toISOString()
     });
 
-    // Find matches that overlap with the user's day
-    const matches = await Match.find({
-      $or: [
-        // Match starts within the user's day
-        { utcDate: { $gte: utcStart.toISOString(), $lte: utcEnd.toISOString() } },
-        // Match ended within the user's day (for finished matches)
-        {
-          status: 'FINISHED',
-          utcDate: { 
-            $gte: new Date(utcStart.getTime() - 8 * 60 * 60 * 1000).toISOString(), // Include matches up to 8 hours before
-            $lt: utcStart.toISOString()
+    // Find matches within the adjusted time range
+    const [matches, user] = await Promise.all([
+      Match.find({
+        $or: [
+          // Match starts within the user's day
+          { utcDate: { $gte: start.toISOString(), $lte: end.toISOString() } },
+          // Include matches that ended up to 8 hours before the start of the day
+          {
+            status: 'FINISHED',
+            utcDate: { 
+              $gte: subHours(start, 8).toISOString(),
+              $lt: start.toISOString()
+            }
           }
-        }
-      ]
-    }).sort({ utcDate: 1 });
+        ]
+      }).sort({ utcDate: 1 }),
+      userId ? User.findById(userId, 'votes') : null
+    ]);
 
     console.log('Found matches:', {
       count: matches.length,
@@ -164,18 +165,16 @@ router.get('/', optionalAuth, async (req, res) => {
       }))
     });
 
-    const user = userId ? await User.findById(userId, 'votes') : null;
     const userVotes = user ? user.votes : [];
 
     const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
       
-      // Convert to user's timezone for display
-      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), timeZone);
-      matchObj.localDate = matchLocalDate;
+      // Convert UTC date to local time
+      const matchDate = new Date(match.utcDate);
+      matchObj.localDate = addHours(matchDate, tzOffset);
       matchObj.voteCounts = match.votes;
 
-      // Process fan prediction
       const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
       if (totalVotes > 0) {
         const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
@@ -190,7 +189,6 @@ router.get('/', optionalAuth, async (req, res) => {
         matchObj.fanPrediction = null;
       }
 
-      // Add user's vote if exists
       const userVote = userVotes.find(v => v.matchId === match.id);
       if (userVote) {
         matchObj.userVote = userVote.vote;
