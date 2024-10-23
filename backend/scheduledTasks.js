@@ -243,12 +243,12 @@ cron.schedule('0 * * * *', () => {
 });
 
 // Run user stats update every 5 minutes
-cron.schedule('*/5 * * * *', () => {
-  console.log('Running user stats update');
-  updateUserStats().catch(error => {
-    console.error('Error in scheduled updateUserStats:', error);
-  });
-});
+//cron.schedule('*/5 * * * *', () => {
+//  console.log('Running user stats update');
+//  updateUserStats().catch(error => {
+//    console.error('Error in scheduled updateUserStats:', error);
+ // });
+//});
 
 
 module.exports = {
