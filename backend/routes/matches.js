@@ -8,6 +8,7 @@ const { startOfDay, endOfDay, parseISO, isValid } = require('date-fns'); // Adde
 const { recalculateUserStats } = require('../utils/userStats');
 const optionalAuth = require('../middleware/optionalAuth');
 const auth = require('../middleware/auth');
+const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz'); // Add this import
 
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
@@ -110,8 +111,7 @@ router.get('/', optionalAuth, async (req, res) => {
     requestDate: date,
     userTimezone: timeZone,
     userId: userId,
-    serverTime: new Date().toISOString(),
-    serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    serverTime: new Date().toISOString()
   });
 
   if (!date) {
@@ -119,52 +119,51 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 
   try {
-    const parsedDate = parseISO(date);
-    if (!isValid(parsedDate)) {
-      console.log('Invalid date received:', {
-        date,
-        parseResult: parsedDate,
-      });
+    // Convert the requested date to the user's timezone
+    const userDate = parseISO(date);
+    if (!isValid(userDate)) {
       return res.status(400).json({ message: 'Invalid date format' });
     }
 
-    const start = startOfDay(parsedDate);
-    const end = endOfDay(parsedDate);
+    // Get the start and end of the user's day in their timezone
+    const userStart = startOfDay(userDate);
+    const userEnd = endOfDay(userDate);
+
+    // Convert the user's timezone boundaries to UTC for the database query
+    const utcStart = zonedTimeToUtc(userStart, timeZone);
+    const utcEnd = zonedTimeToUtc(userEnd, timeZone);
 
     console.log('Date range for query:', {
       inputDate: date,
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      timeZone: timeZone
+      userTimezone: timeZone,
+      utcStart: utcStart.toISOString(),
+      utcEnd: utcEnd.toISOString()
     });
 
+    // Query matches using UTC timestamps
     const [matches, user] = await Promise.all([
       Match.find({
         utcDate: {
-          $gte: start.toISOString(),
-          $lte: end.toISOString()
+          $gte: utcStart.toISOString(),
+          $lte: utcEnd.toISOString()
         }
-      }),
+      }).sort({ utcDate: 1 }),
       userId ? User.findById(userId, 'votes') : null
     ]);
 
-    console.log('Query results:', {
-      matchCount: matches.length,
-      dateRange: `${start.toISOString()} to ${end.toISOString()}`,
-      sampleMatch: matches.length > 0 ? {
-        id: matches[0].id,
-        utcDate: matches[0].utcDate,
-        status: matches[0].status
-      } : null
-    });
+    console.log(`Found ${matches.length} matches in date range`);
 
     const userVotes = user ? user.votes : [];
 
     const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
+      
+      // Convert match UTC date to user's timezone
+      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), timeZone);
+      matchObj.localDate = matchLocalDate;
       matchObj.voteCounts = match.votes;
-
       const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
+      
       if (totalVotes > 0) {
         const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
         if (matchObj.voteCounts.home === maxVotes) {
@@ -177,7 +176,7 @@ router.get('/', optionalAuth, async (req, res) => {
       } else {
         matchObj.fanPrediction = null;
       }
-      
+
       const userVote = userVotes.find(v => v.matchId === match.id);
       if (userVote) {
         matchObj.userVote = userVote.vote;
@@ -186,16 +185,9 @@ router.get('/', optionalAuth, async (req, res) => {
       return matchObj;
     });
 
-    res.json({ 
-      matches: processedMatches
-    });
+    res.json({ matches: processedMatches });
   } catch (error) {
-    console.error('Error in /matches route:', {
-      error: error.message,
-      stack: error.stack,
-      date: date,
-      timeZone: timeZone
-    });
+    console.error('Error in matches route:', error);
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
   }
 });

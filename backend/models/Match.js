@@ -32,11 +32,16 @@ const MatchSchema = new mongoose.Schema({
   },
   source: String,
   status: String,
-  utcDate: {
-    type: String,
-    get: (v) => v,
-    set: (v) => v
-  },
+utcDate: {
+  type: String,
+  get: (v) => v,
+  set: (v) => {
+        if (!v.endsWith('Z') && !v.includes('+')) {
+      return `${v}Z`;
+    }
+    return v;
+  }
+},
   aiPrediction: {
     type: String,
     enum: ['HOME_TEAM', 'DRAW', 'AWAY_TEAM', null],
