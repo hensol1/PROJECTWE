@@ -43,7 +43,9 @@ function processMatchData(match) {
             emblem: match.league.logo
         },
         utcDate: match.fixture.date,
-        status: mapStatus(match.fixture.status.short),
+    status: mapStatus(match.fixture.status.short),
+    minute: match.fixture.status.elapsed,
+    matchPeriod: match.fixture.status.long,
         homeTeam: {
             id: match.teams.home.id,
             name: match.teams.home.name,
@@ -66,6 +68,8 @@ function processMatchData(match) {
                 away: match.score.halftime.away
             }
         },
+        
+        
         lastUpdated: new Date()
     };
 }

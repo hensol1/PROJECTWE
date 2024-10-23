@@ -35,27 +35,35 @@ const AccuracyComparison = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  useEffect(() => {
-    const fetchAccuracyData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.fetchAccuracy();
-        
-        // Use the data property from the response
-        setAccuracyData(response.data);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching accuracy data:', error);
-        setError(error.message || 'Failed to load accuracy data. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchAccuracyData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.fetchAccuracy();
+      console.log('Received accuracy data:', response); // Debug log
 
+      // Check if response has the correct structure
+      const newData = {
+        fanAccuracy: Number(response?.data?.fanAccuracy || 0),
+        aiAccuracy: Number(response?.data?.aiAccuracy || 0),
+        lastUpdated: new Date(response?.data?.lastUpdated || Date.now())
+      };
+
+      console.log('Processed accuracy data:', newData); // Debug log
+      setAccuracyData(newData);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching accuracy data:', error);
+      // Don't clear previous data on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAccuracyData();
     
-    // Set up auto-refresh every 5 minutes
-    const refreshInterval = setInterval(fetchAccuracyData, 5 * 60 * 1000);
+    // Fetch every 15 minutes
+    const refreshInterval = setInterval(fetchAccuracyData, 15 * 60 * 1000);
     
     return () => clearInterval(refreshInterval);
   }, []);

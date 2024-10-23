@@ -278,25 +278,48 @@ const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHED
     return format(date, 'HH:mm');
   };
 
-  const renderMatchStatus = (match) => {
-    const statusStyle = (status) => {
-      switch (status) {
-        case 'FINISHED': return 'bg-gray-500 text-white';
-        case 'IN_PLAY':
-        case 'HALFTIME':
-        case 'LIVE': return 'bg-green-500 text-white';
-        case 'TIMED':
-        case 'SCHEDULED': return 'bg-blue-500 text-white';
-        default: return 'bg-gray-200 text-gray-800';
-      }
-    };
-
-    return (
-      <span className={`inline-block px-1 py-0.5 rounded text-xs font-medium ${statusStyle(match.status)}`}>
-        {match.status}
-      </span>
-    );
+const renderMatchStatus = (match) => {
+  const statusStyle = (status) => {
+    switch (status) {
+      case 'FINISHED': return 'bg-gray-500 text-white';
+      case 'IN_PLAY':
+      case 'HALFTIME':
+      case 'LIVE': return 'bg-green-500 text-white';
+      case 'TIMED':
+      case 'SCHEDULED': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-200 text-gray-800';
+    }
   };
+
+  const getMatchMinute = (match) => {
+    if (!match.minute) return match.status;
+    
+    switch (match.status) {
+      case 'IN_PLAY':
+        return `${match.minute}'`;
+      case 'HALFTIME':
+        return 'HT';
+      case 'PAUSED':
+        return `${match.minute}' (Paused)`;
+      default:
+        return match.status;
+    }
+  };
+
+  const isLiveStatus = ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status);
+
+  return (
+    <span 
+      className={`
+        inline-block px-1 py-0.5 rounded text-xs font-medium 
+        ${statusStyle(match.status)}
+        ${isLiveStatus ? 'animate-pulse' : ''}
+      `}
+    >
+      {getMatchMinute(match)}
+    </span>
+  );
+};
 
   const handleVote = async (matchId, vote) => {
     try {

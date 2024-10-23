@@ -8,20 +8,17 @@ async function recalculateAllStats() {
   try {
     console.log('Starting stats recalculation...');
     
-    // First reset all stats
-    await resetAllStats();
-
+    // Get the last reset dates
+    const aiStat = await AIPredictionStat.findOne() || new AIPredictionStat();
+    const fanStat = await FanPredictionStat.findOne() || new FanPredictionStat();
+    
     // Get all finished matches
     const matches = await Match.find({ 
       status: 'FINISHED',
       'score.fullTime': { $exists: true }
-    });
+    }).sort({ utcDate: 1 });
 
     console.log(`Found ${matches.length} finished matches to process`);
-
-    // Get or create stats documents
-    const fanStat = await FanPredictionStat.findOne() || new FanPredictionStat();
-    const aiStat = await AIPredictionStat.findOne() || new AIPredictionStat();
 
     // Reset counters
     fanStat.totalPredictions = 0;
@@ -32,36 +29,37 @@ async function recalculateAllStats() {
     // Process each match
     for (const match of matches) {
       try {
+        const matchDate = new Date(match.lastUpdated || match.utcDate);
+
         // Get actual winner
         const actualWinner = match.score.winner || (
           match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
           match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW'
         );
 
-        // Process fan prediction if votes exist
-        if (match.votes && (match.votes.home > 0 || match.votes.draw > 0 || match.votes.away > 0)) {
-          fanStat.totalPredictions++;
-          
-          // Determine majority vote
-          const maxVotes = Math.max(
-            match.votes.home || 0,
-            match.votes.draw || 0,
-            match.votes.away || 0
-          );
-          
-          const fanPrediction = 
-            maxVotes === match.votes.home ? 'HOME_TEAM' :
-            maxVotes === match.votes.away ? 'AWAY_TEAM' : 'DRAW';
+        // Process fan prediction if votes exist and no fan reset or match is after fan reset
+        if (!fanStat.lastReset || matchDate > fanStat.lastReset) {
+          if (match.votes && (match.votes.home > 0 || match.votes.draw > 0 || match.votes.away > 0)) {
+            fanStat.totalPredictions++;
+            
+            const maxVotes = Math.max(
+              match.votes.home || 0,
+              match.votes.draw || 0,
+              match.votes.away || 0
+            );
+            
+            const fanPrediction = 
+              maxVotes === match.votes.home ? 'HOME_TEAM' :
+              maxVotes === match.votes.away ? 'AWAY_TEAM' : 'DRAW';
 
-          if (fanPrediction === actualWinner) {
-            fanStat.correctPredictions++;
+            if (fanPrediction === actualWinner) {
+              fanStat.correctPredictions++;
+            }
           }
-
-          console.log(`Match ${match.id} - Fans predicted: ${fanPrediction}, Actual: ${actualWinner}`);
         }
 
-        // Process AI prediction if it exists
-        if (match.aiPrediction) {
+        // Process AI prediction if it exists and no AI reset or match is after AI reset
+        if (match.aiPrediction && (!aiStat.lastReset || matchDate > aiStat.lastReset)) {
           aiStat.totalPredictions++;
           if (match.aiPrediction === actualWinner) {
             aiStat.correctPredictions++;
@@ -83,11 +81,23 @@ async function recalculateAllStats() {
       ? (aiStat.correctPredictions / aiStat.totalPredictions) * 100
       : 0;
 
-    // Save stats to all relevant collections
+    console.log('Processing stats:', {
+      ai: {
+        total: aiStat.totalPredictions,
+        correct: aiStat.correctPredictions,
+        lastReset: aiStat.lastReset
+      },
+      fans: {
+        total: fanStat.totalPredictions,
+        correct: fanStat.correctPredictions,
+        lastReset: fanStat.lastReset
+      }
+    });
+
+    // Save all stats
     await Promise.all([
       fanStat.save(),
       aiStat.save(),
-      // Update AccuracyStats collection
       AccuracyStats.create({
         fanAccuracy,
         aiAccuracy,

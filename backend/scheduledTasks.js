@@ -235,11 +235,14 @@ cron.schedule('*/30 12-23,0-2 * * *', () => {
 });
 
 // Run recalculateAllStats every hour
-cron.schedule('0 * * * *', () => {
+cron.schedule('*/15 * * * *', async () => {
   console.log('Scheduled task triggered: recalculateAllStats at:', new Date().toISOString());
-  recalculateAllStats().catch(error => {
+  try {
+    const stats = await recalculateAllStats();
+    console.log('Successfully updated accuracy stats:', stats);
+  } catch (error) {
     console.error('Error in scheduled recalculateAllStats:', error);
-  });
+  }
 });
 
 // Run user stats update every 5 minutes

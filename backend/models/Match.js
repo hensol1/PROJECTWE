@@ -25,6 +25,16 @@ const MatchSchema = new mongoose.Schema({
       home: Number,
       away: Number
     },
+      status: String,
+  minute: {
+    type: Number,
+    default: null
+  },
+  matchPeriod: {
+    type: String,
+    default: null
+  },
+
     halfTime: {
       home: Number,
       away: Number

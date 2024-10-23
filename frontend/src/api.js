@@ -86,24 +86,20 @@ api.makeAIPrediction = (matchId, prediction) => {
 
 api.triggerFetchMatches = () => api.post('/api/admin/fetch-matches');
 api.recalculateStats = () => api.post('/api/admin/recalculate-stats');
+api.resetStats = () => api.post('/api/accuracy/reset');
+api.resetAllStats = () => api.post('/api/accuracy/reset-all');
+api.resetAIStats = () => api.post('/api/accuracy/reset-ai');
+api.resetFanStats = () => api.post('/api/accuracy/reset-fans');
 
 // Accuracy endpoint
 api.fetchAccuracy = async () => {
   try {
     const response = await api.get('/api/accuracy');
-    return response.data.data ? response.data : {
-      data: {
-        fanAccuracy: response.data.fanAccuracy || 0,
-        aiAccuracy: response.data.aiAccuracy || 0,
-        lastUpdated: response.data.lastUpdated || new Date()
-      }
-    };
+    console.log('API accuracy response:', response); // Debug log
+    return response.data;
   } catch (error) {
-    console.error('Error fetching accuracy:', error);
-    throw new Error(
-      error.response?.data?.message || 
-      'Failed to fetch accuracy data. Please try again later.'
-    );
+    console.error('Error in fetchAccuracy:', error);
+    throw error;
   }
 };
 

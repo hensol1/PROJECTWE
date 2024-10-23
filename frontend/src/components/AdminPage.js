@@ -28,6 +28,11 @@ const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
 const AdminControls = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [isResetting, setIsResetting] = useState({
+    all: false,
+    ai: false,
+    fans: false
+  });
   const [lastAction, setLastAction] = useState(null);
 
   const handleFetchMatches = async () => {
@@ -64,6 +69,52 @@ const AdminControls = () => {
     }
   };
 
+  const handleResetStats = async (type) => {
+    const messages = {
+      all: 'all prediction stats',
+      ai: 'AI prediction stats',
+      fans: 'fan prediction stats'
+    };
+
+    if (!window.confirm(`Are you sure you want to reset ${messages[type]}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsResetting(prev => ({ ...prev, [type]: true }));
+      
+      switch(type) {
+        case 'all':
+          await api.resetAllStats();
+          break;
+        case 'ai':
+          await api.resetAIStats();
+          break;
+        case 'fans':
+          await api.resetFanStats();
+          break;
+        default:
+          throw new Error('Invalid reset type');
+      }
+
+      setLastAction({ 
+        type: 'success', 
+        message: `${messages[type]} reset successfully. Please recalculate stats to get new values.`
+      });
+      
+      // Automatically trigger recalculation after reset
+      await handleRecalculateStats();
+    } catch (error) {
+      console.error('Reset error:', error);
+      setLastAction({ 
+        type: 'error', 
+        message: `Error resetting ${messages[type]}: ` + (error.response?.data?.message || error.message) 
+      });
+    } finally {
+      setIsResetting(prev => ({ ...prev, [type]: false }));
+    }
+  };
+
   return (
     <div className="bg-white shadow-md rounded-lg p-4 mb-6">
       <h2 className="text-xl font-semibold mb-4">Admin Controls</h2>
@@ -81,6 +132,32 @@ const AdminControls = () => {
           loadingLabel="Recalculating..."
         />
       </div>
+      
+      {/* Reset buttons section */}
+      <div className="flex flex-wrap gap-4 mb-4 border-t pt-4">
+        <AdminButton
+          onClick={() => handleResetStats('ai')}
+          isLoading={isResetting.ai}
+          label="Reset AI Stats"
+          loadingLabel="Resetting AI..."
+          className="bg-orange-500 hover:bg-orange-600"
+        />
+        <AdminButton
+          onClick={() => handleResetStats('fans')}
+          isLoading={isResetting.fans}
+          label="Reset Fan Stats"
+          loadingLabel="Resetting Fans..."
+          className="bg-purple-500 hover:bg-purple-600"
+        />
+        <AdminButton
+          onClick={() => handleResetStats('all')}
+          isLoading={isResetting.all}
+          label="Reset All Stats"
+          loadingLabel="Resetting All..."
+          className="bg-red-500 hover:bg-red-600"
+        />
+      </div>
+
       {lastAction && (
         <div className={`mt-2 p-2 rounded ${
           lastAction.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -91,6 +168,7 @@ const AdminControls = () => {
     </div>
   );
 };
+
 
 const MatchCard = ({ match, onPrediction }) => {
   const getStatusClass = (status) => {
