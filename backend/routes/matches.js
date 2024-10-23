@@ -119,7 +119,6 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 
   try {
-    // Convert the requested date to the user's timezone
     const userDate = parseISO(date);
     if (!isValid(userDate)) {
       return res.status(400).json({ message: 'Invalid date format' });
@@ -133,37 +132,51 @@ router.get('/', optionalAuth, async (req, res) => {
     const utcStart = zonedTimeToUtc(userStart, timeZone);
     const utcEnd = zonedTimeToUtc(userEnd, timeZone);
 
-    console.log('Date range for query:', {
+    console.log('Query parameters:', {
       inputDate: date,
       userTimezone: timeZone,
       utcStart: utcStart.toISOString(),
       utcEnd: utcEnd.toISOString()
     });
 
-    // Query matches using UTC timestamps
-    const [matches, user] = await Promise.all([
-      Match.find({
-        utcDate: {
-          $gte: utcStart.toISOString(),
-          $lte: utcEnd.toISOString()
+    // Find matches that overlap with the user's day
+    const matches = await Match.find({
+      $or: [
+        // Match starts within the user's day
+        { utcDate: { $gte: utcStart.toISOString(), $lte: utcEnd.toISOString() } },
+        // Match ended within the user's day (for finished matches)
+        {
+          status: 'FINISHED',
+          utcDate: { 
+            $gte: new Date(utcStart.getTime() - 8 * 60 * 60 * 1000).toISOString(), // Include matches up to 8 hours before
+            $lt: utcStart.toISOString()
+          }
         }
-      }).sort({ utcDate: 1 }),
-      userId ? User.findById(userId, 'votes') : null
-    ]);
+      ]
+    }).sort({ utcDate: 1 });
 
-    console.log(`Found ${matches.length} matches in date range`);
+    console.log('Found matches:', {
+      count: matches.length,
+      matchDates: matches.map(m => ({
+        id: m.id,
+        utcDate: m.utcDate,
+        status: m.status
+      }))
+    });
 
+    const user = userId ? await User.findById(userId, 'votes') : null;
     const userVotes = user ? user.votes : [];
 
     const processedMatches = matches.map(match => {
       const matchObj = match.toObject();
       
-      // Convert match UTC date to user's timezone
+      // Convert to user's timezone for display
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), timeZone);
       matchObj.localDate = matchLocalDate;
       matchObj.voteCounts = match.votes;
+
+      // Process fan prediction
       const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
-      
       if (totalVotes > 0) {
         const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
         if (matchObj.voteCounts.home === maxVotes) {
@@ -177,6 +190,7 @@ router.get('/', optionalAuth, async (req, res) => {
         matchObj.fanPrediction = null;
       }
 
+      // Add user's vote if exists
       const userVote = userVotes.find(v => v.matchId === match.id);
       if (userVote) {
         matchObj.userVote = userVote.vote;
@@ -191,7 +205,6 @@ router.get('/', optionalAuth, async (req, res) => {
     res.status(500).json({ message: 'Error fetching matches', error: error.message });
   }
 });
-
 
 router.get('/all', async (req, res) => {
   try {

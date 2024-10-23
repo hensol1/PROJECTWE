@@ -36,10 +36,9 @@ utcDate: {
   type: String,
   get: (v) => v,
   set: (v) => {
-        if (!v.endsWith('Z') && !v.includes('+')) {
-      return `${v}Z`;
-    }
-    return v;
+    if (!v) return v;
+    const date = new Date(v);
+    return date.toISOString();
   }
 },
   aiPrediction: {
