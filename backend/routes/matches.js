@@ -328,13 +328,15 @@ router.put('/:matchId/update-result', auth, async (req, res) => {
       return res.status(404).json({ message: 'Match not found' });
     }
 
+    const wasFinished = match.status === 'FINISHED';
     match.status = status;
     match.score = score;
 
     await match.save();
 
-    if (status === 'FINISHED') {
-      await updateCorrectVotes(match);
+    // If match just finished, update stats
+    if (!wasFinished && status === 'FINISHED') {
+      await updateStatsForFinishedMatch(matchId);
     }
 
     res.json({ message: 'Match result updated successfully', match });

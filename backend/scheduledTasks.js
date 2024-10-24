@@ -161,6 +161,7 @@ async function resetAllStats() {
 
 async function updateUserStats() {
   try {
+    // Find only unprocessed finished matches
     const matches = await Match.find({ 
       status: 'FINISHED',
       processed: false
@@ -170,60 +171,86 @@ async function updateUserStats() {
       return;
     }
 
-    console.log(`Processing ${matches.length} unprocessed matches`);
+    console.log(`Processing ${matches.length} unprocessed finished matches`);
 
     for (const match of matches) {
       // Find users who voted on this match
       const users = await User.find({ 'votes.matchId': match.id });
+      console.log(`Found ${users.length} users who voted on match ${match.id}`);
       
+      // Calculate actual match result
+      const actualResult = match.score.winner || (
+        match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
+        match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW'
+      );
+
+      // Process each user who voted on this match
       for (const user of users) {
-        // Update user's stats
-        let userFinishedVotes = 0;
-        let userCorrectVotes = 0;
+        // Find this user's vote for this match
+        const vote = user.votes.find(v => v.matchId === match.id);
+        if (vote) {
+          // Convert user's vote to match result format
+          const userPrediction = 
+            vote.vote === 'home' ? 'HOME_TEAM' :
+            vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
 
-        for (const vote of user.votes) {
-          const voteMatch = await Match.findOne({ id: vote.matchId, status: 'FINISHED' });
-          if (voteMatch) {
-            userFinishedVotes++;
-            const actualWinner = voteMatch.score.winner || (
-              voteMatch.score.fullTime.home > voteMatch.score.fullTime.away ? 'HOME_TEAM' :
-              voteMatch.score.fullTime.away > voteMatch.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW'
+          // Update vote correctness
+          vote.isCorrect = userPrediction === actualResult;
+
+          // Recalculate user's total stats
+          const allUserVotes = await Match.find({
+            id: { $in: user.votes.map(v => v.matchId) },
+            status: 'FINISHED'
+          });
+
+          const finishedVotes = allUserVotes.length;
+          const correctVotes = allUserVotes.reduce((count, match) => {
+            const vote = user.votes.find(v => v.matchId === match.id);
+            if (!vote) return count;
+
+            const matchResult = match.score.winner || (
+              match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
+              match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW'
             );
-
-            const userPrediction = 
+            const userPred = 
               vote.vote === 'home' ? 'HOME_TEAM' :
               vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
 
-            if (userPrediction === actualWinner) {
-              userCorrectVotes++;
+            return count + (matchResult === userPred ? 1 : 0);
+          }, 0);
+
+          // Calculate Wilson score
+          const n = finishedVotes;
+          const p = n > 0 ? correctVotes / n : 0;
+          const z = 1.96;
+          const zsqr = z * z;
+          const wilsonScore = n > 0 ? 
+            (p + zsqr/(2*n) - z * Math.sqrt((p*(1-p) + zsqr/(4*n))/n))/(1 + zsqr/n) : 0;
+
+          // Update user document
+          await User.findByIdAndUpdate(user._id, {
+            $set: {
+              finishedVotes,
+              correctVotes,
+              accuracy: n > 0 ? (correctVotes / n * 100) : 0,
+              wilsonScore,
+              votes: user.votes // Update all votes
             }
-          }
+          });
+
+          console.log(`Updated stats for user ${user.username}: ${correctVotes}/${finishedVotes} correct`);
         }
-
-        // Update user stats
-        user.finishedVotes = userFinishedVotes;
-        user.correctVotes = userCorrectVotes;
-        
-        // Calculate Wilson score
-        const n = userFinishedVotes;
-        const p = n > 0 ? userCorrectVotes / n : 0;
-        const z = 1.96;
-        const zsqr = z * z;
-        user.wilsonScore = n > 0 ? 
-          (p + zsqr/(2*n) - z * Math.sqrt((p*(1-p) + zsqr/(4*n))/n))/(1 + zsqr/n) : 0;
-
-        await user.save();
       }
 
       // Mark match as processed
       match.processed = true;
       await match.save();
+      console.log(`Marked match ${match.id} as processed`);
     }
   } catch (error) {
     console.error('Error in updateUserStats:', error);
   }
 }
-
 
 // Scheduled tasks
 // Run fetchMatches every 30 minutes during match hours
@@ -238,15 +265,26 @@ cron.schedule('*/30 12-23,0-2 * * *', () => {
 cron.schedule('*/15 * * * *', async () => {
   console.log('Scheduled task triggered: recalculateAllStats at:', new Date().toISOString());
   try {
-    const stats = await recalculateAllStats();
-    console.log('Successfully updated accuracy stats:', stats);
+    // Get the latest reset dates
+    const aiStat = await AIPredictionStat.findOne();
+    const fanStat = await FanPredictionStat.findOne();
+
+    // Only recalculate if there are no reset dates or if it's been more than 5 minutes since reset
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    if ((!aiStat?.lastReset && !fanStat?.lastReset) || 
+        (aiStat?.lastReset < fiveMinutesAgo && fanStat?.lastReset < fiveMinutesAgo)) {
+      const stats = await recalculateAllStats();
+      console.log('Successfully updated accuracy stats:', stats);
+    } else {
+      console.log('Skipping recalculation due to recent reset');
+    }
   } catch (error) {
     console.error('Error in scheduled recalculateAllStats:', error);
   }
 });
 
 // Run user stats update every 5 minutes
-cron.schedule('*/5 * * * *', () => {
+cron.schedule('*/15 * * * *', () => {
   console.log('Running user stats update');
   updateUserStats().catch(error => {
     console.error('Error in scheduled updateUserStats:', error);
