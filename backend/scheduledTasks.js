@@ -99,9 +99,17 @@ async function updateUserStats() {
   }
 }
 
-// Schedule match fetching every 30 minutes during match hours
-cron.schedule('*/30 12-23,0-2 * * *', () => {
+// Schedule match fetching every 15 minutes (at XX:01, XX:16, XX:31, XX:46) during match hours
+cron.schedule('1,16,31,46 12-23,0-2 * * *', () => {
   console.log('Scheduled task triggered: fetchMatches');
+  fetchMatches().catch(error => {
+    console.error('Error in fetchMatches:', error);
+  });
+});
+
+// Additional run at 09:00
+cron.schedule('0 9 * * *', () => {
+  console.log('Scheduled task triggered: fetchMatches (morning run)');
   fetchMatches().catch(error => {
     console.error('Error in fetchMatches:', error);
   });
