@@ -62,9 +62,9 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-2 mb-4 max-w-2xl mx-auto">
+    <div className="mb-4 max-w-2xl mx-auto">
       <div className="text-center mb-1">
-        <span className="text-gray-600 text-xs sm:text-sm">Next match starts in:</span>
+        <span className="text-gray-600 text-xs sm:text-sm">Next match starts in: </span>
         <span className="ml-2 font-mono text-base sm:text-lg font-bold text-blue-600">{countdown}</span>
       </div>
       <div className="flex items-center justify-center space-x-3 sm:space-x-4 text-xs sm:text-sm">

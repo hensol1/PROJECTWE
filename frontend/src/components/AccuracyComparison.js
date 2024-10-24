@@ -4,17 +4,37 @@ import api from '../api';
 
 const AccuracyBox = ({ label, animatedAccuracy, isWinning }) => {
   const color = isWinning ? '#22c55e' : '#ef4444';
+  const shadowColor = isWinning ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
   
   return (
     <div className="flex flex-col items-center">
       <span className="text-xs font-bold mb-1">{label}</span>
       <div 
-        className="w-24 h-14 sm:w-28 sm:h-16 border-2 rounded-md flex items-center justify-center bg-white"
-        style={{ borderColor: color }}
+        className="w-24 h-14 sm:w-28 sm:h-16 rounded-xl flex items-center justify-center bg-white relative transform transition-all duration-300 hover:scale-105"
+        style={{
+          background: 'linear-gradient(145deg, #ffffff, #f5f5f5)',
+          boxShadow: `3px 3px 6px ${shadowColor}, 
+                      -3px -3px 6px rgba(255, 255, 255, 0.8),
+                      inset 1px 1px 1px rgba(255, 255, 255, 0.8),
+                      inset -1px -1px 1px rgba(174, 174, 192, 0.2)`,
+          border: `2px solid ${color}`,
+          borderRadius: '12px',
+        }}
       >
+        <div
+          className="absolute inset-0 rounded-lg"
+          style={{
+            background: `linear-gradient(145deg, ${shadowColor} 0%, transparent 100%)`,
+            opacity: '0.1',
+            borderRadius: '10px',
+          }}
+        />
         <span 
-          className="text-lg sm:text-xl font-bold transition-all duration-100 ease-out"
-          style={{ color: color }}
+          className="text-lg sm:text-xl font-bold transition-all duration-100 ease-out relative z-10"
+          style={{ 
+            color,
+            textShadow: `1px 1px 2px ${shadowColor}`,
+          }}
         >
           {animatedAccuracy.toFixed(1)}%
         </span>
@@ -39,21 +59,15 @@ const AccuracyComparison = () => {
     try {
       setIsLoading(true);
       const response = await api.fetchAccuracy();
-      console.log('Received accuracy data:', response); // Debug log
-
-      // Check if response has the correct structure
       const newData = {
         fanAccuracy: Number(response?.data?.fanAccuracy || 0),
         aiAccuracy: Number(response?.data?.aiAccuracy || 0),
         lastUpdated: new Date(response?.data?.lastUpdated || Date.now())
       };
-
-      console.log('Processed accuracy data:', newData); // Debug log
       setAccuracyData(newData);
       setError(null);
     } catch (error) {
       console.error('Error fetching accuracy data:', error);
-      // Don't clear previous data on error
     } finally {
       setIsLoading(false);
     }
@@ -61,10 +75,7 @@ const AccuracyComparison = () => {
 
   useEffect(() => {
     fetchAccuracyData();
-    
-    // Fetch every 15 minutes
     const refreshInterval = setInterval(fetchAccuracyData, 15 * 60 * 1000);
-    
     return () => clearInterval(refreshInterval);
   }, []);
 
@@ -124,7 +135,7 @@ const AccuracyComparison = () => {
           animatedAccuracy={animatedFanAccuracy} 
           isWinning={isFanWinning} 
         />
-        <div className="text-lg sm:text-xl font-bold">VS</div>
+        <div className="text-lg sm:text-xl font-bold text-gray-700">VS</div>
         <AccuracyBox 
           label="AI" 
           animatedAccuracy={animatedAiAccuracy} 
@@ -134,10 +145,16 @@ const AccuracyComparison = () => {
           className="ml-1 sm:ml-2 cursor-pointer relative"
           onClick={() => setShowTooltip(!showTooltip)}
         >
-          <InfoIcon size={18} className="text-gray-500" />
+          <InfoIcon size={18} className="text-gray-500 hover:text-gray-700 transition-colors duration-200" />
           {showTooltip && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-              <div className="bg-white rounded-lg p-4 max-w-xs w-full shadow-lg">
+              <div 
+                className="bg-white rounded-lg p-4 max-w-xs w-full"
+                style={{
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                }}
+              >
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
