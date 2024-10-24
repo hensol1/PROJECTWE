@@ -8,14 +8,22 @@ import UserStats from './components/UserStats';
 import AdminPage from './components/AdminPage';
 import Leaderboard from './components/Leaderboard';
 import IconMenu from './components/IconMenu';
+import LoadingScreen from './components/LoadingScreen';
 import api from './api';
 import config from './config';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
+    // Remove the initial loading div once React is loaded
+    const initialLoadingElement = document.getElementById('initial-loading');
+    if (initialLoadingElement) {
+      initialLoadingElement.remove();
+    }
+
     const fetchUserData = async () => {
       const token = localStorage.getItem('token');
       if (token) {
@@ -31,14 +39,18 @@ function App() {
           localStorage.removeItem('token');
         }
       }
+      
+      // Add a minimum loading time to ensure animation is visible
+      await new Promise(resolve => setTimeout(resolve, 1500));
       setLoading(false);
+      setInitialLoad(false);
     };
 
     fetchUserData();
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (loading || initialLoad) {
+    return <LoadingScreen />;
   }
 
   return (
