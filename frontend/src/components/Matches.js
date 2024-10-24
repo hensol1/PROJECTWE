@@ -5,6 +5,7 @@ import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import AccuracyComparison from './AccuracyComparison';
 import { BiAlarm, BiAlarmOff } from "react-icons/bi";
 import CustomButton from './CustomButton';
+import NextMatchCountdown from './NextMatchCountdown';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
@@ -18,6 +19,7 @@ const Matches = ({ user }) => {
   const [userTimeZone, setUserTimeZone] = useState('');
   const [activeTab, setActiveTab] = useState("live");
   const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
+  const [currentDateLiveMatches, setCurrentDateLiveMatches] = useState(false);
   
   const filterMatchesByStatus = (matches, statuses) => {
   return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
@@ -181,28 +183,41 @@ useEffect(() => {
     fetchAccuracyData();
   }
 }, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData]); // Removed user from dependencies
+  
+const handleTabChange = useCallback((newTab) => {
+    if (newTab === 'live' && !isToday(currentDate)) {
+      // If switching to live tab and not on current date,
+      // set date to today and fetch current matches
+      setCurrentDate(new Date());
+      setActiveTab('live');
+    } else {
+      setActiveTab(newTab);
+    }
+  }, [currentDate]);
+
 
 const handleDateChange = useCallback((days) => {
-  setCurrentDate(prevDate => {
-    const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
-    const formattedNewDate = format(newDate, 'yyyy-MM-dd');
-    console.log('New date:', formattedNewDate);
-    
-    // Check if we already have matches for this date
-    if (!matches[formattedNewDate]) {
-      fetchMatches(newDate);
-    } else {
-      // If we already have the matches, still determine the appropriate tab
-      const appropriateTab = determineActiveTab(matches[formattedNewDate] || {});
-      setActiveTab(appropriateTab);
-    }
-    
-    return newDate;
-  });
-  setSelectedContinent('All');
-}, [matches, fetchMatches, determineActiveTab]);
+    setCurrentDate(prevDate => {
+      const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
+      const formattedNewDate = format(newDate, 'yyyy-MM-dd');
+      
+      // When changing date, switch to appropriate tab
+      if (!isToday(newDate)) {
+        // If not today, switch to scheduled or finished tab
+        setActiveTab('scheduled'); // or could determine based on time of day
+      }
+      
+      // Check if we already have matches for this date
+      if (!matches[formattedNewDate]) {
+        fetchMatches(newDate);
+      }
+      
+      return newDate;
+    });
+    setSelectedContinent('All');
+  }, [matches, fetchMatches]);
 
-  const toggleLeague = (leagueKey) => {
+const toggleLeague = (leagueKey) => {
     setCollapsedLeagues(prev => ({
       ...prev,
       [leagueKey]: !prev[leagueKey]
@@ -556,48 +571,58 @@ const renderMatches = (matches) => {
     }
   };
 
-  return (
-    <div className="max-w-3xl mx-auto px-2">
-      <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
+return (
+  <div className="max-w-3xl mx-auto px-2">
+    <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
+    
+    {/* Next Match Countdown - placed right after AccuracyComparison */}
+    {Object.keys(liveMatches).length === 0 && (
+      <NextMatchCountdown scheduledMatches={scheduledMatches} />
+    )}
 
-      {isLoading ? (
-        <div className="text-center py-4">
-          <p className="text-gray-600 text-lg">Loading matches...</p>
-        </div>
-      ) : (
-        <>
+    {isLoading ? (
+      <div className="text-center py-4">
+        <p className="text-gray-600 text-lg">Loading matches...</p>
+      </div>
+    ) : (
+      <>
           <div className="flex flex-col space-y-4 mb-4">
             {/* Match type tabs */}
-<div className="flex justify-center">
-  <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
-    {['live', 'finished', 'scheduled'].map((tab) => (
-      <button
-        key={tab}
-        onClick={() => setActiveTab(tab)}
-        className={`
-          px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-          flex items-center justify-center
-          ${activeTab === tab
-            ? 'bg-white text-blue-600 shadow-sm'
-            : 'text-gray-600 hover:bg-gray-200'
-          }
-        `}
-      >
-        {tab === 'live' && (
-          <span 
-            className={`
-              inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
-              ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
-            `}
-          />
-        )}
-        {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
-        {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
-        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-      </button>
-    ))}
-  </div>
-</div>
+            <div className="flex justify-center">
+              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+                {['live', 'finished', 'scheduled'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => handleTabChange(tab)}
+                    className={`
+                      px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+                      flex items-center justify-center
+                      ${activeTab === tab
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-200'
+                      }
+                      ${tab === 'live' && !isToday(currentDate) ? 'opacity-50' : ''}
+                    `}
+                    disabled={tab === 'live' && !isToday(currentDate)}
+                  >
+                    {tab === 'live' && (
+                      <span 
+                        className={`
+                          inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
+                          ${isToday(currentDate) && hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
+                        `}
+                      />
+                    )}
+                    {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
+                    {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab === 'live' && !isToday(currentDate) && (
+                      <span className="ml-1 text-xs">(Today only)</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Continent tabs */}
             <div className="flex justify-center">
@@ -636,7 +661,6 @@ const renderMatches = (matches) => {
           </CustomButton>
         </div>
       </div>
-
           <div className="bg-white rounded-lg shadow-md p-2 sm:p-4">
             {renderTabContent()}
           </div>
