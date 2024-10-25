@@ -6,6 +6,7 @@ import AccuracyComparison from './AccuracyComparison';
 import { BiAlarm, BiAlarmOff } from "react-icons/bi";
 import CustomButton from './CustomButton';
 import NextMatchCountdown from './NextMatchCountdown';
+import LoadingLogo from './LoadingLogo';
 
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
@@ -585,21 +586,19 @@ const renderMatches = (matches) => {
     }
   };
 
-return (
-  <div className="max-w-3xl mx-auto px-2">
-    <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
-    
-    {/* Next Match Countdown - placed right after AccuracyComparison */}
-    {Object.keys(liveMatches).length === 0 && (
-      <NextMatchCountdown scheduledMatches={scheduledMatches} />
-    )}
+  return (
+    <div className="max-w-3xl mx-auto px-2">
+      <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
+      
+      {/* Next Match Countdown - placed right after AccuracyComparison */}
+      {Object.keys(liveMatches).length === 0 && (
+        <NextMatchCountdown scheduledMatches={scheduledMatches} />
+      )}
 
-    {isLoading ? (
-      <div className="text-center py-4">
-        <p className="text-gray-600 text-lg">Loading matches...</p>
-      </div>
-    ) : (
-      <>
+      {isLoading ? (
+        <LoadingLogo /> // Replace the loading text with LoadingLogo
+      ) : (
+        <>
           <div className="flex flex-col space-y-4 mb-4">
             {/* Match type tabs */}
 <div className="flex justify-center">

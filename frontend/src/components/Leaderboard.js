@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { InfoIcon } from 'lucide-react';
+import LoadingLogo from './LoadingLogo';
 
 const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -83,11 +84,7 @@ const Leaderboard = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  if (loading) return (
-    <div className="flex justify-center items-center mt-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-    </div>
-  );
+  if (loading) return <LoadingLogo />;
 
   if (error) return (
     <div className="text-center mt-8 text-red-500">
