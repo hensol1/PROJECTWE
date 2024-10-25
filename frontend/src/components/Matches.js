@@ -20,6 +20,16 @@ const Matches = ({ user }) => {
   const [activeTab, setActiveTab] = useState("live");
   const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
   const [currentDateLiveMatches, setCurrentDateLiveMatches] = useState(false);
+  const currentDateKey = format(currentDate, 'yyyy-MM-dd');
+  const matchesForCurrentDate = matches[currentDateKey] || {};
+  const allMatchesForCurrentDate = matches[currentDateKey] || {};
+const hasAnyLiveMatches = Object.values(matches).some(dateMatches => 
+  Object.values(dateMatches).some(leagueMatches =>
+    leagueMatches.some(match => 
+      ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status)
+    )
+  )
+);
   
   const filterMatchesByStatus = (matches, statuses) => {
   return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
@@ -32,32 +42,39 @@ const Matches = ({ user }) => {
 };
   
 
-// Then, define determineActiveTab as a separate useCallback hook
+// Modify the determineActiveTab function to implement the correct tab selection logic
 const determineActiveTab = useCallback((matches) => {
-  // Helper function inside determineActiveTab to avoid dependency issues
+  // Helper function inside determineActiveTab
   const hasMatchesWithStatus = (matches, statuses) => {
     return Object.values(matches).some(leagueMatches => 
       leagueMatches.some(match => statuses.includes(match.status))
     );
   };
 
-  // Check if there are any live matches
+  // Check for live matches first
   const hasLiveMatches = hasMatchesWithStatus(matches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
-  
-  // Check if there are any scheduled matches
-  const hasScheduledMatches = hasMatchesWithStatus(matches, ['TIMED', 'SCHEDULED']);
-  
-  // Check if there are any finished matches
-  const hasFinishedMatches = hasMatchesWithStatus(matches, ['FINISHED']);
-  
-  // Return the appropriate tab based on availability
   if (hasLiveMatches) return 'live';
+
+  // Then check for scheduled matches
+  const hasScheduledMatches = hasMatchesWithStatus(matches, ['TIMED', 'SCHEDULED']);
   if (hasScheduledMatches) return 'scheduled';
+
+  // Finally, if neither live nor scheduled matches exist, check for finished matches
+  const hasFinishedMatches = hasMatchesWithStatus(matches, ['FINISHED']);
   if (hasFinishedMatches) return 'finished';
+
+  // Default to scheduled if somehow no matches are available
+  return 'scheduled';
+}, []);
   
-  // Default to 'live' if somehow no matches are available
-  return 'live';
-}, []); // Empty dependency array since we moved the helper function inside
+  // Add this useEffect to handle automatic tab selection when matches change
+useEffect(() => {
+  const currentDateMatches = matches[currentDateKey];
+  if (currentDateMatches) {
+    const appropriateTab = determineActiveTab(currentDateMatches);
+    setActiveTab(appropriateTab);
+  }
+}, [matches, currentDateKey, determineActiveTab]);
 
 
   const continentalLeagues = {
@@ -102,29 +119,11 @@ const determineActiveTab = useCallback((matches) => {
 
 const fetchMatches = useCallback(async (date) => {
   setIsLoading(true);
-  let formattedDate; // Declare the variable at the function scope
+  let formattedDate;
 
   try {
     formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
-    
-    console.log('Component fetching matches:', {
-      inputDate: date,
-      formattedDate,
-      userTimeZone,
-      componentTime: new Date().toISOString()
-    });
-    
     const response = await api.fetchMatches(formattedDate);
-    
-    console.log('Component received matches:', {
-      matchCount: response.data.matches.length,
-      timeZone: userTimeZone,
-      sampleMatch: response.data.matches.length > 0 ? {
-        id: response.data.matches[0].id,
-        date: response.data.matches[0].utcDate,
-        status: response.data.matches[0].status
-      } : null
-    });
     
     const groupedMatches = response.data.matches.reduce((acc, match) => {
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
@@ -151,15 +150,10 @@ const fetchMatches = useCallback(async (date) => {
       return newMatches;
     });
     
-    if (groupedMatches[formattedDate]) {
-      const appropriateTab = determineActiveTab(groupedMatches[formattedDate]);
-      setActiveTab(appropriateTab);
-    }
-    
   } catch (error) {
     console.error('Error in component fetchMatches:', {
       error: error.message,
-      date: formattedDate, // Now formattedDate is in scope
+      date: formattedDate,
       timeZone: userTimeZone
     });
     setMatches(prevMatches => ({
@@ -169,7 +163,7 @@ const fetchMatches = useCallback(async (date) => {
   } finally {
     setIsLoading(false);
   }
-}, [userTimeZone, determineActiveTab]);
+}, [userTimeZone]);
   
   
   useEffect(() => {
@@ -185,15 +179,41 @@ useEffect(() => {
 }, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData]); // Removed user from dependencies
   
 const handleTabChange = useCallback((newTab) => {
-    if (newTab === 'live' && !isToday(currentDate)) {
-      // If switching to live tab and not on current date,
-      // set date to today and fetch current matches
-      setCurrentDate(new Date());
-      setActiveTab('live');
+  if (newTab === 'live') {
+    const today = new Date();
+    const currentDateStr = format(currentDate, 'yyyy-MM-dd');
+    const todayStr = format(today, 'yyyy-MM-dd');
+
+    // Only fetch and change date if we're not already on today
+    if (currentDateStr !== todayStr) {
+      setCurrentDate(today);
+      // If we need to fetch today's matches
+      if (userTimeZone && !matches[todayStr]) {
+        fetchMatches(today).then(() => {
+          // Force live tab after fetch completes
+          setActiveTab('live');
+        });
+      } else {
+        // If we already have today's matches, just set the tab
+        setActiveTab('live');
+      }
     } else {
-      setActiveTab(newTab);
+      // If we're already on today, just set the tab
+      setActiveTab('live');
     }
-  }, [currentDate]);
+  } else {
+    // For other tabs, just switch the tab
+    setActiveTab(newTab);
+  }
+}, [userTimeZone, fetchMatches, currentDate, matches]);
+
+  // Add this useEffect after your other useEffects
+useEffect(() => {
+  if (hasAnyLiveMatches && isToday(currentDate)) {
+    setActiveTab('live');
+  }
+}, [hasAnyLiveMatches, currentDate]);
+
 
 
 const handleDateChange = useCallback((days) => {
@@ -232,16 +252,7 @@ const toggleLeague = (leagueKey) => {
     }
     return 'Other';
   };
-
-  const currentDateKey = format(currentDate, 'yyyy-MM-dd');
-  const matchesForCurrentDate = matches[currentDateKey] || {};
   
-    // Check for live matches across all continents
-  const allMatchesForCurrentDate = matches[currentDateKey] || {};
-  const hasAnyLiveMatches = Object.values(allMatchesForCurrentDate).some(leagueMatches =>
-    leagueMatches.some(match => ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status))
-  );
-
 
   const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
     const [, leagueId] = leagueKey.split('_');
@@ -588,41 +599,36 @@ return (
       <>
           <div className="flex flex-col space-y-4 mb-4">
             {/* Match type tabs */}
-            <div className="flex justify-center">
-              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
-                {['live', 'finished', 'scheduled'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => handleTabChange(tab)}
-                    className={`
-                      px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                      flex items-center justify-center
-                      ${activeTab === tab
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-200'
-                      }
-                      ${tab === 'live' && !isToday(currentDate) ? 'opacity-50' : ''}
-                    `}
-                    disabled={tab === 'live' && !isToday(currentDate)}
-                  >
-                    {tab === 'live' && (
-                      <span 
-                        className={`
-                          inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
-                          ${isToday(currentDate) && hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
-                        `}
-                      />
-                    )}
-                    {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
-                    {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    {tab === 'live' && !isToday(currentDate) && (
-                      <span className="ml-1 text-xs">(Today only)</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+<div className="flex justify-center">
+  <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+    {['live', 'finished', 'scheduled'].map((tab) => (
+      <button
+        key={tab}
+        onClick={() => handleTabChange(tab)}
+        className={`
+          px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+          flex items-center justify-center
+          ${activeTab === tab
+            ? 'bg-white text-blue-600 shadow-sm'
+            : 'text-gray-600 hover:bg-gray-200'
+          }
+        `}
+      >
+        {tab === 'live' && (
+          <span 
+            className={`
+              inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
+              ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
+            `}
+          />
+        )}
+        {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
+        {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
+        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+      </button>
+    ))}
+  </div>
+</div>
 
             {/* Continent tabs */}
             <div className="flex justify-center">
