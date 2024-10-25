@@ -21,6 +21,7 @@ const Matches = ({ user }) => {
   const [activeTab, setActiveTab] = useState("live");
   const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
   const [currentDateLiveMatches, setCurrentDateLiveMatches] = useState(false);
+  const [isManualTabSelect, setIsManualTabSelect] = useState(false);
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
   const allMatchesForCurrentDate = matches[currentDateKey] || {};
@@ -42,6 +43,21 @@ const hasAnyLiveMatches = Object.values(matches).some(dateMatches =>
   }, {});
 };
   
+// Add a function to find the date with live matches
+const findDateWithLiveMatches = useCallback(() => {
+  for (const [date, dateMatches] of Object.entries(matches)) {
+    const hasLive = Object.values(dateMatches).some(leagueMatches =>
+      leagueMatches.some(match => 
+        ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status)
+      )
+    );
+    if (hasLive) {
+      return date;
+    }
+  }
+  return null;
+}, [matches]);  
+  
 
 // Modify the determineActiveTab function to implement the correct tab selection logic
 const determineActiveTab = useCallback((matches) => {
@@ -52,7 +68,7 @@ const determineActiveTab = useCallback((matches) => {
     );
   };
 
-  // Check for live matches first
+  // First check for live matches
   const hasLiveMatches = hasMatchesWithStatus(matches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
   if (hasLiveMatches) return 'live';
 
@@ -60,25 +76,34 @@ const determineActiveTab = useCallback((matches) => {
   const hasScheduledMatches = hasMatchesWithStatus(matches, ['TIMED', 'SCHEDULED']);
   if (hasScheduledMatches) return 'scheduled';
 
-  // Finally, if neither live nor scheduled matches exist, check for finished matches
+  // Finally, check for finished matches
   const hasFinishedMatches = hasMatchesWithStatus(matches, ['FINISHED']);
   if (hasFinishedMatches) return 'finished';
 
-  // Default to scheduled if somehow no matches are available
-  return 'scheduled';
+  return 'scheduled'; // Default to scheduled
 }, []);
   
   // Add this useEffect to handle automatic tab selection when matches change
 useEffect(() => {
-  const currentDateMatches = matches[currentDateKey];
-  if (currentDateMatches) {
-    // Only change tab on initial load or date change, not on vote updates
-    if (!isToday(currentDate) || activeTab === '') {
+  if (isManualTabSelect) {
+    // Don't override manual selections
+    return;
+  }
+
+  const liveMatchDate = findDateWithLiveMatches();
+  if (liveMatchDate) {
+    // If there are live matches, switch to that date and the live tab
+    setCurrentDate(new Date(liveMatchDate));
+    setActiveTab('live');
+  } else {
+    // If no live matches, handle current date matches
+    const currentDateMatches = matches[currentDateKey];
+    if (currentDateMatches) {
       const appropriateTab = determineActiveTab(currentDateMatches);
       setActiveTab(appropriateTab);
     }
   }
-}, [matches, currentDateKey, determineActiveTab, currentDate]);
+}, [matches, findDateWithLiveMatches, determineActiveTab, currentDateKey, isManualTabSelect]);
 
 
   const continentalLeagues = {
@@ -184,32 +209,19 @@ useEffect(() => {
   
 const handleTabChange = useCallback((newTab) => {
   if (newTab === 'live') {
-    const today = new Date();
-    const currentDateStr = format(currentDate, 'yyyy-MM-dd');
-    const todayStr = format(today, 'yyyy-MM-dd');
-
-    // Only fetch and change date if we're not already on today
-    if (currentDateStr !== todayStr) {
-      setCurrentDate(today);
-      // If we need to fetch today's matches
-      if (userTimeZone && !matches[todayStr]) {
-        fetchMatches(today).then(() => {
-          // Force live tab after fetch completes
-          setActiveTab('live');
-        });
-      } else {
-        // If we already have today's matches, just set the tab
-        setActiveTab('live');
-      }
+    const liveMatchDate = findDateWithLiveMatches();
+    if (liveMatchDate) {
+      // If there are live matches, go to that date
+      setCurrentDate(new Date(liveMatchDate));
     } else {
-      // If we're already on today, just set the tab
-      setActiveTab('live');
+      // If no live matches, stay on current date
+      setCurrentDate(new Date());
     }
-  } else {
-    // For other tabs, just switch the tab
-    setActiveTab(newTab);
+    setIsManualTabSelect(true); // Mark as manual selection
   }
-}, [userTimeZone, fetchMatches, currentDate, matches]);
+  setActiveTab(newTab);
+}, [findDateWithLiveMatches]);
+
 
   // Add this useEffect after your other useEffects
 useEffect(() => {
@@ -221,25 +233,27 @@ useEffect(() => {
 
 
 const handleDateChange = useCallback((days) => {
-    setCurrentDate(prevDate => {
-      const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
-      const formattedNewDate = format(newDate, 'yyyy-MM-dd');
-      
-      // When changing date, switch to appropriate tab
-      if (!isToday(newDate)) {
-        // If not today, switch to scheduled or finished tab
-        setActiveTab('scheduled'); // or could determine based on time of day
+  setIsManualTabSelect(false); // Reset manual selection when changing dates
+  setCurrentDate(prevDate => {
+    const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
+    const formattedNewDate = format(newDate, 'yyyy-MM-dd');
+    
+    if (!matches[formattedNewDate]) {
+      fetchMatches(newDate);
+    } else {
+      const liveMatchDate = findDateWithLiveMatches();
+      if (liveMatchDate) {
+        setActiveTab('live');
+      } else {
+        const appropriateTab = determineActiveTab(matches[formattedNewDate]);
+        setActiveTab(appropriateTab);
       }
-      
-      // Check if we already have matches for this date
-      if (!matches[formattedNewDate]) {
-        fetchMatches(newDate);
-      }
-      
-      return newDate;
-    });
-    setSelectedContinent('All');
-  }, [matches, fetchMatches]);
+    }
+    
+    return newDate;
+  });
+  setSelectedContinent('All');
+}, [matches, fetchMatches, determineActiveTab, findDateWithLiveMatches]);
 
 const toggleLeague = (leagueKey) => {
     setCollapsedLeagues(prev => ({
@@ -561,30 +575,31 @@ const renderMatches = (matches) => {
   });
 };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'live':
-        return Object.keys(liveMatches).length > 0 ? renderMatches(liveMatches) : (
-          <div className="text-center py-4">
-            <p className="text-gray-600 text-lg">No live matches at the moment.</p>
-          </div>
-        );
-      case 'finished':
-        return Object.keys(finishedMatches).length > 0 ? renderMatches(finishedMatches) : (
-          <div className="text-center py-4">
-            <p className="text-gray-600 text-lg">No finished matches for this day.</p>
-          </div>
-        );
-      case 'scheduled':
-        return Object.keys(scheduledMatches).length > 0 ? renderMatches(scheduledMatches) : (
-          <div className="text-center py-4">
-            <p className="text-gray-600 text-lg">No scheduled matches for this day.</p>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+const renderTabContent = () => {
+  switch (activeTab) {
+    case 'live':
+      // Always show "No live matches" if there are none, regardless of other matches
+      return Object.keys(liveMatches).length > 0 ? renderMatches(liveMatches) : (
+        <div className="text-center py-4">
+          <p className="text-gray-600 text-lg">No live matches at the moment.</p>
+        </div>
+      );
+    case 'finished':
+      return Object.keys(finishedMatches).length > 0 ? renderMatches(finishedMatches) : (
+        <div className="text-center py-4">
+          <p className="text-gray-600 text-lg">No finished matches for this day.</p>
+        </div>
+      );
+    case 'scheduled':
+      return Object.keys(scheduledMatches).length > 0 ? renderMatches(scheduledMatches) : (
+        <div className="text-center py-4">
+          <p className="text-gray-600 text-lg">No scheduled matches for this day.</p>
+        </div>
+      );
+    default:
+      return null;
+  }
+};
 
   return (
     <div className="max-w-3xl mx-auto px-2">
