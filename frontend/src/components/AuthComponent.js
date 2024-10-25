@@ -20,6 +20,10 @@ const AuthComponent = ({ setUser, user }) => {
   const [googleUserInfo, setGoogleUserInfo] = useState(null);
   const [message, setMessage] = useState({ text: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   const countries = useMemo(() => countryList().getData(), []);
   
@@ -149,105 +153,198 @@ const handleLoginSuccess = async (token, userData) => {
       setMessage({ text: 'Failed to complete profile. Please try again.', type: 'error' });
     }
   };
+  
+    const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await api.post('/api/auth/forgot-password', { email: resetEmail });
+      setMessage({ 
+        text: 'If an account exists with this email, you will receive password reset instructions.', 
+        type: 'success' 
+      });
+    } catch (error) {
+      setMessage({ 
+        text: 'Failed to process password reset request. Please try again.', 
+        type: 'error' 
+      });
+    }
+    setIsLoading(false);
+  };
 
+  // Add this function to handle password reset
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await api.post('/api/auth/reset-password', { 
+        token: resetToken, 
+        newPassword 
+      });
+      setMessage({ 
+        text: 'Password successfully reset. Please login with your new password.', 
+        type: 'success' 
+      });
+      setIsForgotPassword(false);
+    } catch (error) {
+      setMessage({ 
+        text: 'Failed to reset password. Please try again.', 
+        type: 'error' 
+      });
+    }
+    setIsLoading(false);
+  };
 
-
-  const renderAuthForm = () => (
+  const renderForgotPasswordForm = () => (
     <div className="bg-white p-8 rounded-lg shadow-md w-96">
-      <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Sign In' : 'Register'}</h2>
+      <h2 className="text-2xl font-bold mb-6">Reset Password</h2>
       {message.text && (
         <div className={`${
-          message.type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
-          message.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
-          'bg-blue-100 border-blue-400 text-blue-700'
-        } border px-4 py-3 rounded relative mb-4`} role="alert">
+          message.type === 'error' ? 'bg-red-100 text-red-700' : 
+          'bg-green-100 text-green-700'
+        } border px-4 py-3 rounded relative mb-4`}>
           <span className="block sm:inline">{message.text}</span>
         </div>
       )}
-      {message.type === 'success' || message.type === 'info' ? (
-        <div className="text-center">
+      <form onSubmit={handleForgotPassword} className="space-y-4">
+        <input
+          type="email"
+          placeholder="Enter your email"
+          value={resetEmail}
+          onChange={(e) => setResetEmail(e.target.value)}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Sending...' : 'Send Reset Link'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsForgotPassword(false);
+            setMessage({ text: '', type: '' });
+          }}
+          className="w-full text-blue-500 hover:underline"
+        >
+          Back to Login
+        </button>
+      </form>
+    </div>
+  );
+
+const renderAuthForm = () => (
+  <div className="bg-white p-8 rounded-lg shadow-md w-96">
+    <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Sign In' : 'Register'}</h2>
+    {message.text && (
+      <div className={`${
+        message.type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
+        message.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
+        'bg-blue-100 border-blue-400 text-blue-700'
+      } border px-4 py-3 rounded relative mb-4`} role="alert">
+        <span className="block sm:inline">{message.text}</span>
+      </div>
+    )}
+    {message.type === 'success' || message.type === 'info' ? (
+      <div className="text-center">
+        <button
+          onClick={handleProceed}
+          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Loading...' : 'Proceed'}
+        </button>
+      </div>
+    ) : (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+        {!isLogin && (
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          />
+        )}
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+        {!isLogin && (
+          <Select
+            options={countries}
+            value={country}
+            onChange={(value) => setCountry(value)}
+            placeholder="Select a country"
+            className="w-full"
+          />
+        )}
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Register')}
+        </button>
+      </form>
+    )}
+    {!message.text && (
+      <>
+        <div className="mt-4">
           <button
-            onClick={handleProceed}
-            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-            disabled={isLoading}
+            className="flex items-center justify-center gap-3 w-full py-2 px-4 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            onClick={() => googleLogin()}
           >
-            {isLoading ? 'Loading...' : 'Proceed'}
+            <img src="https://docs.material-tailwind.com/icons/google.svg" alt="google" className="h-6 w-6" />
+            Continue with Google
           </button>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-          {!isLogin && (
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          )}
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-          {!isLogin && (
-            <Select
-              options={countries}
-              value={country}
-              onChange={(value) => setCountry(value)}
-              placeholder="Select a country"
-              className="w-full"
-            />
-          )}
+        <p className="mt-4 text-center">
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setMessage({ text: '', type: '' });
+            }}
+            className="text-blue-500 hover:underline"
             disabled={isLoading}
           >
-            {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Register')}
+            {isLogin ? 'Register' : 'Sign In'}
           </button>
-        </form>
-      )}
-      {!message.text && (
-        <>
-          <div className="mt-4">
-            <button
-              className="flex items-center justify-center gap-3 w-full py-2 px-4 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-              onClick={() => googleLogin()}
-            >
-              <img src="https://docs.material-tailwind.com/icons/google.svg" alt="google" className="h-6 w-6" />
-              Continue with Google
-            </button>
-          </div>
-          <p className="mt-4 text-center">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+        </p>
+        {isLogin && (
+          <p className="mt-2 text-center">
             <button
               onClick={() => {
-                setIsLogin(!isLogin);
+                setIsForgotPassword(true);
                 setMessage({ text: '', type: '' });
               }}
               className="text-blue-500 hover:underline"
-              disabled={isLoading}
             >
-              {isLogin ? 'Register' : 'Sign In'}
+              Forgot Password?
             </button>
           </p>
-        </>
-      )}
-    </div>
-  );
+        )}
+      </>
+    )}
+  </div>
+);
 
 return (
   <div>
@@ -300,6 +397,8 @@ return (
                 Complete Profile
               </button>
             </form>
+          ) : isForgotPassword ? (
+            renderForgotPasswordForm()
           ) : (
             renderAuthForm()
           )}

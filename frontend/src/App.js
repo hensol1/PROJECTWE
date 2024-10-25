@@ -12,6 +12,7 @@ import IconMenu from './components/IconMenu';
 import LoadingScreen from './components/LoadingScreen';
 import api from './api';
 import config from './config';
+import ResetPassword from './components/ResetPassword';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -103,6 +104,7 @@ function App() {
                 <Route path="/admin" element={<AdminPage />} />
               )}
               <Route path="*" element={<Navigate to="/" />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
           </main>
         </div>

@@ -78,6 +78,10 @@ api.getUserProfile = () => api.get('/api/user/profile');
 api.getUserStats = () => api.get('/api/user/stats');
 api.getLeaderboard = () => api.get('/api/user/leaderboard');
 api.deleteAccount = () => api.delete('/api/user/profile');
+api.forgotPassword = (email) => api.post('/api/auth/forgot-password', { email });
+api.resetPassword = (token, newPassword) => api.post('/api/auth/reset-password', { token, newPassword });
+api.resetPassword = (token, newPassword) => 
+  api.post('/api/auth/reset-password', { token, newPassword });
 
 // Admin related endpoints
 api.makeAIPrediction = (matchId, prediction) => {
