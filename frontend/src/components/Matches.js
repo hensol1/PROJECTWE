@@ -71,10 +71,13 @@ const determineActiveTab = useCallback((matches) => {
 useEffect(() => {
   const currentDateMatches = matches[currentDateKey];
   if (currentDateMatches) {
-    const appropriateTab = determineActiveTab(currentDateMatches);
-    setActiveTab(appropriateTab);
+    // Only change tab on initial load or date change, not on vote updates
+    if (!isToday(currentDate) || activeTab === '') {
+      const appropriateTab = determineActiveTab(currentDateMatches);
+      setActiveTab(appropriateTab);
+    }
   }
-}, [matches, currentDateKey, determineActiveTab]);
+}, [matches, currentDateKey, determineActiveTab, currentDate]);
 
 
   const continentalLeagues = {
@@ -355,36 +358,36 @@ const renderMatchStatus = (match) => {
   );
 };
 
-  const handleVote = async (matchId, vote) => {
-    try {
-      const response = await api.voteForMatch(matchId, vote);
-      setMatches(prevMatches => {
-        const updatedMatches = { ...prevMatches };
-        const currentDate = format(new Date(), 'yyyy-MM-dd');
-        
-        for (let date in updatedMatches) {
-          for (let league in updatedMatches[date]) {
-            updatedMatches[date][league] = updatedMatches[date][league].map(match => 
-              match.id === matchId ? { 
-                ...match, 
-                votes: response.data.votes,
-                voteCounts: {
-                  home: response.data.votes.home,
-                  draw: response.data.votes.draw,
-                  away: response.data.votes.away
-                },
-                userVote: response.data.userVote
-              } : match
-            );
-          }
+const handleVote = async (matchId, vote) => {
+  try {
+    const response = await api.voteForMatch(matchId, vote);
+    setMatches(prevMatches => {
+      const updatedMatches = { ...prevMatches };
+      const currentDate = format(new Date(), 'yyyy-MM-dd');
+      
+      for (let date in updatedMatches) {
+        for (let league in updatedMatches[date]) {
+          updatedMatches[date][league] = updatedMatches[date][league].map(match => 
+            match.id === matchId ? { 
+              ...match, 
+              votes: response.data.votes,
+              voteCounts: {
+                home: response.data.votes.home,
+                draw: response.data.votes.draw,
+                away: response.data.votes.away
+              },
+              userVote: response.data.userVote
+            } : match
+          );
         }
-        return updatedMatches;
-      });
-    } catch (error) {
-      console.error('Error voting:', error);
-      alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
-    }
-  };
+      }
+      return updatedMatches;
+    });
+  } catch (error) {
+    console.error('Error voting:', error);
+    alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
+  }
+};
 
   const renderVoteButtons = useCallback((match) => {
     const hasVoted = match.userVote;
