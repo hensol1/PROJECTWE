@@ -77,6 +77,7 @@ api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
 api.getUserProfile = () => api.get('/api/user/profile');
 api.getUserStats = () => api.get('/api/user/stats');
 api.getLeaderboard = () => api.get('/api/user/leaderboard');
+api.deleteAccount = () => api.delete('/api/user/profile');
 
 // Admin related endpoints
 api.makeAIPrediction = (matchId, prediction) => {
