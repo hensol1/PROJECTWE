@@ -235,37 +235,52 @@ router.post('/reset-all', async (req, res) => {
 
 router.get('/daily', async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfDay(new Date());
+    
+    // Log the date we're looking for
+    console.log('Fetching stats for date:', today);
 
     const [aiStats, fanStats] = await Promise.all([
-      AIPredictionStat.findOne({
-        'dailyStats.date': today
-      }, {
-        'dailyStats.$': 1
-      }),
-      FanPredictionStat.findOne({
-        'dailyStats.date': today
-      }, {
-        'dailyStats.$': 1
-      })
+      AIPredictionStat.findOne(),
+      FanPredictionStat.findOne()
     ]);
 
+    // Find today's stats in both collections
+    const todayAiStats = aiStats?.dailyStats?.find(stat => 
+      startOfDay(new Date(stat.date)).getTime() === today.getTime()
+    ) || { totalPredictions: 0, correctPredictions: 0 };
+
+    const todayFanStats = fanStats?.dailyStats?.find(stat => 
+      startOfDay(new Date(stat.date)).getTime() === today.getTime()
+    ) || { totalPredictions: 0, correctPredictions: 0 };
+
+    // Log what we found
+    console.log('Today stats found:', {
+      ai: todayAiStats,
+      fans: todayFanStats
+    });
+
     const response = {
-      ai: {
-        correct: aiStats?.dailyStats[0]?.correctPredictions || 0,
-        total: aiStats?.dailyStats[0]?.totalPredictions || 0
-      },
-      fans: {
-        correct: fanStats?.dailyStats[0]?.correctPredictions || 0,
-        total: fanStats?.dailyStats[0]?.totalPredictions || 0
+      data: {
+        ai: {
+          total: todayAiStats.totalPredictions,
+          correct: todayAiStats.correctPredictions
+        },
+        fans: {
+          total: todayFanStats.totalPredictions,
+          correct: todayFanStats.correctPredictions
+        }
       }
     };
 
-    res.json({ data: response });
+    console.log('Sending response:', response);
+    res.json(response);
   } catch (error) {
     console.error('Error fetching daily accuracy stats:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
   }
 });
 

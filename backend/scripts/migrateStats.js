@@ -93,18 +93,33 @@ const resetStats = async () => {
 
 const createDailyStats = (matches) => {
   const dailyStats = {};
+  const now = new Date();
+  const todayStart = startOfDay(now);
 
   matches.forEach(match => {
-    // Parse the UTC date and get local date
+    // Parse the UTC date
     const matchDate = parseISO(match.utcDate);
-    const localDate = startOfDay(matchDate).getTime();
-    
-    if (!dailyStats[localDate]) {
-      dailyStats[localDate] = {
-        date: new Date(localDate),
+    const localDate = startOfDay(matchDate);
+    const dateKey = localDate.getTime();
+
+    // Initialize the day's stats if not exists
+    if (!dailyStats[dateKey]) {
+      dailyStats[dateKey] = {
+        date: localDate,
         ai: { total: 0, correct: 0 },
         fans: { total: 0, correct: 0 }
       };
+    }
+    // Add extra logging for today's matches
+    if (localDate.getTime() === todayStart.getTime()) {
+      console.log('Processing today\'s match:', {
+        id: match.id,
+        date: match.utcDate,
+        status: match.status,
+        votes: match.votes,
+        aiPrediction: match.aiPrediction,
+        score: match.score
+      });
     }
 
     console.log('Processing match:', {
@@ -117,13 +132,12 @@ const createDailyStats = (matches) => {
 
     // Process AI prediction
     if (match.aiPrediction) {
-      dailyStats[localDate].ai.total++;
+      dailyStats[dateKey].ai.total++;
       if (checkPredictionCorrect(match.aiPrediction, match)) {
-        dailyStats[localDate].ai.correct++;
+        dailyStats[dateKey].ai.correct++;
       }
     }
 
-    // Process Fan prediction
     const { home = 0, draw = 0, away = 0 } = match.votes || {};
     const totalVotes = home + draw + away;
     if (totalVotes > 0) {
@@ -137,20 +151,23 @@ const createDailyStats = (matches) => {
         fanPrediction = 'DRAW';
       }
 
-      dailyStats[localDate].fans.total++;
+      dailyStats[dateKey].fans.total++;
       if (checkPredictionCorrect(fanPrediction, match)) {
-        dailyStats[localDate].fans.correct++;
+        dailyStats[dateKey].fans.correct++;
       }
     }
   });
 
-  // Debug log daily stats before returning
-  Object.entries(dailyStats).forEach(([date, stats]) => {
-    console.log(`Stats for ${new Date(parseInt(date)).toISOString().split('T')[0]}:`, {
-      ai: stats.ai,
-      fans: stats.fans
+  // Add extra logging for today's stats
+  const todayKey = todayStart.getTime();
+  if (dailyStats[todayKey]) {
+    console.log('\nToday\'s stats:', {
+      date: new Date(todayKey).toISOString(),
+      stats: dailyStats[todayKey]
     });
-  });
+  } else {
+    console.log('\nNo stats found for today');
+  }
 
   return Object.values(dailyStats);
 };
