@@ -156,25 +156,21 @@ const fetchMatches = useCallback(async (date) => {
   }, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData, isInitialLoad]);
 
   // Effect for automatic tab selection
-  useEffect(() => {
-    if (!isLoading && !isInitialLoad) {
-      if (isManualTabSelect) {
-        return;
-      }
-
-      const liveMatchDate = findDateWithLiveMatches();
-      if (liveMatchDate) {
-        setCurrentDate(new Date(liveMatchDate));
-        setActiveTab('live');
-      } else {
-        const currentDateMatches = matches[currentDateKey];
-        if (currentDateMatches) {
-          const appropriateTab = determineActiveTab(currentDateMatches);
-          setActiveTab(appropriateTab);
-        }
+useEffect(() => {
+  if (!isLoading && !isInitialLoad && !isManualTabSelect) {
+    const liveMatchDate = findDateWithLiveMatches();
+    if (liveMatchDate) {
+      setCurrentDate(new Date(liveMatchDate));
+      setActiveTab('live');
+    } else {
+      const currentDateMatches = matches[currentDateKey];
+      if (currentDateMatches) {
+        const appropriateTab = determineActiveTab(currentDateMatches);
+        setActiveTab(appropriateTab);
       }
     }
-  }, [matches, findDateWithLiveMatches, determineActiveTab, currentDateKey, isManualTabSelect, isLoading, isInitialLoad]);
+  }
+}, [matches, findDateWithLiveMatches, determineActiveTab, currentDateKey, isManualTabSelect, isLoading, isInitialLoad]);
 
   const handleTabChange = useCallback((newTab) => {
     setIsManualTabSelect(true);
@@ -189,28 +185,21 @@ const fetchMatches = useCallback(async (date) => {
     setActiveTab(newTab);
   }, [findDateWithLiveMatches]);
 
-  const handleDateChange = useCallback((days) => {
-    setIsManualTabSelect(false);
-    setCurrentDate(prevDate => {
-      const newDate = days > 0 ? addDays(prevDate, days) : subDays(prevDate, Math.abs(days));
-      const formattedNewDate = format(newDate, 'yyyy-MM-dd');
-      
-      if (!matches[formattedNewDate]) {
-        fetchMatches(newDate);
-      } else {
-        const liveMatchDate = findDateWithLiveMatches();
-        if (liveMatchDate) {
-          setActiveTab('live');
-        } else {
-          const appropriateTab = determineActiveTab(matches[formattedNewDate]);
-          setActiveTab(appropriateTab);
-        }
-      }
-      
-      return newDate;
-    });
-    setSelectedContinent('All');
-  }, [matches, fetchMatches, determineActiveTab, findDateWithLiveMatches]);
+const handleDateChange = useCallback((days) => {
+  setIsManualTabSelect(true); // Set this to true to prevent automatic tab switching
+  const newDate = days > 0 ? addDays(currentDate, days) : subDays(currentDate, Math.abs(days));
+  const formattedNewDate = format(newDate, 'yyyy-MM-dd');
+  
+  // Always fetch matches for the new date
+  fetchMatches(newDate);
+  setCurrentDate(newDate);
+
+  // When changing date, always default to scheduled tab first
+  setActiveTab('scheduled');
+  
+  // Reset continent filter
+  setSelectedContinent('All');
+}, [currentDate, fetchMatches]);
 
   const getLeagueContinent = (leagueId) => {
     for (const [continent, leagues] of Object.entries(continentalLeagues)) {
