@@ -7,6 +7,7 @@ import Select from 'react-select';
 import countryList from 'react-select-country-list';
 import { VscAccount } from "react-icons/vsc";
 import { IoExitOutline } from "react-icons/io5";
+import logo from '../assets/images/logo.svg';
 
 const AuthComponent = ({ setUser, user }) => {
   const navigate = useNavigate();
@@ -195,8 +196,23 @@ const handleLoginSuccess = async (token, userData) => {
     setIsLoading(false);
   };
 
-  const renderForgotPasswordForm = () => (
-    <div className="bg-white p-8 rounded-lg shadow-md w-96">
+const renderForgotPasswordForm = () => (
+  <div className="bg-white p-8 rounded-lg shadow-md w-96 relative">
+    {/* Close button */}
+    <button
+      onClick={() => {
+        setIsModalOpen(false);
+        setMessage({ text: '', type: '' });
+      }}
+      className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-xl"
+    >
+      ✕
+    </button>
+
+    {/* Logo */}
+    <div className="flex justify-center mb-6">
+      <img src={logo} alt="We Know Better" className="h-16" />
+    </div>
       <h2 className="text-2xl font-bold mb-6">Reset Password</h2>
       {message.text && (
         <div className={`${
@@ -237,8 +253,24 @@ const handleLoginSuccess = async (token, userData) => {
   );
 
 const renderAuthForm = () => (
-  <div className="bg-white p-8 rounded-lg shadow-md w-96">
-    <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Sign In' : 'Register'}</h2>
+  <div className="bg-white p-8 rounded-lg shadow-md w-96 relative">
+    {/* Close button */}
+    <button
+      onClick={() => {
+        setIsModalOpen(false);
+        setMessage({ text: '', type: '' });
+      }}
+      className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-xl"
+    >
+      ✕
+    </button>
+
+    {/* Logo */}
+    <div className="flex justify-center mb-6">
+      <img src={logo} alt="We Know Better" className="h-16" />
+    </div>
+
+    <h2 className="text-2xl font-bold mb-6 text-center">{isLogin ? 'Sign In' : 'Register'}</h2>
     {message.text && (
       <div className={`${
         message.type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
@@ -371,9 +403,27 @@ return (
     )}
     {isModalOpen && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div className="bg-white p-8 rounded-lg">
+        <div className="relative">
           {isFirstTimeGoogleUser ? (
-            <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
+            <div className="bg-white p-8 rounded-lg relative">
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setMessage({ text: '', type: '' });
+                }}
+                className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ✕
+              </button>
+
+              {/* Logo */}
+              <div className="flex justify-center mb-6">
+                <img src={logo} alt="We Know Better" className="h-16" />
+              </div>
+
+              <form onSubmit={handleFirstTimeGoogleUser} className="space-y-4">
+                <h2 className="text-2xl font-bold mb-6 text-center">Complete Your Profile</h2>
               <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
               <input
                 type="text"
@@ -396,22 +446,12 @@ return (
               >
                 Complete Profile
               </button>
-            </form>
+              </form>
+            </div>
           ) : isForgotPassword ? (
             renderForgotPasswordForm()
           ) : (
             renderAuthForm()
-          )}
-          {!message.text && (
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setMessage({ text: '', type: '' });
-              }}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
           )}
         </div>
       </div>
