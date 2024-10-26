@@ -5,8 +5,14 @@ const Match = require('../models/Match');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
 
-// Set MongoDB URI from environment variable
-const MONGODB_URI = process.env.MONGODB_URI + 'test';
+// Update MongoDB URI for production
+const MONGODB_URI = 'mongodb+srv://cluster0.asbrji.mongodb.net/test';
+// You might need to add username and password from your .env file
+// const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.asbrji.mongodb.net/test`;
+
+// Add debug logging
+console.log('Environment:', process.env.NODE_ENV);
+console.log('MongoDB URI:', MONGODB_URI.replace(/mongodb\+srv:\/\/.*@/, 'mongodb+srv://****:****@')); // Hide credentials in logs
 
 // Set strictQuery to false to handle the deprecation warning
 mongoose.set('strictQuery', false);
