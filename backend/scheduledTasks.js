@@ -115,15 +115,15 @@ cron.schedule('0 9 * * *', () => {
   });
 });
 
-// Schedule accuracy stats recalculation every hour
-cron.schedule('0 * * * *', async () => {
+// Schedule accuracy stats recalculation every 10 minutes
+cron.schedule('*/10 * * * *', async () => {
   try {
     // Get the latest accuracy stats
     const lastAccuracyStats = await AccuracyStats.findOne().sort({ lastUpdated: -1 });
     const lastUpdate = lastAccuracyStats?.lastUpdated || new Date(0);
     
-    // Only recalculate if it's been more than an hour since last update
-    if (Date.now() - lastUpdate.getTime() > 60 * 60 * 1000) {
+    // Only recalculate if it's been more than 10 minutes since last update
+    if (Date.now() - lastUpdate.getTime() > 10 * 60 * 1000) {
       console.log('Running scheduled accuracy recalculation');
       const stats = await recalculateAllStats();
       console.log('Accuracy stats updated:', stats);
