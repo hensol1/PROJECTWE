@@ -8,7 +8,7 @@ const FanPredictionStat = require('./models/FanPredictionStat');
 const AIPredictionStat = require('./models/AIPredictionStat');
 const AccuracyStats = require('./models/AccuracyStats');
 const { recalculateAllStats } = require('./utils/statsProcessor');
-const { startOfDay, endOfDay, parseISO, addDays, format } = require('date-fns');
+const { endOfDay, parseISO, addDays, format } = require('date-fns');
 const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
 
 async function updateDailyPredictionStats() {
