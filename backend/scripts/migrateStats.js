@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { startOfDay } = require('date-fns');
+const { startOfDay, parseISO } = require('date-fns');
 const Match = require('../models/Match');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
@@ -31,6 +31,27 @@ const verifyData = async () => {
         aiPrediction: sampleMatch.aiPrediction,
         score: sampleMatch.score
       });
+
+      // Get today's matches
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayMatches = await Match.find({
+        status: 'FINISHED',
+        utcDate: {
+          $gte: today.toISOString(),
+          $lte: new Date().toISOString()
+        }
+      });
+      console.log(`\nToday's finished matches: ${todayMatches.length}`);
+      if (todayMatches.length > 0) {
+        console.log('Sample today match:', {
+          id: todayMatches[0].id,
+          utcDate: todayMatches[0].utcDate,
+          status: todayMatches[0].status,
+          votes: todayMatches[0].votes,
+          aiPrediction: todayMatches[0].aiPrediction
+        });
+      }
     }
 
     const currentStats = await Promise.all([
@@ -48,49 +69,6 @@ const verifyData = async () => {
     return false;
   }
 };
-
-const debugQueries = async () => {
-  try {
-    // List all collections
-    const collections = await mongoose.connection.db.listCollections().toArray();
-    console.log('\nAvailable collections:', collections.map(c => c.name));
-
-    // Check matches collection
-    const matchesCount = await Match.countDocuments();
-    const finishedMatchesCount = await Match.countDocuments({ status: 'FINISHED' });
-    console.log('\nMatches statistics:');
-    console.log(`Total matches: ${matchesCount}`);
-    console.log(`Finished matches: ${finishedMatchesCount}`);
-
-    // Sample finished match
-    if (finishedMatchesCount > 0) {
-      const sampleMatch = await Match.findOne({ status: 'FINISHED' });
-      console.log('\nSample finished match:', JSON.stringify(sampleMatch, null, 2));
-    }
-
-    // Check prediction stats collections
-    const aiStats = await AIPredictionStat.findOne();
-    const fanStats = await FanPredictionStat.findOne();
-    
-    console.log('\nCurrent prediction stats:');
-    console.log('AI Stats:', aiStats ? {
-      total: aiStats.totalPredictions,
-      correct: aiStats.correctPredictions,
-      dailyStatsCount: aiStats.dailyStats?.length
-    } : 'No AI stats found');
-    console.log('Fan Stats:', fanStats ? {
-      total: fanStats.totalPredictions,
-      correct: fanStats.correctPredictions,
-      dailyStatsCount: fanStats.dailyStats?.length
-    } : 'No fan stats found');
-
-    return true;
-  } catch (error) {
-    console.error('Debug queries failed:', error);
-    return false;
-  }
-};
-
 
 const checkPredictionCorrect = (prediction, match) => {
   const homeScore = match.score.fullTime.home;
@@ -117,26 +95,36 @@ const createDailyStats = (matches) => {
   const dailyStats = {};
 
   matches.forEach(match => {
-    const matchDate = startOfDay(new Date(match.utcDate)).getTime();
+    // Parse the UTC date and get local date
+    const matchDate = parseISO(match.utcDate);
+    const localDate = startOfDay(matchDate).getTime();
     
-    if (!dailyStats[matchDate]) {
-      dailyStats[matchDate] = {
-        date: new Date(matchDate),
+    if (!dailyStats[localDate]) {
+      dailyStats[localDate] = {
+        date: new Date(localDate),
         ai: { total: 0, correct: 0 },
         fans: { total: 0, correct: 0 }
       };
     }
 
+    console.log('Processing match:', {
+      id: match.id,
+      date: match.utcDate,
+      localDate: new Date(localDate).toISOString(),
+      hasAIPrediction: !!match.aiPrediction,
+      votesCount: match.votes ? (match.votes.home + match.votes.draw + match.votes.away) : 0
+    });
+
     // Process AI prediction
     if (match.aiPrediction) {
-      dailyStats[matchDate].ai.total++;
+      dailyStats[localDate].ai.total++;
       if (checkPredictionCorrect(match.aiPrediction, match)) {
-        dailyStats[matchDate].ai.correct++;
+        dailyStats[localDate].ai.correct++;
       }
     }
 
     // Process Fan prediction
-    const { home, draw, away } = match.votes;
+    const { home = 0, draw = 0, away = 0 } = match.votes || {};
     const totalVotes = home + draw + away;
     if (totalVotes > 0) {
       const maxVotes = Math.max(home, draw, away);
@@ -149,11 +137,19 @@ const createDailyStats = (matches) => {
         fanPrediction = 'DRAW';
       }
 
-      dailyStats[matchDate].fans.total++;
+      dailyStats[localDate].fans.total++;
       if (checkPredictionCorrect(fanPrediction, match)) {
-        dailyStats[matchDate].fans.correct++;
+        dailyStats[localDate].fans.correct++;
       }
     }
+  });
+
+  // Debug log daily stats before returning
+  Object.entries(dailyStats).forEach(([date, stats]) => {
+    console.log(`Stats for ${new Date(parseInt(date)).toISOString().split('T')[0]}:`, {
+      ai: stats.ai,
+      fans: stats.fans
+    });
   });
 
   return Object.values(dailyStats);
@@ -184,32 +180,25 @@ const migrate = async () => {
     // Reset existing stats
     await resetStats();
 
-    // Get all finished matches
+    // Get all finished matches including today
     const matches = await Match.find({ 
       status: 'FINISHED',
-      utcDate: { $exists: true }
+      utcDate: { 
+        $exists: true,
+        $lte: new Date().toISOString() // Include matches up to current time
+      }
     }).sort({ utcDate: 1 });
     
     console.log(`Found ${matches.length} finished matches to process`);
 
-    if (matches.length === 0) {
-      console.log('No matches to process. Exiting...');
-      await mongoose.connection.close();
-      process.exit(0);
-    }
-
-    // Log first 5 matches for verification
-    console.log('\nProcessing matches:');
-    matches.slice(0, 5).forEach((match, index) => {
-      console.log(`Match ${index + 1}:`, {
-        id: match.id,
-        date: match.utcDate,
-        status: match.status,
-        votes: match.votes,
-        aiPrediction: match.aiPrediction,
-        score: match.score?.fullTime
+    // Log the date range of matches
+    if (matches.length > 0) {
+      console.log('Date range:', {
+        earliest: matches[0].utcDate,
+        latest: matches[matches.length - 1].utcDate,
+        currentTime: new Date().toISOString()
       });
-    });
+    }
 
     // Calculate daily stats
     const dailyStats = createDailyStats(matches);
