@@ -8,19 +8,55 @@ const FanPredictionStat = require('./models/FanPredictionStat');
 const AIPredictionStat = require('./models/AIPredictionStat');
 const AccuracyStats = require('./models/AccuracyStats');
 const { recalculateAllStats } = require('./utils/statsProcessor');
+const { startOfDay, endOfDay, parseISO, addDays, format } = require('date-fns');
+const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
 
 async function updateDailyPredictionStats() {
   try {
-    const today = startOfDay(new Date());
+    // Get matches for multiple time zones to ensure coverage
+    const timeZones = ['UTC', 'Europe/London', 'Asia/Jerusalem', 'America/New_York'];
+    let allTodayMatches = new Set();
+
+    for (const timeZone of timeZones) {
+      const now = new Date();
+      const localDate = utcToZonedTime(now, timeZone);
+      const todayStart = zonedTimeToUtc(startOfDay(localDate), timeZone);
+      const todayEnd = zonedTimeToUtc(endOfDay(localDate), timeZone);
+
+      console.log(`Checking matches for timezone ${timeZone}:`, {
+        localDate: format(localDate, 'yyyy-MM-dd HH:mm:ss'),
+        startTime: todayStart.toISOString(),
+        endTime: todayEnd.toISOString()
+      });
+
+      const matches = await Match.find({
+        status: 'FINISHED',
+        utcDate: {
+          $gte: todayStart.toISOString(),
+          $lte: todayEnd.toISOString()
+        }
+      });
+
+      matches.forEach(match => allTodayMatches.add(match.id));
+    }
+
+    // Get all unique matches found
     const todayMatches = await Match.find({
-      status: 'FINISHED',
-      utcDate: {
-        $gte: today.toISOString(),
-        $lte: new Date().toISOString()
-      }
+      id: { $in: Array.from(allTodayMatches) },
+      status: 'FINISHED'
     });
 
-    console.log(`Found ${todayMatches.length} finished matches for today's stats`);
+    console.log(`Found ${todayMatches.length} unique finished matches for today`);
+    
+    // Log sample matches for verification
+    if (todayMatches.length > 0) {
+      console.log('Sample matches:', todayMatches.slice(0, 3).map(match => ({
+        id: match.id,
+        date: match.utcDate,
+        teams: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
+        score: match.score.fullTime
+      })));
+    }
 
     // Initialize stats
     const stats = {
@@ -61,49 +97,53 @@ async function updateDailyPredictionStats() {
       }
     });
 
+    console.log('Calculated stats:', {
+      date: new Date().toISOString(),
+      stats,
+      matchCount: todayMatches.length
+    });
+
     // Update stats in database
     const [aiStats, fanStats] = await Promise.all([
       AIPredictionStat.findOne(),
       FanPredictionStat.findOne()
     ]);
 
-    if (aiStats) {
-      let todayAiStats = aiStats.dailyStats.find(
-        stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
-      );
-      
-      if (todayAiStats) {
-        todayAiStats.totalPredictions = stats.ai.total;
-        todayAiStats.correctPredictions = stats.ai.correct;
-      } else {
-        aiStats.dailyStats.push({
-          date: today,
-          totalPredictions: stats.ai.total,
-          correctPredictions: stats.ai.correct
-        });
+    // Function to update stats for a specific prediction type
+    const updateStatsForType = async (stats, todayStats, type) => {
+      // Find or create today's stats for each timezone
+      for (const timeZone of timeZones) {
+        const localDate = utcToZonedTime(new Date(), timeZone);
+        const localToday = startOfDay(localDate);
+        
+        let zoneDayStats = todayStats.dailyStats.find(stat => 
+          startOfDay(utcToZonedTime(new Date(stat.date), timeZone)).getTime() === localToday.getTime()
+        );
+
+        if (!zoneDayStats) {
+          todayStats.dailyStats.push({
+            date: zonedTimeToUtc(localToday, timeZone),
+            totalPredictions: stats[type].total,
+            correctPredictions: stats[type].correct
+          });
+        } else {
+          zoneDayStats.totalPredictions = stats[type].total;
+          zoneDayStats.correctPredictions = stats[type].correct;
+        }
       }
-      await aiStats.save();
+      
+      await todayStats.save();
+    };
+
+    if (aiStats) {
+      await updateStatsForType(stats, aiStats, 'ai');
     }
 
     if (fanStats) {
-      let todayFanStats = fanStats.dailyStats.find(
-        stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
-      );
-      
-      if (todayFanStats) {
-        todayFanStats.totalPredictions = stats.fans.total;
-        todayFanStats.correctPredictions = stats.fans.correct;
-      } else {
-        fanStats.dailyStats.push({
-          date: today,
-          totalPredictions: stats.fans.total,
-          correctPredictions: stats.fans.correct
-        });
-      }
-      await fanStats.save();
+      await updateStatsForType(stats, fanStats, 'fans');
     }
 
-    console.log('Daily stats updated:', stats);
+    console.log('Daily stats updated successfully for all timezones');
   } catch (error) {
     console.error('Error updating daily prediction stats:', error);
   }
