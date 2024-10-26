@@ -1,5 +1,5 @@
-// scheduledTasks.js
 const cron = require('node-cron');
+const { startOfDay } = require('date-fns');
 const Match = require('./models/Match');
 const User = require('./models/User');
 const { recalculateUserStats } = require('./utils/userStats');
@@ -8,6 +8,106 @@ const FanPredictionStat = require('./models/FanPredictionStat');
 const AIPredictionStat = require('./models/AIPredictionStat');
 const AccuracyStats = require('./models/AccuracyStats');
 const { recalculateAllStats } = require('./utils/statsProcessor');
+
+async function updateDailyPredictionStats() {
+  try {
+    const today = startOfDay(new Date());
+    const todayMatches = await Match.find({
+      status: 'FINISHED',
+      utcDate: {
+        $gte: today.toISOString(),
+        $lte: new Date().toISOString()
+      }
+    });
+
+    console.log(`Found ${todayMatches.length} finished matches for today's stats`);
+
+    // Initialize stats
+    const stats = {
+      ai: { total: 0, correct: 0 },
+      fans: { total: 0, correct: 0 }
+    };
+
+    // Process matches
+    todayMatches.forEach(match => {
+      // Process AI prediction
+      if (match.aiPrediction) {
+        stats.ai.total++;
+        const homeScore = match.score.fullTime.home;
+        const awayScore = match.score.fullTime.away;
+        let actualResult = homeScore > awayScore ? 'HOME_TEAM' : (awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW');
+        if (match.aiPrediction === actualResult) {
+          stats.ai.correct++;
+        }
+      }
+
+      // Process Fan predictions
+      const { home = 0, draw = 0, away = 0 } = match.votes || {};
+      const totalVotes = home + draw + away;
+      if (totalVotes > 0) {
+        const maxVotes = Math.max(home, draw, away);
+        let fanPrediction;
+        if (home === maxVotes) fanPrediction = 'HOME_TEAM';
+        else if (away === maxVotes) fanPrediction = 'AWAY_TEAM';
+        else fanPrediction = 'DRAW';
+
+        stats.fans.total++;
+        const homeScore = match.score.fullTime.home;
+        const awayScore = match.score.fullTime.away;
+        let actualResult = homeScore > awayScore ? 'HOME_TEAM' : (awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW');
+        if (fanPrediction === actualResult) {
+          stats.fans.correct++;
+        }
+      }
+    });
+
+    // Update stats in database
+    const [aiStats, fanStats] = await Promise.all([
+      AIPredictionStat.findOne(),
+      FanPredictionStat.findOne()
+    ]);
+
+    if (aiStats) {
+      let todayAiStats = aiStats.dailyStats.find(
+        stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
+      );
+      
+      if (todayAiStats) {
+        todayAiStats.totalPredictions = stats.ai.total;
+        todayAiStats.correctPredictions = stats.ai.correct;
+      } else {
+        aiStats.dailyStats.push({
+          date: today,
+          totalPredictions: stats.ai.total,
+          correctPredictions: stats.ai.correct
+        });
+      }
+      await aiStats.save();
+    }
+
+    if (fanStats) {
+      let todayFanStats = fanStats.dailyStats.find(
+        stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
+      );
+      
+      if (todayFanStats) {
+        todayFanStats.totalPredictions = stats.fans.total;
+        todayFanStats.correctPredictions = stats.fans.correct;
+      } else {
+        fanStats.dailyStats.push({
+          date: today,
+          totalPredictions: stats.fans.total,
+          correctPredictions: stats.fans.correct
+        });
+      }
+      await fanStats.save();
+    }
+
+    console.log('Daily stats updated:', stats);
+  } catch (error) {
+    console.error('Error updating daily prediction stats:', error);
+  }
+}
 
 async function updateUserStats() {
   try {
@@ -115,34 +215,76 @@ cron.schedule('0 9 * * *', () => {
   });
 });
 
-// Schedule accuracy stats recalculation every 10 minutes
+// Check for finished matches and update stats every 2 minutes
+cron.schedule('*/2 * * * *', async () => {
+  try {
+    console.log('Checking for finished matches...');
+    await updateDailyPredictionStats();
+    await updateUserStats();
+  } catch (error) {
+    console.error('Error in finished matches check:', error);
+  }
+});
+
+// Reset daily stats at midnight
+cron.schedule('0 0 * * *', async () => {
+  try {
+    console.log('Starting daily stats reset...');
+    const today = startOfDay(new Date());
+    
+    // Initialize new day's stats in both collections
+    await Promise.all([
+      AIPredictionStat.findOneAndUpdate(
+        {},
+        {
+          $push: {
+            dailyStats: {
+              date: today,
+              totalPredictions: 0,
+              correctPredictions: 0
+            }
+          }
+        },
+        { upsert: true }
+      ),
+      FanPredictionStat.findOneAndUpdate(
+        {},
+        {
+          $push: {
+            dailyStats: {
+              date: today,
+              totalPredictions: 0,
+              correctPredictions: 0
+            }
+          }
+        },
+        { upsert: true }
+      )
+    ]);
+    
+    console.log('Daily stats reset completed');
+  } catch (error) {
+    console.error('Error in daily stats reset:', error);
+  }
+});
+
+// Accuracy stats recalculation
 cron.schedule('*/10 * * * *', async () => {
   try {
-    // Get the latest accuracy stats
     const lastAccuracyStats = await AccuracyStats.findOne().sort({ lastUpdated: -1 });
     const lastUpdate = lastAccuracyStats?.lastUpdated || new Date(0);
     
-    // Only recalculate if it's been more than 10 minutes since last update
     if (Date.now() - lastUpdate.getTime() > 10 * 60 * 1000) {
       console.log('Running scheduled accuracy recalculation');
       const stats = await recalculateAllStats();
       console.log('Accuracy stats updated:', stats);
-    } else {
-      console.log('Skipping accuracy recalculation - last update was too recent');
     }
   } catch (error) {
     console.error('Error in scheduled accuracy recalculation:', error);
   }
 });
 
-// Schedule user stats update every 5 minutes
-cron.schedule('*/5 * * * *', () => {
-  console.log('Running scheduled user stats update');
-  updateUserStats().catch(error => {
-    console.error('Error in scheduled user stats update:', error);
-  });
-});
-
 module.exports = {
-  updateUserStats
+  updateUserStats,
+  updateDailyPredictionStats
 };
