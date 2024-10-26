@@ -49,6 +49,49 @@ const verifyData = async () => {
   }
 };
 
+const debugQueries = async () => {
+  try {
+    // List all collections
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('\nAvailable collections:', collections.map(c => c.name));
+
+    // Check matches collection
+    const matchesCount = await Match.countDocuments();
+    const finishedMatchesCount = await Match.countDocuments({ status: 'FINISHED' });
+    console.log('\nMatches statistics:');
+    console.log(`Total matches: ${matchesCount}`);
+    console.log(`Finished matches: ${finishedMatchesCount}`);
+
+    // Sample finished match
+    if (finishedMatchesCount > 0) {
+      const sampleMatch = await Match.findOne({ status: 'FINISHED' });
+      console.log('\nSample finished match:', JSON.stringify(sampleMatch, null, 2));
+    }
+
+    // Check prediction stats collections
+    const aiStats = await AIPredictionStat.findOne();
+    const fanStats = await FanPredictionStat.findOne();
+    
+    console.log('\nCurrent prediction stats:');
+    console.log('AI Stats:', aiStats ? {
+      total: aiStats.totalPredictions,
+      correct: aiStats.correctPredictions,
+      dailyStatsCount: aiStats.dailyStats?.length
+    } : 'No AI stats found');
+    console.log('Fan Stats:', fanStats ? {
+      total: fanStats.totalPredictions,
+      correct: fanStats.correctPredictions,
+      dailyStatsCount: fanStats.dailyStats?.length
+    } : 'No fan stats found');
+
+    return true;
+  } catch (error) {
+    console.error('Debug queries failed:', error);
+    return false;
+  }
+};
+
+
 const checkPredictionCorrect = (prediction, match) => {
   const homeScore = match.score.fullTime.home;
   const awayScore = match.score.fullTime.away;
