@@ -66,6 +66,29 @@ api.fetchMatches = (date) => {
   });
 };
 
+api.fetchAccuracy = async () => {
+  try {
+    const response = await api.get('/api/accuracy');
+    console.log('API accuracy response:', response);
+    return response.data;
+  } catch (error) {
+    console.error('Error in fetchAccuracy:', error);
+    throw error;
+  }
+};
+
+api.fetchDailyAccuracy = async () => {
+  try {
+    const response = await api.get('/api/accuracy/daily');
+    console.log('API daily accuracy response:', response);
+    return response.data;
+  } catch (error) {
+    console.error('Error in fetchDailyAccuracy:', error);
+    throw error;
+  }
+};
+
+
 // Match related endpoints
 api.voteForMatch = (matchId, vote) => {
   return api.post(`/api/matches/${matchId}/vote`, { vote });

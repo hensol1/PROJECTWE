@@ -9,6 +9,108 @@ const { recalculateUserStats } = require('../utils/userStats');
 const optionalAuth = require('../middleware/optionalAuth');
 const auth = require('../middleware/auth');
 
+// Add these helper functions at the top of the file
+const checkPredictionCorrect = (prediction, match) => {
+  const homeScore = match.score.fullTime.home;
+  const awayScore = match.score.fullTime.away;
+  
+  let actualResult;
+  if (homeScore > awayScore) actualResult = 'HOME_TEAM';
+  else if (awayScore > homeScore) actualResult = 'AWAY_TEAM';
+  else actualResult = 'DRAW';
+  
+  return prediction === actualResult;
+};
+
+const updatePredictionStats = async (modelType, isCorrect) => {
+  const today = startOfDay(new Date());
+  const StatModel = modelType === 'AI' ? AIPredictionStat : FanPredictionStat;
+  
+  try {
+    let stats = await StatModel.findOne();
+    if (!stats) {
+      stats = new StatModel();
+    }
+
+    // Update total stats
+    stats.totalPredictions += 1;
+    if (isCorrect) {
+      stats.correctPredictions += 1;
+    }
+
+    // Find or create today's daily stat
+    let dailyStat = stats.dailyStats.find(stat => 
+      startOfDay(stat.date).getTime() === today.getTime()
+    );
+
+    if (!dailyStat) {
+      stats.dailyStats.push({
+        date: today,
+        totalPredictions: 0,
+        correctPredictions: 0
+      });
+      dailyStat = stats.dailyStats[stats.dailyStats.length - 1];
+    }
+
+    // Update daily stats
+    dailyStat.totalPredictions += 1;
+    if (isCorrect) {
+      dailyStat.correctPredictions += 1;
+    }
+
+    // Keep last 30 days of daily stats
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    stats.dailyStats = stats.dailyStats.filter(stat => 
+      stat.date >= thirtyDaysAgo
+    );
+
+    await stats.save();
+    return stats;
+  } catch (error) {
+    console.error(`Error updating ${modelType} prediction stats:`, error);
+    throw error;
+  }
+};
+
+// Add this function to handle match completion
+const handleMatchCompletion = async (match) => {
+  if (match.status === 'FINISHED') {
+    try {
+      // Get the fan prediction based on votes
+      const { home, draw, away } = match.votes;
+      const totalVotes = home + draw + away;
+      
+      if (totalVotes > 0) {
+        const maxVotes = Math.max(home, draw, away);
+        let fanPrediction;
+        if (home === maxVotes) {
+          fanPrediction = 'HOME_TEAM';
+        } else if (away === maxVotes) {
+          fanPrediction = 'AWAY_TEAM';
+        } else {
+          fanPrediction = 'DRAW';
+        }
+
+        // Update Fan stats
+        const fanCorrect = checkPredictionCorrect(fanPrediction, match);
+        await updatePredictionStats('FAN', fanCorrect);
+      }
+
+      // If there's an AI prediction, update AI stats
+      if (match.aiPrediction) {
+        const aiCorrect = checkPredictionCorrect(match.aiPrediction, match);
+        await updatePredictionStats('AI', aiCorrect);
+      }
+
+      console.log('Updated prediction stats for match:', match.id);
+    } catch (error) {
+      console.error('Error updating match completion stats:', error);
+      throw error;
+    }
+  }
+};
+
 // Cache for fan accuracy stats
 let fanAccuracyCache = null;
 let lastCalculationTime = 0;
@@ -383,6 +485,33 @@ router.post('/update-all-user-stats', auth, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+router.post('/update-match-status', async (req, res) => {
+  try {
+    const { matchId, status, score } = req.body;
+    const match = await Match.findById(matchId);
+    
+    if (!match) {
+      return res.status(404).json({ message: 'Match not found' });
+    }
+
+    const wasFinished = match.status === 'FINISHED';
+    match.status = status;
+    match.score = score;
+    await match.save();
+
+    // Only update stats if the match just finished (wasn't finished before)
+    if (!wasFinished && status === 'FINISHED') {
+      await handleMatchCompletion(match);
+    }
+
+    res.json({ message: 'Match updated successfully' });
+  } catch (error) {
+    console.error('Error updating match:', error);
+    res.status(500).json({ message: 'Error updating match' });
+  }
+});
+
 
 
 

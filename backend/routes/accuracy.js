@@ -4,6 +4,73 @@ const AccuracyStats = require('../models/AccuracyStats');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
 const { recalculateAllStats } = require('../utils/statsProcessor');
+const { startOfDay } = require('date-fns');
+
+const updatePredictionStats = async (modelType, isCorrect) => {
+  const today = startOfDay(new Date());
+  const StatModel = modelType === 'AI' ? AIPredictionStat : FanPredictionStat;
+  
+  try {
+    // Get or create stats document
+    let stats = await StatModel.findOne();
+    if (!stats) {
+      stats = new StatModel();
+    }
+
+    // Update total stats
+    stats.totalPredictions += 1;
+    if (isCorrect) {
+      stats.correctPredictions += 1;
+    }
+
+    // Find today's daily stat or create it
+    let dailyStat = stats.dailyStats.find(stat => 
+      startOfDay(stat.date).getTime() === today.getTime()
+    );
+
+    if (!dailyStat) {
+      stats.dailyStats.push({
+        date: today,
+        totalPredictions: 0,
+        correctPredictions: 0
+      });
+      dailyStat = stats.dailyStats[stats.dailyStats.length - 1];
+    }
+
+    // Update daily stats
+    dailyStat.totalPredictions += 1;
+    if (isCorrect) {
+      dailyStat.correctPredictions += 1;
+    }
+
+    // Remove old daily stats (keep last 30 days)
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    stats.dailyStats = stats.dailyStats.filter(stat => 
+      stat.date >= thirtyDaysAgo
+    );
+
+    await stats.save();
+    return stats;
+  } catch (error) {
+    console.error(`Error updating ${modelType} prediction stats:`, error);
+    throw error;
+  }
+};
+
+// Add this function to check prediction correctness
+const checkPredictionCorrect = (prediction, match) => {
+  const homeScore = match.score.fullTime.home;
+  const awayScore = match.score.fullTime.away;
+  
+  let actualResult;
+  if (homeScore > awayScore) actualResult = 'HOME_TEAM';
+  else if (awayScore > homeScore) actualResult = 'AWAY_TEAM';
+  else actualResult = 'DRAW';
+  
+  return prediction === actualResult;
+};
+
 
 router.get('/', async (req, res) => {
   try {
@@ -165,5 +232,42 @@ router.post('/reset-all', async (req, res) => {
     });
   }
 });
+
+router.get('/daily', async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [aiStats, fanStats] = await Promise.all([
+      AIPredictionStat.findOne({
+        'dailyStats.date': today
+      }, {
+        'dailyStats.$': 1
+      }),
+      FanPredictionStat.findOne({
+        'dailyStats.date': today
+      }, {
+        'dailyStats.$': 1
+      })
+    ]);
+
+    const response = {
+      ai: {
+        correct: aiStats?.dailyStats[0]?.correctPredictions || 0,
+        total: aiStats?.dailyStats[0]?.totalPredictions || 0
+      },
+      fans: {
+        correct: fanStats?.dailyStats[0]?.correctPredictions || 0,
+        total: fanStats?.dailyStats[0]?.totalPredictions || 0
+      }
+    };
+
+    res.json({ data: response });
+  } catch (error) {
+    console.error('Error fetching daily accuracy stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 module.exports = router;
