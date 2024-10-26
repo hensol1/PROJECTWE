@@ -5,17 +5,49 @@ const Match = require('../models/Match');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
 
-// Update MongoDB URI for production
-const MONGODB_URI = 'mongodb+srv://weknowbetteradmin:dMMZV14rCKTYLJXG@cluster0.sbr1j.mongodb.net/test';
-// You might need to add username and password from your .env file
-// const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.asbrji.mongodb.net/test`;
+// Use the environment variable directly and append the 'test' database name
+const MONGODB_URI = process.env.MONGODB_URI + 'test';
 
 // Add debug logging
 console.log('Environment:', process.env.NODE_ENV);
-console.log('MongoDB URI:', MONGODB_URI.replace(/mongodb\+srv:\/\/.*@/, 'mongodb+srv://****:****@')); // Hide credentials in logs
+console.log('MongoDB URI:', MONGODB_URI.replace(/mongodb\+srv:\/\/.*@/, 'mongodb+srv://****:****@'));
 
 // Set strictQuery to false to handle the deprecation warning
 mongoose.set('strictQuery', false);
+
+const verifyData = async () => {
+  try {
+    console.log('\nVerifying data...');
+    const finishedMatches = await Match.find({ status: 'FINISHED' }).count();
+    console.log(`Number of finished matches: ${finishedMatches}`);
+
+    if (finishedMatches > 0) {
+      const sampleMatch = await Match.findOne({ status: 'FINISHED' });
+      console.log('Sample match data:', {
+        id: sampleMatch.id,
+        utcDate: sampleMatch.utcDate,
+        status: sampleMatch.status,
+        votes: sampleMatch.votes,
+        aiPrediction: sampleMatch.aiPrediction,
+        score: sampleMatch.score
+      });
+    }
+
+    const currentStats = await Promise.all([
+      AIPredictionStat.findOne(),
+      FanPredictionStat.findOne()
+    ]);
+
+    console.log('\nCurrent Stats:');
+    console.log('AI Stats:', currentStats[0]);
+    console.log('Fan Stats:', currentStats[1]);
+    
+    return finishedMatches > 0;
+  } catch (error) {
+    console.error('Data verification failed:', error);
+    return false;
+  }
+};
 
 const checkPredictionCorrect = (prediction, match) => {
   const homeScore = match.score.fullTime.home;
@@ -89,12 +121,22 @@ const migrate = async () => {
     console.log('Starting stats migration...');
     console.log('Connecting to MongoDB at:', MONGODB_URI);
     
-    // Connect to MongoDB
+    // Connect to MongoDB with updated options
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
+      retryWrites: true,
+      w: 'majority'
     });
     console.log('Connected to MongoDB successfully');
+
+    // Verify data before proceeding
+    const dataValid = await verifyData();
+    if (!dataValid) {
+      console.error('Data verification failed. Aborting migration.');
+      await mongoose.connection.close();
+      process.exit(1);
+    }
 
     // Reset existing stats
     await resetStats();
@@ -112,6 +154,19 @@ const migrate = async () => {
       await mongoose.connection.close();
       process.exit(0);
     }
+
+    // Log first 5 matches for verification
+    console.log('\nProcessing matches:');
+    matches.slice(0, 5).forEach((match, index) => {
+      console.log(`Match ${index + 1}:`, {
+        id: match.id,
+        date: match.utcDate,
+        status: match.status,
+        votes: match.votes,
+        aiPrediction: match.aiPrediction,
+        score: match.score?.fullTime
+      });
+    });
 
     // Calculate daily stats
     const dailyStats = createDailyStats(matches);
@@ -165,14 +220,20 @@ const migrate = async () => {
     console.log('Closed MongoDB connection');
     process.exit(0);
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('Migration failed:', {
+      message: error.message,
+      stack: error.stack,
+      mongoURI: MONGODB_URI.replace(/mongodb\+srv:\/\/.*@/, 'mongodb+srv://****:****@')
+    });
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
-      console.log('Closed MongoDB connection');
     }
     process.exit(1);
   }
 };
 
-// Run the migration
-migrate();
+// Run the migration with better error handling
+migrate().catch(error => {
+  console.error('Unhandled error during migration:', error);
+  process.exit(1);
+});
