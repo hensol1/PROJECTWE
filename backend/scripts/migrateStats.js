@@ -5,70 +5,11 @@ const Match = require('../models/Match');
 const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
 
-// Use the environment variable directly and append the 'test' database name
+// Set MongoDB URI from environment variable
 const MONGODB_URI = process.env.MONGODB_URI + 'test';
-
-// Add debug logging
-console.log('Environment:', process.env.NODE_ENV);
-console.log('MongoDB URI:', MONGODB_URI.replace(/mongodb\+srv:\/\/.*@/, 'mongodb+srv://****:****@'));
 
 // Set strictQuery to false to handle the deprecation warning
 mongoose.set('strictQuery', false);
-
-const verifyData = async () => {
-  try {
-    console.log('\nVerifying data...');
-    const finishedMatches = await Match.find({ status: 'FINISHED' }).count();
-    console.log(`Number of finished matches: ${finishedMatches}`);
-
-    if (finishedMatches > 0) {
-      const sampleMatch = await Match.findOne({ status: 'FINISHED' });
-      console.log('Sample match data:', {
-        id: sampleMatch.id,
-        utcDate: sampleMatch.utcDate,
-        status: sampleMatch.status,
-        votes: sampleMatch.votes,
-        aiPrediction: sampleMatch.aiPrediction,
-        score: sampleMatch.score
-      });
-
-      // Get today's matches
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayMatches = await Match.find({
-        status: 'FINISHED',
-        utcDate: {
-          $gte: today.toISOString(),
-          $lte: new Date().toISOString()
-        }
-      });
-      console.log(`\nToday's finished matches: ${todayMatches.length}`);
-      if (todayMatches.length > 0) {
-        console.log('Sample today match:', {
-          id: todayMatches[0].id,
-          utcDate: todayMatches[0].utcDate,
-          status: todayMatches[0].status,
-          votes: todayMatches[0].votes,
-          aiPrediction: todayMatches[0].aiPrediction
-        });
-      }
-    }
-
-    const currentStats = await Promise.all([
-      AIPredictionStat.findOne(),
-      FanPredictionStat.findOne()
-    ]);
-
-    console.log('\nCurrent Stats:');
-    console.log('AI Stats:', currentStats[0]);
-    console.log('Fan Stats:', currentStats[1]);
-    
-    return finishedMatches > 0;
-  } catch (error) {
-    console.error('Data verification failed:', error);
-    return false;
-  }
-};
 
 const checkPredictionCorrect = (prediction, match) => {
   const homeScore = match.score.fullTime.home;
@@ -93,42 +34,33 @@ const resetStats = async () => {
 
 const createDailyStats = (matches) => {
   const dailyStats = {};
-  const now = new Date();
-  const todayStart = startOfDay(now);
+  const currentDate = new Date();
 
   matches.forEach(match => {
-    // Parse the UTC date
+    // Parse the UTC date from the match
     const matchDate = parseISO(match.utcDate);
-    const localDate = startOfDay(matchDate);
-    const dateKey = localDate.getTime();
+    const matchDay = startOfDay(matchDate);
+    const dateKey = matchDay.getTime();
 
-    // Initialize the day's stats if not exists
+    // Debug log for today's matches
+    const isToday = startOfDay(currentDate).getTime() === dateKey;
+    if (isToday) {
+      console.log('Found today\'s match:', {
+        id: match.id,
+        utcDate: match.utcDate,
+        status: match.status,
+        votes: match.votes,
+        aiPrediction: match.aiPrediction
+      });
+    }
+
     if (!dailyStats[dateKey]) {
       dailyStats[dateKey] = {
-        date: localDate,
+        date: matchDay,
         ai: { total: 0, correct: 0 },
         fans: { total: 0, correct: 0 }
       };
     }
-    // Add extra logging for today's matches
-    if (localDate.getTime() === todayStart.getTime()) {
-      console.log('Processing today\'s match:', {
-        id: match.id,
-        date: match.utcDate,
-        status: match.status,
-        votes: match.votes,
-        aiPrediction: match.aiPrediction,
-        score: match.score
-      });
-    }
-
-    console.log('Processing match:', {
-      id: match.id,
-      date: match.utcDate,
-      localDate: new Date(localDate).toISOString(),
-      hasAIPrediction: !!match.aiPrediction,
-      votesCount: match.votes ? (match.votes.home + match.votes.draw + match.votes.away) : 0
-    });
 
     // Process AI prediction
     if (match.aiPrediction) {
@@ -138,6 +70,7 @@ const createDailyStats = (matches) => {
       }
     }
 
+    // Process Fan prediction
     const { home = 0, draw = 0, away = 0 } = match.votes || {};
     const totalVotes = home + draw + away;
     if (totalVotes > 0) {
@@ -158,16 +91,13 @@ const createDailyStats = (matches) => {
     }
   });
 
-  // Add extra logging for today's stats
-  const todayKey = todayStart.getTime();
-  if (dailyStats[todayKey]) {
-    console.log('\nToday\'s stats:', {
-      date: new Date(todayKey).toISOString(),
-      stats: dailyStats[todayKey]
+  // Debug log all daily stats
+  Object.entries(dailyStats).forEach(([date, stats]) => {
+    console.log(`Stats for ${new Date(parseInt(date)).toISOString().split('T')[0]}:`, {
+      ai: stats.ai,
+      fans: stats.fans
     });
-  } else {
-    console.log('\nNo stats found for today');
-  }
+  });
 
   return Object.values(dailyStats);
 };
@@ -177,7 +107,6 @@ const migrate = async () => {
     console.log('Starting stats migration...');
     console.log('Connecting to MongoDB at:', MONGODB_URI);
     
-    // Connect to MongoDB with updated options
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -186,35 +115,39 @@ const migrate = async () => {
     });
     console.log('Connected to MongoDB successfully');
 
-    // Verify data before proceeding
-    const dataValid = await verifyData();
-    if (!dataValid) {
-      console.error('Data verification failed. Aborting migration.');
-      await mongoose.connection.close();
-      process.exit(1);
-    }
+    // Get current date for query
+    const currentDate = new Date();
+    console.log('Current date:', currentDate.toISOString());
 
-    // Reset existing stats
-    await resetStats();
-
-    // Get all finished matches including today
+    // Get all finished matches including today's matches
     const matches = await Match.find({ 
       status: 'FINISHED',
       utcDate: { 
         $exists: true,
-        $lte: new Date().toISOString() // Include matches up to current time
+        $lte: currentDate.toISOString() // Include matches up to current time
       }
     }).sort({ utcDate: 1 });
     
     console.log(`Found ${matches.length} finished matches to process`);
 
-    // Log the date range of matches
     if (matches.length > 0) {
-      console.log('Date range:', {
+      console.log('Date range of matches:', {
         earliest: matches[0].utcDate,
-        latest: matches[matches.length - 1].utcDate,
-        currentTime: new Date().toISOString()
+        latest: matches[matches.length - 1].utcDate
       });
+
+      // Log last 5 matches to verify we're getting today's matches
+      console.log('Last 5 matches:', matches.slice(-5).map(m => ({
+        id: m.id,
+        date: m.utcDate,
+        status: m.status
+      })));
+    }
+
+    if (matches.length === 0) {
+      console.log('No matches to process. Exiting...');
+      await mongoose.connection.close();
+      process.exit(0);
     }
 
     // Calculate daily stats
@@ -255,14 +188,16 @@ const migrate = async () => {
       correct: aiStats.correctPredictions,
       accuracy: aiStats.totalPredictions > 0 
         ? ((aiStats.correctPredictions / aiStats.totalPredictions) * 100).toFixed(2) + '%'
-        : '0%'
+        : '0%',
+      dailyStatsCount: aiStats.dailyStats.length
     });
     console.log('Fan Stats:', {
       total: fanStats.totalPredictions,
       correct: fanStats.correctPredictions,
       accuracy: fanStats.totalPredictions > 0 
         ? ((fanStats.correctPredictions / fanStats.totalPredictions) * 100).toFixed(2) + '%'
-        : '0%'
+        : '0%',
+      dailyStatsCount: fanStats.dailyStats.length
     });
 
     await mongoose.connection.close();
@@ -271,8 +206,7 @@ const migrate = async () => {
   } catch (error) {
     console.error('Migration failed:', {
       message: error.message,
-      stack: error.stack,
-      mongoURI: MONGODB_URI.replace(/mongodb\+srv:\/\/.*@/, 'mongodb+srv://****:****@')
+      stack: error.stack
     });
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
@@ -281,7 +215,7 @@ const migrate = async () => {
   }
 };
 
-// Run the migration with better error handling
+// Run the migration
 migrate().catch(error => {
   console.error('Unhandled error during migration:', error);
   process.exit(1);
