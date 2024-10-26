@@ -6,7 +6,7 @@ const FanPredictionStat = require('../models/FanPredictionStat');
 const AIPredictionStat = require('../models/AIPredictionStat');
 
 // Update MongoDB URI for production
-const MONGODB_URI = 'mongodb+srv://cluster0.asbrji.mongodb.net/test';
+const MONGODB_URI = 'mongodb+srv://weknowbetteradmin:dMMZV14rCKTYLJXG@cluster0.sbr1j.mongodb.net/test';
 // You might need to add username and password from your .env file
 // const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.asbrji.mongodb.net/test`;
 
