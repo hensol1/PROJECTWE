@@ -247,13 +247,6 @@ cron.schedule('1,16,31,46 12-23,0-2 * * *', () => {
   });
 });
 
-// Additional run at 09:00
-cron.schedule('0 9 * * *', () => {
-  console.log('Scheduled task triggered: fetchMatches (morning run)');
-  fetchMatches().catch(error => {
-    console.error('Error in fetchMatches:', error);
-  });
-});
 
 // Check for finished matches and update stats every 2 minutes
 cron.schedule('*/2 * * * *', async () => {
