@@ -284,5 +284,51 @@ router.get('/daily', async (req, res) => {
   }
 });
 
+router.get('/debug', async (req, res) => {
+  try {
+    const today = startOfDay(new Date());
+    
+    const [aiStats, fanStats] = await Promise.all([
+      AIPredictionStat.findOne(),
+      FanPredictionStat.findOne()
+    ]);
+
+    const todayAiStats = aiStats?.dailyStats?.find(
+      stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
+    );
+
+    const todayFanStats = fanStats?.dailyStats?.find(
+      stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
+    );
+
+    const matches = await Match.find({
+      status: 'FINISHED',
+      utcDate: {
+        $gte: today.toISOString(),
+        $lte: endOfDay(today).toISOString()
+      }
+    });
+
+    res.json({
+      currentTime: new Date().toISOString(),
+      today: today.toISOString(),
+      todayMatches: matches.length,
+      aiStats: todayAiStats,
+      fanStats: todayFanStats,
+      sampleMatches: matches.slice(0, 3).map(m => ({
+        id: m.id,
+        date: m.utcDate,
+        status: m.status,
+        teams: `${m.homeTeam.name} vs ${m.awayTeam.name}`,
+        score: m.score.fullTime
+      }))
+    });
+  } catch (error) {
+    console.error('Debug route error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 
 module.exports = router;

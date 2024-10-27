@@ -13,50 +13,24 @@ const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
 
 async function updateDailyPredictionStats() {
   try {
-    // Get matches for multiple time zones to ensure coverage
-    const timeZones = ['UTC', 'Europe/London', 'Asia/Jerusalem', 'America/New_York'];
-    let allTodayMatches = new Set();
+    const today = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
 
-    for (const timeZone of timeZones) {
-      const now = new Date();
-      const localDate = utcToZonedTime(now, timeZone);
-      const todayStart = zonedTimeToUtc(startOfDay(localDate), timeZone);
-      const todayEnd = zonedTimeToUtc(endOfDay(localDate), timeZone);
-
-      console.log(`Checking matches for timezone ${timeZone}:`, {
-        localDate: format(localDate, 'yyyy-MM-dd HH:mm:ss'),
-        startTime: todayStart.toISOString(),
-        endTime: todayEnd.toISOString()
-      });
-
-      const matches = await Match.find({
-        status: 'FINISHED',
-        utcDate: {
-          $gte: todayStart.toISOString(),
-          $lte: todayEnd.toISOString()
-        }
-      });
-
-      matches.forEach(match => allTodayMatches.add(match.id));
-    }
-
-    // Get all unique matches found
-    const todayMatches = await Match.find({
-      id: { $in: Array.from(allTodayMatches) },
-      status: 'FINISHED'
+    console.log('Processing matches for date range:', {
+      start: today.toISOString(),
+      end: todayEnd.toISOString()
     });
 
-    console.log(`Found ${todayMatches.length} unique finished matches for today`);
-    
-    // Log sample matches for verification
-    if (todayMatches.length > 0) {
-      console.log('Sample matches:', todayMatches.slice(0, 3).map(match => ({
-        id: match.id,
-        date: match.utcDate,
-        teams: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
-        score: match.score.fullTime
-      })));
-    }
+    // Find today's finished matches
+    const todayMatches = await Match.find({
+      status: 'FINISHED',
+      utcDate: {
+        $gte: today.toISOString(),
+        $lte: todayEnd.toISOString()
+      }
+    });
+
+    console.log(`Found ${todayMatches.length} finished matches for today`);
 
     // Initialize stats
     const stats = {
@@ -66,6 +40,13 @@ async function updateDailyPredictionStats() {
 
     // Process matches
     todayMatches.forEach(match => {
+      console.log('Processing match:', {
+        id: match.id,
+        date: match.utcDate,
+        teams: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
+        score: match.score.fullTime
+      });
+
       // Process AI prediction
       if (match.aiPrediction) {
         stats.ai.total++;
@@ -97,55 +78,65 @@ async function updateDailyPredictionStats() {
       }
     });
 
-    console.log('Calculated stats:', {
-      date: new Date().toISOString(),
-      stats,
-      matchCount: todayMatches.length
-    });
+    console.log('Today\'s stats calculated:', stats);
 
-    // Update stats in database
+    // Update the stats in database
     const [aiStats, fanStats] = await Promise.all([
       AIPredictionStat.findOne(),
       FanPredictionStat.findOne()
     ]);
 
-    // Function to update stats for a specific prediction type
-    const updateStatsForType = async (stats, todayStats, type) => {
-      // Find or create today's stats for each timezone
-      for (const timeZone of timeZones) {
-        const localDate = utcToZonedTime(new Date(), timeZone);
-        const localToday = startOfDay(localDate);
-        
-        let zoneDayStats = todayStats.dailyStats.find(stat => 
-          startOfDay(utcToZonedTime(new Date(stat.date), timeZone)).getTime() === localToday.getTime()
-        );
-
-        if (!zoneDayStats) {
-          todayStats.dailyStats.push({
-            date: zonedTimeToUtc(localToday, timeZone),
-            totalPredictions: stats[type].total,
-            correctPredictions: stats[type].correct
-          });
-        } else {
-          zoneDayStats.totalPredictions = stats[type].total;
-          zoneDayStats.correctPredictions = stats[type].correct;
-        }
-      }
-      
-      await todayStats.save();
-    };
-
     if (aiStats) {
-      await updateStatsForType(stats, aiStats, 'ai');
+      let todayAiStats = aiStats.dailyStats.find(
+        stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
+      );
+
+      if (todayAiStats) {
+        todayAiStats.totalPredictions = stats.ai.total;
+        todayAiStats.correctPredictions = stats.ai.correct;
+      } else {
+        aiStats.dailyStats.push({
+          date: today,
+          totalPredictions: stats.ai.total,
+          correctPredictions: stats.ai.correct
+        });
+      }
+      await aiStats.save();
     }
 
     if (fanStats) {
-      await updateStatsForType(stats, fanStats, 'fans');
+      let todayFanStats = fanStats.dailyStats.find(
+        stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
+      );
+
+      if (todayFanStats) {
+        todayFanStats.totalPredictions = stats.fans.total;
+        todayFanStats.correctPredictions = stats.fans.correct;
+      } else {
+        fanStats.dailyStats.push({
+          date: today,
+          totalPredictions: stats.fans.total,
+          correctPredictions: stats.fans.correct
+        });
+      }
+      await fanStats.save();
     }
 
-    console.log('Daily stats updated successfully for all timezones');
+    // Add a check to ensure the data is actually saved
+    const verifyStats = await FanPredictionStat.findOne();
+    const todayFanStats = verifyStats?.dailyStats?.find(
+      stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
+    );
+    
+    console.log('Verification - Today\'s stats in database:', {
+      date: today.toISOString(),
+      stats: todayFanStats
+    });
+
+    return stats;
   } catch (error) {
     console.error('Error updating daily prediction stats:', error);
+    throw error; // Rethrow to handle in the scheduled task
   }
 }
 
@@ -251,11 +242,17 @@ cron.schedule('1,16,31,46 12-23,0-2 * * *', () => {
 // Check for finished matches and update stats every 2 minutes
 cron.schedule('*/2 * * * *', async () => {
   try {
-    console.log('Checking for finished matches...');
-    await updateDailyPredictionStats();
+    console.log('Starting scheduled task: Check finished matches');
+    const stats = await updateDailyPredictionStats();
+    console.log('Daily stats update completed:', stats);
+    
     await updateUserStats();
+    console.log('User stats update completed');
   } catch (error) {
-    console.error('Error in finished matches check:', error);
+    console.error('Error in scheduled task:', {
+      message: error.message,
+      stack: error.stack
+    });
   }
 });
 
