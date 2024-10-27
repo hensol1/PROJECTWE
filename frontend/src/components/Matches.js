@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// Part 1: Imports
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api';
 import { format, addDays, subDays, parseISO, startOfDay, endOfDay, isToday } from 'date-fns';
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
@@ -7,9 +8,11 @@ import { BiAlarm, BiAlarmOff } from "react-icons/bi";
 import CustomButton from './CustomButton';
 import NextMatchCountdown from './NextMatchCountdown';
 import LoadingLogo from './LoadingLogo';
+import GoalNotification from './GoalNotification';
+import NotificationQueue from './NotificationQueue';
 
+// Part 2: Component Definition and Initial States
 const Matches = ({ user }) => {
-  // State declarations
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
   const [fanAccuracy, setFanAccuracy] = useState(0);
@@ -24,11 +27,14 @@ const Matches = ({ user }) => {
   const [currentDateLiveMatches, setCurrentDateLiveMatches] = useState(false);
   const [isManualTabSelect, setIsManualTabSelect] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [goalNotification, setGoalNotification] = useState(null);
+  const [goalNotifications, setGoalNotifications] = useState([]);
 
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
   const allMatchesForCurrentDate = matches[currentDateKey] || {};
 
+  // Part 3: Constants and Utility Functions
   const hasAnyLiveMatches = Object.values(matches).some(dateMatches => 
     Object.values(dateMatches).some(leagueMatches =>
       leagueMatches.some(match => 
@@ -57,6 +63,7 @@ const Matches = ({ user }) => {
     }, {});
   };
 
+  // Part 4: Callback Functions
   const findDateWithLiveMatches = useCallback(() => {
     for (const [date, dateMatches] of Object.entries(matches)) {
       const hasLive = Object.values(dateMatches).some(leagueMatches =>
@@ -99,10 +106,61 @@ const Matches = ({ user }) => {
     }
   }, []);
 
-const fetchMatches = useCallback(async (date) => {
-  // Remove this check as it's causing the infinite loading
-  // if (isLoading) return;
+const checkForGoals = useCallback((newMatches, prevMatches) => {
+  if (!prevMatches || !newMatches) return [];
   
+  const newNotifications = [];
+  
+  // Use Object.keys to safely iterate
+  const dateKeys = Object.keys(newMatches);
+  
+  dateKeys.forEach(dateKey => {
+    // Skip if no previous matches for this date
+    if (!prevMatches[dateKey]) return;
+    
+    const leagueKeys = Object.keys(newMatches[dateKey]);
+    
+    leagueKeys.forEach(leagueKey => {
+      // Skip if no previous matches for this league
+      if (!prevMatches[dateKey][leagueKey]) return;
+      
+      newMatches[dateKey][leagueKey].forEach(newMatch => {
+        const oldMatch = prevMatches[dateKey][leagueKey]?.find(m => m.id === newMatch.id);
+        
+        if (oldMatch) {
+          const newScore = newMatch.score.fullTime;
+          const oldScore = oldMatch.score.fullTime;
+          
+          if (newScore.home > oldScore.home) {
+            newNotifications.push({
+              match: newMatch,
+              scoringTeam: 'home',
+              id: `${newMatch.id}-${newScore.home}-${newScore.away}`
+            });
+          }
+          
+          if (newScore.away > oldScore.away) {
+            newNotifications.push({
+              match: newMatch,
+              scoringTeam: 'away',
+              id: `${newMatch.id}-${newScore.home}-${newScore.away}`
+            });
+          }
+        }
+      });
+    });
+  });
+  
+  return newNotifications;
+}, []);
+
+// Add this handler
+const handleNotificationDismiss = useCallback((notification) => {
+  setGoalNotifications(prev => prev.filter(n => n.id !== notification.id));
+}, []);
+
+  // Part 5: Main Data Fetching Function
+const fetchMatches = useCallback(async (date) => {
   setIsLoading(true);
   let formattedDate;
 
@@ -114,6 +172,7 @@ const fetchMatches = useCallback(async (date) => {
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
       const leagueKey = `${match.competition.name}_${match.competition.id}`;
+      
       if (!acc[dateKey]) {
         acc[dateKey] = {};
       }
@@ -127,10 +186,23 @@ const fetchMatches = useCallback(async (date) => {
       return acc;
     }, {});
 
-    setMatches(prevMatches => ({
-      ...prevMatches,
-      [formattedDate]: groupedMatches[formattedDate] || {}
-    }));
+    setMatches(prevMatches => {
+      const newState = {
+        ...prevMatches,
+        [formattedDate]: groupedMatches[formattedDate] || {}
+      };
+      
+      // Get notifications array from checkForGoals
+      const notifications = checkForGoals(newState, prevMatches);
+      
+      // Update notifications if there are any
+      if (notifications.length > 0) {
+        setGoalNotifications(currentNotifications => [...currentNotifications, ...notifications]);
+      }
+      
+      return newState;
+    });
+
   } catch (error) {
     console.error('Error in component fetchMatches:', error);
     setMatches(prevMatches => ({
@@ -140,13 +212,13 @@ const fetchMatches = useCallback(async (date) => {
   } finally {
     setIsLoading(false);
   }
-}, [userTimeZone]); // Remove isLoading from dependencies
-  
+}, [userTimeZone, checkForGoals]);
+
+  // Part 6: Effect Hooks
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
 
-  // Main effect for initial load
   useEffect(() => {
     if (userTimeZone && isInitialLoad) {
       fetchMatches(currentDate);
@@ -155,23 +227,33 @@ const fetchMatches = useCallback(async (date) => {
     }
   }, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData, isInitialLoad]);
 
-  // Effect for automatic tab selection
-useEffect(() => {
-  if (!isLoading && !isInitialLoad && !isManualTabSelect) {
-    const liveMatchDate = findDateWithLiveMatches();
-    if (liveMatchDate) {
-      setCurrentDate(new Date(liveMatchDate));
-      setActiveTab('live');
-    } else {
-      const currentDateMatches = matches[currentDateKey];
-      if (currentDateMatches) {
-        const appropriateTab = determineActiveTab(currentDateMatches);
-        setActiveTab(appropriateTab);
+  useEffect(() => {
+    if (!isLoading && !isInitialLoad && !isManualTabSelect) {
+      const liveMatchDate = findDateWithLiveMatches();
+      if (liveMatchDate) {
+        setCurrentDate(new Date(liveMatchDate));
+        setActiveTab('live');
+      } else {
+        const currentDateMatches = matches[currentDateKey];
+        if (currentDateMatches) {
+          const appropriateTab = determineActiveTab(currentDateMatches);
+          setActiveTab(appropriateTab);
+        }
       }
     }
-  }
-}, [matches, findDateWithLiveMatches, determineActiveTab, currentDateKey, isManualTabSelect, isLoading, isInitialLoad]);
+  }, [matches, findDateWithLiveMatches, determineActiveTab, currentDateKey, isManualTabSelect, isLoading, isInitialLoad]);
 
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      if (!isLoading) {
+        fetchMatches(currentDate);
+      }
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [fetchMatches, currentDate, isLoading]);
+
+  // Part 7: Event Handlers
   const handleTabChange = useCallback((newTab) => {
     setIsManualTabSelect(true);
     if (newTab === 'live') {
@@ -185,22 +267,47 @@ useEffect(() => {
     setActiveTab(newTab);
   }, [findDateWithLiveMatches]);
 
-const handleDateChange = useCallback((days) => {
-  setIsManualTabSelect(true); // Set this to true to prevent automatic tab switching
-  const newDate = days > 0 ? addDays(currentDate, days) : subDays(currentDate, Math.abs(days));
-  const formattedNewDate = format(newDate, 'yyyy-MM-dd');
-  
-  // Always fetch matches for the new date
-  fetchMatches(newDate);
-  setCurrentDate(newDate);
+  const handleDateChange = useCallback((days) => {
+    setIsManualTabSelect(true);
+    const newDate = days > 0 ? addDays(currentDate, days) : subDays(currentDate, Math.abs(days));
+    const formattedNewDate = format(newDate, 'yyyy-MM-dd');
+    
+    fetchMatches(newDate);
+    setCurrentDate(newDate);
+    setActiveTab('scheduled');
+    setSelectedContinent('All');
+  }, [currentDate, fetchMatches]);
 
-  // When changing date, always default to scheduled tab first
-  setActiveTab('scheduled');
-  
-  // Reset continent filter
-  setSelectedContinent('All');
-}, [currentDate, fetchMatches]);
+  const handleVote = async (matchId, vote) => {
+    try {
+      const response = await api.voteForMatch(matchId, vote);
+      setMatches(prevMatches => {
+        const updatedMatches = { ...prevMatches };
+        for (let date in updatedMatches) {
+          for (let league in updatedMatches[date]) {
+            updatedMatches[date][league] = updatedMatches[date][league].map(match => 
+              match.id === matchId ? { 
+                ...match, 
+                votes: response.data.votes,
+                voteCounts: {
+                  home: response.data.votes.home,
+                  draw: response.data.votes.draw,
+                  away: response.data.votes.away
+                },
+                userVote: response.data.userVote
+              } : match
+            );
+          }
+        }
+        return updatedMatches;
+      });
+    } catch (error) {
+      console.error('Error voting:', error);
+      alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
+    }
+  };
 
+// Part 8: Utility Functions
   const getLeagueContinent = (leagueId) => {
     for (const [continent, leagues] of Object.entries(continentalLeagues)) {
       if (leagues.includes(leagueId)) {
@@ -217,23 +324,11 @@ const handleDateChange = useCallback((days) => {
     }));
   };
 
-  const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
-    const [, leagueId] = leagueKey.split('_');
-    const continent = getLeagueContinent(parseInt(leagueId));
-    if (selectedContinent === 'All' || continent === selectedContinent) {
-      acc[leagueKey] = leagueMatches;
-    }
-    return acc;
-  }, {});
-
-  const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
-  const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED']);
-  const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED']);
-  
   const formatMatchDate = (date) => {
     return format(date, 'HH:mm');
   };
 
+  // Part 9: Match Status and Voting Components
   const renderMatchStatus = (match) => {
     const statusStyle = (status) => {
       switch (status) {
@@ -278,35 +373,6 @@ const handleDateChange = useCallback((days) => {
     );
   };
 
-  const handleVote = async (matchId, vote) => {
-    try {
-      const response = await api.voteForMatch(matchId, vote);
-      setMatches(prevMatches => {
-        const updatedMatches = { ...prevMatches };
-        for (let date in updatedMatches) {
-          for (let league in updatedMatches[date]) {
-            updatedMatches[date][league] = updatedMatches[date][league].map(match => 
-              match.id === matchId ? { 
-                ...match, 
-                votes: response.data.votes,
-                voteCounts: {
-                  home: response.data.votes.home,
-                  draw: response.data.votes.draw,
-                  away: response.data.votes.away
-                },
-                userVote: response.data.userVote
-              } : match
-            );
-          }
-        }
-        return updatedMatches;
-      });
-    } catch (error) {
-      console.error('Error voting:', error);
-      alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
-    }
-  };
-
   const renderVoteButtons = useCallback((match) => {
     const hasVoted = match.userVote;
     const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
@@ -332,8 +398,9 @@ const handleDateChange = useCallback((days) => {
       );
     }
     return null;
-  }, []);
+  }, [handleVote]);
 
+  // Part 10: Predictions Component
   const renderPredictions = useCallback((match) => {
     const getTeamPrediction = (prediction) => {
       switch(prediction) {
@@ -424,14 +491,27 @@ const handleDateChange = useCallback((days) => {
     );
   }, []);
 
-// START PART 6
+// Part 11: Match List Filtering and Rendering
+  const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
+    const [, leagueId] = leagueKey.split('_');
+    const continent = getLeagueContinent(parseInt(leagueId));
+    if (selectedContinent === 'All' || continent === selectedContinent) {
+      acc[leagueKey] = leagueMatches;
+    }
+    return acc;
+  }, {});
+
+  const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
+  const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED']);
+  const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED']);
+
+  // Part 12: League Sorting and Rendering
   const sortedLeagues = (matches) => Object.entries(matches).sort((a, b) => {
     const [leagueKeyA, matchesA] = a;
     const [leagueKeyB, matchesB] = b;
     const [, aId] = leagueKeyA.split('_');
     const [, bId] = leagueKeyB.split('_');
 
-    // First, sort by match status
     const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
     const statusA = Math.min(...matchesA.map(match => statusOrder.indexOf(match.status)));
     const statusB = Math.min(...matchesB.map(match => statusOrder.indexOf(match.status)));
@@ -440,7 +520,6 @@ const handleDateChange = useCallback((days) => {
       return statusA - statusB;
     }
 
-    // Then, sort by priority leagues
     const aIndex = priorityLeagues.indexOf(parseInt(aId));
     const bIndex = priorityLeagues.indexOf(parseInt(bId));
     
@@ -452,7 +531,6 @@ const handleDateChange = useCallback((days) => {
       return 1;
     }
 
-    // Finally, sort alphabetically by league name
     return leagueKeyA.localeCompare(leagueKeyB);
   });
 
@@ -534,21 +612,25 @@ const handleDateChange = useCallback((days) => {
         return null;
     }
   };
-  
-  return (
-    <div className="max-w-3xl mx-auto px-2">
-      <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
-      
-      {Object.keys(liveMatches).length === 0 && (
-        <NextMatchCountdown scheduledMatches={scheduledMatches} />
-      )}
 
-      {isLoading ? (
-        <LoadingLogo />
-      ) : (
-        <>
-          <div className="flex flex-col space-y-4 mb-4">
-            {/* Match type tabs */}
+  // Part 13: Component Return
+return (
+  <div className="max-w-3xl mx-auto px-2">
+    <NotificationQueue 
+      notifications={goalNotifications}
+      onDismiss={handleNotificationDismiss}
+    />
+    <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
+    
+    {Object.keys(liveMatches).length === 0 && (
+      <NextMatchCountdown scheduledMatches={scheduledMatches} />
+    )}
+
+    {isLoading ? (
+      <LoadingLogo />
+    ) : (
+      <>
+        <div className="flex flex-col space-y-4 mb-4">
             <div className="flex justify-center">
               <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
                 {['live', 'finished', 'scheduled'].map((tab) => (
@@ -580,7 +662,6 @@ const handleDateChange = useCallback((days) => {
               </div>
             </div>
 
-            {/* Continent tabs */}
             <div className="flex justify-center">
               <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
                 {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map((continent) => (
