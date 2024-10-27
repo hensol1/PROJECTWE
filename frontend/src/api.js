@@ -119,4 +119,16 @@ api.resetAllStats = () => api.post('/api/accuracy/reset-all');
 api.resetAIStats = () => api.post('/api/accuracy/reset-ai');
 api.resetFanStats = () => api.post('/api/accuracy/reset-fans');
 
+// Accuracy endpoint
+api.fetchAccuracy = async () => {
+  try {
+    const response = await api.get('/api/accuracy');
+    console.log('API accuracy response:', response); // Debug log
+    return response.data;
+  } catch (error) {
+    console.error('Error in fetchAccuracy:', error);
+    throw error;
+  }
+};
+
 export default api;
