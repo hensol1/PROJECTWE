@@ -731,16 +731,15 @@ return (
   matches={Object.values(allMatchesForCurrentDate)
     .reduce((acc, leagueMatches) => [...acc, ...Object.values(leagueMatches)], [])
     .filter(match => 
-      (match.status === 'TIMED' || match.status === 'SCHEDULED') && 
-      !match.userVote
-    )}
+      (match.status === 'TIMED' || match.status === 'SCHEDULED')
+    )
+    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
   onVote={handleVote}
   onSkip={(matchId) => {
     console.log('Skipped match:', matchId);
   }}
+  user={user}  
 />
-
-
     
     {Object.keys(liveMatches).length === 0 && (
       <NextMatchCountdown scheduledMatches={scheduledMatches} />

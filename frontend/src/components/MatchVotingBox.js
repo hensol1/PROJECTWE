@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 
-const MatchVotingBox = ({ matches, onVote, onSkip }) => {
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-  const [processedMatches, setProcessedMatches] = useState(new Set());
-  
-  // Reset currentMatchIndex when matches array changes
+const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
+  const [remainingMatches, setRemainingMatches] = useState([]);
+
+  // Initialize remaining matches on component mount and when matches change
   useEffect(() => {
-    setCurrentMatchIndex(0);
-    setProcessedMatches(new Set());
-  }, [matches]);
+    if (!user) {
+      const votedMatches = new Set(JSON.parse(localStorage.getItem('votedMatches') || '[]'));
+      setRemainingMatches(matches.filter(match => !votedMatches.has(match.id)));
+    } else {
+      setRemainingMatches(matches.filter(match => !match.userVote));
+    }
+  }, [matches, user]);
 
-  const unvotedMatches = matches.filter(match => !processedMatches.has(match.id));
-
-  if (unvotedMatches.length === 0) {
+  if (remainingMatches.length === 0) {
     return null;
   }
 
-  const currentMatch = unvotedMatches[currentMatchIndex];
+  const currentMatch = remainingMatches[0];
   
   if (!currentMatch) {
     return null;
@@ -25,29 +26,42 @@ const MatchVotingBox = ({ matches, onVote, onSkip }) => {
   const handleVote = async (vote) => {
     try {
       await onVote(currentMatch.id, vote);
-      setProcessedMatches(prev => new Set([...prev, currentMatch.id]));
       
-      // Only increment index if there are more matches
-      if (currentMatchIndex < unvotedMatches.length - 1) {
-        setCurrentMatchIndex(prev => prev + 1);
-      }
+      // Update remaining matches
+      setRemainingMatches(prev => {
+        const newMatches = prev.filter(match => match.id !== currentMatch.id);
+        
+        // Update localStorage for unregistered users
+        if (!user) {
+          const votedMatches = JSON.parse(localStorage.getItem('votedMatches') || '[]');
+          votedMatches.push(currentMatch.id);
+          localStorage.setItem('votedMatches', JSON.stringify(votedMatches));
+        }
+        
+        return newMatches;
+      });
+      
     } catch (error) {
-      // If vote fails (e.g., already voted), skip this match
-      setProcessedMatches(prev => new Set([...prev, currentMatch.id]));
-      if (currentMatchIndex < unvotedMatches.length - 1) {
-        setCurrentMatchIndex(prev => prev + 1);
+      // If vote fails (already voted), remove the match from remaining matches
+      if (!user && error.response?.status === 400) {
+        setRemainingMatches(prev => {
+          const newMatches = prev.filter(match => match.id !== currentMatch.id);
+          const votedMatches = JSON.parse(localStorage.getItem('votedMatches') || '[]');
+          votedMatches.push(currentMatch.id);
+          localStorage.setItem('votedMatches', JSON.stringify(votedMatches));
+          return newMatches;
+        });
       }
+      console.error('Vote failed:', error);
     }
   };
 
   const handleSkip = () => {
-    // Mark match as processed but don't vote
-    setProcessedMatches(prev => new Set([...prev, currentMatch.id]));
-    
-    // Move to next match if available
-    if (currentMatchIndex < unvotedMatches.length - 1) {
-      setCurrentMatchIndex(prev => prev + 1);
-    }
+    setRemainingMatches(prev => {
+      const nextMatch = prev[0];
+      const restMatches = prev.slice(1);
+      return [...restMatches, nextMatch]; // Move current match to end of array
+    });
     onSkip(currentMatch.id);
   };
 
@@ -64,7 +78,7 @@ const MatchVotingBox = ({ matches, onVote, onSkip }) => {
             <span className="font-semibold text-sm">{currentMatch.competition.name}</span>
           </div>
           <span className="text-sm text-gray-500">
-            {unvotedMatches.length - currentMatchIndex} matches left to vote
+            {remainingMatches.length} matches left to vote
           </span>
         </div>
       </div>
