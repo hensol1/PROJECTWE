@@ -30,6 +30,7 @@ const Matches = ({ user }) => {
   const [goalNotification, setGoalNotification] = useState(null);
   const [goalNotifications, setGoalNotifications] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [processedScoreUpdates] = useState(new Set());
 
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
@@ -112,73 +113,67 @@ const checkForGoals = useCallback((newMatches, prevMatches) => {
   
   const newNotifications = [];
   
-  // Get all dates from both objects
-  const dateKeys = Object.keys(newMatches);
-  
-  dateKeys.forEach(dateKey => {
+  Object.keys(newMatches).forEach(dateKey => {
     if (!prevMatches[dateKey]) return;
     
-    const leagueKeys = Object.keys(newMatches[dateKey] || {});
-    
-    leagueKeys.forEach(leagueKey => {
+    Object.keys(newMatches[dateKey]).forEach(leagueKey => {
       if (!prevMatches[dateKey][leagueKey]) return;
       
-      const newLeagueMatches = newMatches[dateKey][leagueKey] || [];
-      const prevLeagueMatches = prevMatches[dateKey][leagueKey] || [];
-      
-      newLeagueMatches.forEach(newMatch => {
-        const prevMatch = prevLeagueMatches.find(m => m.id === newMatch.id);
+      newMatches[dateKey][leagueKey].forEach(newMatch => {
+        const prevMatch = prevMatches[dateKey][leagueKey]
+          .find(m => m.id === newMatch.id);
         
         if (prevMatch) {
           const newScore = newMatch.score.fullTime;
           const prevScore = prevMatch.score.fullTime;
+          const scoreKey = `${newMatch.id}-${newScore.home}-${newScore.away}`;
           
-          // Check for home team goal
-          if (newScore.home > prevScore.home) {
-            console.log('Goal detected - Home team:', {
-              matchId: newMatch.id,
-              prevScore,
-              newScore
-            });
-            
-            newNotifications.push({
-              id: `${newMatch.id}-home-${Date.now()}`,
-              match: newMatch,
-              scoringTeam: 'home'
-            });
-          }
+          // Skip if we've already processed this score state or if it's 0-0
+          if (processedScoreUpdates.has(scoreKey)) return;
+          if (newScore.home === 0 && newScore.away === 0) return;
           
-          // Check for away team goal
-          if (newScore.away > prevScore.away) {
-            console.log('Goal detected - Away team:', {
-              matchId: newMatch.id,
-              prevScore,
-              newScore
-            });
+          if (newScore.home !== prevScore.home || newScore.away !== prevScore.away) {
+            // Add this score state to processed set
+            processedScoreUpdates.add(scoreKey);
             
-            newNotifications.push({
-              id: `${newMatch.id}-away-${Date.now()}`,
-              match: newMatch,
-              scoringTeam: 'away'
-            });
+            if (newScore.home > prevScore.home) {
+              newNotifications.push({
+                id: scoreKey + '-home',
+                match: newMatch,
+                scoringTeam: 'home'
+              });
+            }
+            if (newScore.away > prevScore.away) {
+              newNotifications.push({
+                id: scoreKey + '-away',
+                match: newMatch,
+                scoringTeam: 'away'
+              });
+            }
           }
         }
       });
     });
   });
 
-  // If we found any new goals, update the notifications
   if (newNotifications.length > 0) {
-    console.log('New goals detected:', newNotifications);
     setGoalNotifications(prev => [...prev, ...newNotifications]);
   }
-}, []);
+}, [processedScoreUpdates]);
+
 
 // Add this handler
 const handleNotificationDismiss = useCallback((notification) => {
-  console.log('Dismissing notification:', notification);
-  setGoalNotifications(prev => prev.filter(n => n.id !== notification.id));
-}, []);
+  if (notification === 'all') {
+    setGoalNotifications([]);
+    processedScoreUpdates.clear();
+  } else {
+    setGoalNotifications(prev => 
+      prev.filter(n => n.id !== notification.id)
+    );
+  }
+}, [processedScoreUpdates]);
+
   
 const softUpdateMatches = useCallback(async () => {
   if (!currentDate || !userTimeZone) return;
@@ -206,53 +201,71 @@ const softUpdateMatches = useCallback(async () => {
       return acc;
     }, {});
 
-    // Compare and update only changed matches
-setMatches(prevMatches => {
-  const newState = { ...prevMatches };
-  let hasChanges = false;
+  setMatches(prevMatches => {
+    const prevMatchesCopy = JSON.parse(JSON.stringify(prevMatches));
+    const newState = {
+      ...prevMatches,
+      [formattedDate]: groupedMatches[formattedDate] || {}
+    };
 
-  // Update only if there are changes
-  if (groupedMatches[formattedDate]) {
-    Object.entries(groupedMatches[formattedDate]).forEach(([leagueKey, newLeagueMatches]) => {
-      const currentLeagueMatches = prevMatches[formattedDate]?.[leagueKey] || [];
-      
+    // Create a batch of new notifications
+    const newNotifications = [];
+    const processedScores = new Set();
+
+    Object.keys(groupedMatches[formattedDate] || {}).forEach(leagueKey => {
+      const newLeagueMatches = groupedMatches[formattedDate][leagueKey];
+      const prevLeagueMatches = prevMatchesCopy[formattedDate]?.[leagueKey] || [];
+
       newLeagueMatches.forEach(newMatch => {
-        const currentMatch = currentLeagueMatches.find(m => m.id === newMatch.id);
+        const prevMatch = prevLeagueMatches.find(m => m.id === newMatch.id);
         
-        if (!currentMatch || 
-            JSON.stringify(currentMatch.score) !== JSON.stringify(newMatch.score) ||
-            currentMatch.status !== newMatch.status ||
-            currentMatch.minute !== newMatch.minute) {
-          hasChanges = true;
-          if (!newState[formattedDate]) newState[formattedDate] = {};
-          if (!newState[formattedDate][leagueKey]) newState[formattedDate][leagueKey] = [...currentLeagueMatches];
-          
-          const matchIndex = newState[formattedDate][leagueKey].findIndex(m => m.id === newMatch.id);
-          if (matchIndex >= 0) {
-            newState[formattedDate][leagueKey][matchIndex] = newMatch; // Use entire new match data
-          } else {
-            // If it's a new match, add it to the array
-            newState[formattedDate][leagueKey].push(newMatch);
+        if (prevMatch) {
+          const newScore = newMatch.score.fullTime;
+          const prevScore = prevMatch.score.fullTime;
+          const scoreKey = `${newMatch.id}-${newScore.home}-${newScore.away}`;
+
+          // Skip if already processed or initial 0-0
+          if (processedScores.has(scoreKey)) return;
+          if (prevScore.home === 0 && prevScore.away === 0 &&
+              newScore.home === 0 && newScore.away === 0) return;
+
+          if (newScore.home > prevScore.home || newScore.away > prevScore.away) {
+            processedScores.add(scoreKey);
+
+            if (newScore.home > prevScore.home) {
+              newNotifications.push({
+                id: `${newMatch.id}-home-${newScore.home}-${newScore.away}`,
+                match: newMatch,
+                scoringTeam: 'home'
+              });
+            }
+            if (newScore.away > prevScore.away) {
+              newNotifications.push({
+                id: `${newMatch.id}-away-${newScore.home}-${newScore.away}`,
+                match: newMatch,
+                scoringTeam: 'away'
+              });
+            }
           }
         }
       });
     });
-  }
 
-  // If we have changes, check for goals
-  if (hasChanges) {
-    checkForGoals(newState, prevMatches);
-  }
+    // Set all new notifications at once
+    if (newNotifications.length > 0) {
+      console.log('Setting new batch of notifications:', newNotifications);
+      setGoalNotifications(newNotifications);
+    }
 
-  return hasChanges ? newState : prevMatches;
-});
+    return newState;
+  });
 
   } catch (error) {
     console.error('Error in soft update:', error);
   } finally {
     setIsRefreshing(false);
   }
-}, [currentDate, userTimeZone, checkForGoals]);
+}, [currentDate, userTimeZone]);
 
 
   // Part 5: Main Data Fetching Function
@@ -712,6 +725,7 @@ return (
       notifications={goalNotifications}
       onDismiss={handleNotificationDismiss}
     />
+    )}
     <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
     
     {Object.keys(liveMatches).length === 0 && (
