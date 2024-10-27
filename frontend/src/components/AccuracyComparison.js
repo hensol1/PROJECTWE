@@ -157,29 +157,24 @@ const AccuracyComparison = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-const fetchData = useCallback(async () => {
-  try {
-    setIsLoading(true);
-    const [accuracyResponse, dailyResponse] = await Promise.all([
-      api.fetchAccuracy(),
-      api.fetchDailyAccuracy()
-    ]);
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const [accuracyResponse, dailyResponse] = await Promise.all([
+        api.fetchAccuracy(),
+        api.fetchDailyAccuracy()
+      ]);
 
-    console.log('Fetched accuracy data:', {
-      overall: accuracyResponse.data,
-      daily: dailyResponse.data
-    });
-
-    setAccuracyData(accuracyResponse.data);
-    setDailyStats(dailyResponse.data);
-    setError(null);
-  } catch (error) {
-    console.error('Error fetching accuracy data:', error);
-    setError('Failed to fetch accuracy data');
-  } finally {
-    setIsLoading(false);
-  }
-}, []);
+      setAccuracyData(accuracyResponse.data);
+      setDailyStats(dailyResponse.data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching accuracy data:', error);
+      setError('Failed to fetch accuracy data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
