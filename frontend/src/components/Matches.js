@@ -725,25 +725,29 @@ return (
       onDismiss={handleNotificationDismiss}
     />
     
-<AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
-
-<MatchVotingBox 
-  matches={Object.values(allMatchesForCurrentDate)
-    .reduce((acc, leagueMatches) => [...acc, ...Object.values(leagueMatches)], [])
-    .filter(match => 
-      (match.status === 'TIMED' || match.status === 'SCHEDULED')
-    )
-    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
-  onVote={handleVote}
-  onSkip={(matchId) => {
-    console.log('Skipped match:', matchId);
-  }}
-  user={user}  
-/>
+    <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
     
+    {/* Only show NextMatchCountdown if there are no live matches */}
     {Object.keys(liveMatches).length === 0 && (
       <NextMatchCountdown scheduledMatches={scheduledMatches} />
     )}
+
+    {/* Match Voting Box */}
+    <div className="mb-8">
+      <MatchVotingBox 
+        matches={Object.values(allMatchesForCurrentDate)
+          .reduce((acc, leagueMatches) => [...acc, ...Object.values(leagueMatches)], [])
+          .filter(match => 
+            (match.status === 'TIMED' || match.status === 'SCHEDULED')
+          )
+          .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
+        onVote={handleVote}
+        onSkip={(matchId) => {
+          console.log('Skipped match:', matchId);
+        }}
+        user={user}
+      />
+    </div>
 
     {isLoading ? (
       <LoadingLogo />
