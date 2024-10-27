@@ -725,7 +725,7 @@ return (
       notifications={goalNotifications}
       onDismiss={handleNotificationDismiss}
     />
-    )}
+    
     <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
     
     {Object.keys(liveMatches).length === 0 && (
