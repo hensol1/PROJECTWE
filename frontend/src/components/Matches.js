@@ -10,6 +10,7 @@ import NextMatchCountdown from './NextMatchCountdown';
 import LoadingLogo from './LoadingLogo';
 import GoalNotification from './GoalNotification';
 import NotificationQueue from './NotificationQueue';
+import MatchVotingBox from './MatchVotingBox';
 
 // Part 2: Component Definition and Initial States
 const Matches = ({ user }) => {
@@ -478,32 +479,30 @@ useEffect(() => {
     );
   };
 
-  const renderVoteButtons = useCallback((match) => {
-    const hasVoted = match.userVote;
-    const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
-    
-    const getPercentage = (voteCount) => {
-      return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-    };
-    
-    if (match.status === 'TIMED' || match.status === 'SCHEDULED') {
-      return (
-        <div className="flex justify-center mt-2">
-          {['home', 'draw', 'away'].map((voteType) => (
-            <button 
-              key={voteType}
-              onClick={() => handleVote(match.id, voteType)} 
-              className={`bg-${voteType === 'draw' ? 'gray' : voteType === 'home' ? 'blue' : 'red'}-500 text-white px-1 py-0.5 ${voteType === 'home' ? 'rounded-l' : voteType === 'away' ? 'rounded-r' : ''} text-xs ${hasVoted ? 'cursor-default' : ''}`}
-              disabled={hasVoted}
-            >
-              {voteType.charAt(0).toUpperCase() + voteType.slice(1)} {hasVoted ? `${getPercentage(match.voteCounts[voteType])}%` : ''}
-            </button>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  }, [handleVote]);
+const renderVoteButtons = useCallback((match) => {
+  const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+  
+  const getPercentage = (voteCount) => {
+    return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+  };
+  
+  return (
+    <div className="flex justify-center mt-2">
+      <div className="flex space-x-1 text-xs text-gray-600">
+        <span className="px-2 py-0.5 bg-blue-100 rounded">
+          Home: {getPercentage(match.voteCounts.home)}%
+        </span>
+        <span className="px-2 py-0.5 bg-gray-100 rounded">
+          Draw: {getPercentage(match.voteCounts.draw)}%
+        </span>
+        <span className="px-2 py-0.5 bg-red-100 rounded">
+          Away: {getPercentage(match.voteCounts.away)}%
+        </span>
+      </div>
+    </div>
+  );
+}, []);
+
 
   // Part 10: Predictions Component
   const renderPredictions = useCallback((match) => {
@@ -726,7 +725,22 @@ return (
       onDismiss={handleNotificationDismiss}
     />
     
-    <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
+<AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
+
+<MatchVotingBox 
+  matches={Object.values(allMatchesForCurrentDate)
+    .reduce((acc, leagueMatches) => [...acc, ...Object.values(leagueMatches)], [])
+    .filter(match => 
+      (match.status === 'TIMED' || match.status === 'SCHEDULED') && 
+      !match.userVote
+    )}
+  onVote={handleVote}
+  onSkip={(matchId) => {
+    console.log('Skipped match:', matchId);
+  }}
+/>
+
+
     
     {Object.keys(liveMatches).length === 0 && (
       <NextMatchCountdown scheduledMatches={scheduledMatches} />
