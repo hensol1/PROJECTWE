@@ -29,6 +29,7 @@ const Matches = ({ user }) => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [goalNotification, setGoalNotification] = useState(null);
   const [goalNotifications, setGoalNotifications] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
@@ -107,57 +108,152 @@ const Matches = ({ user }) => {
   }, []);
 
 const checkForGoals = useCallback((newMatches, prevMatches) => {
-  if (!prevMatches || !newMatches) return [];
+  if (!prevMatches || !newMatches) return;
   
   const newNotifications = [];
   
-  // Use Object.keys to safely iterate
+  // Get all dates from both objects
   const dateKeys = Object.keys(newMatches);
   
   dateKeys.forEach(dateKey => {
-    // Skip if no previous matches for this date
     if (!prevMatches[dateKey]) return;
     
-    const leagueKeys = Object.keys(newMatches[dateKey]);
+    const leagueKeys = Object.keys(newMatches[dateKey] || {});
     
     leagueKeys.forEach(leagueKey => {
-      // Skip if no previous matches for this league
       if (!prevMatches[dateKey][leagueKey]) return;
       
-      newMatches[dateKey][leagueKey].forEach(newMatch => {
-        const oldMatch = prevMatches[dateKey][leagueKey]?.find(m => m.id === newMatch.id);
+      const newLeagueMatches = newMatches[dateKey][leagueKey] || [];
+      const prevLeagueMatches = prevMatches[dateKey][leagueKey] || [];
+      
+      newLeagueMatches.forEach(newMatch => {
+        const prevMatch = prevLeagueMatches.find(m => m.id === newMatch.id);
         
-        if (oldMatch) {
+        if (prevMatch) {
           const newScore = newMatch.score.fullTime;
-          const oldScore = oldMatch.score.fullTime;
+          const prevScore = prevMatch.score.fullTime;
           
-          if (newScore.home > oldScore.home) {
+          // Check for home team goal
+          if (newScore.home > prevScore.home) {
+            console.log('Goal detected - Home team:', {
+              matchId: newMatch.id,
+              prevScore,
+              newScore
+            });
+            
             newNotifications.push({
+              id: `${newMatch.id}-home-${Date.now()}`,
               match: newMatch,
-              scoringTeam: 'home',
-              id: `${newMatch.id}-${newScore.home}-${newScore.away}`
+              scoringTeam: 'home'
             });
           }
           
-          if (newScore.away > oldScore.away) {
+          // Check for away team goal
+          if (newScore.away > prevScore.away) {
+            console.log('Goal detected - Away team:', {
+              matchId: newMatch.id,
+              prevScore,
+              newScore
+            });
+            
             newNotifications.push({
+              id: `${newMatch.id}-away-${Date.now()}`,
               match: newMatch,
-              scoringTeam: 'away',
-              id: `${newMatch.id}-${newScore.home}-${newScore.away}`
+              scoringTeam: 'away'
             });
           }
         }
       });
     });
   });
-  
-  return newNotifications;
+
+  // If we found any new goals, update the notifications
+  if (newNotifications.length > 0) {
+    console.log('New goals detected:', newNotifications);
+    setGoalNotifications(prev => [...prev, ...newNotifications]);
+  }
 }, []);
 
 // Add this handler
 const handleNotificationDismiss = useCallback((notification) => {
+  console.log('Dismissing notification:', notification);
   setGoalNotifications(prev => prev.filter(n => n.id !== notification.id));
 }, []);
+  
+const softUpdateMatches = useCallback(async () => {
+  if (!currentDate || !userTimeZone) return;
+  
+  setIsRefreshing(true);
+  try {
+    const formattedDate = format(zonedTimeToUtc(currentDate, userTimeZone), 'yyyy-MM-dd');
+    const response = await api.fetchMatches(formattedDate);
+    
+    const groupedMatches = response.data.matches.reduce((acc, match) => {
+      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+      const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
+      const leagueKey = `${match.competition.name}_${match.competition.id}`;
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = {};
+      }
+      if (!acc[dateKey][leagueKey]) {
+        acc[dateKey][leagueKey] = [];
+      }
+      acc[dateKey][leagueKey].push({
+        ...match,
+        localDate: matchLocalDate
+      });
+      return acc;
+    }, {});
+
+    // Compare and update only changed matches
+setMatches(prevMatches => {
+  const newState = { ...prevMatches };
+  let hasChanges = false;
+
+  // Update only if there are changes
+  if (groupedMatches[formattedDate]) {
+    Object.entries(groupedMatches[formattedDate]).forEach(([leagueKey, newLeagueMatches]) => {
+      const currentLeagueMatches = prevMatches[formattedDate]?.[leagueKey] || [];
+      
+      newLeagueMatches.forEach(newMatch => {
+        const currentMatch = currentLeagueMatches.find(m => m.id === newMatch.id);
+        
+        if (!currentMatch || 
+            JSON.stringify(currentMatch.score) !== JSON.stringify(newMatch.score) ||
+            currentMatch.status !== newMatch.status ||
+            currentMatch.minute !== newMatch.minute) {
+          hasChanges = true;
+          if (!newState[formattedDate]) newState[formattedDate] = {};
+          if (!newState[formattedDate][leagueKey]) newState[formattedDate][leagueKey] = [...currentLeagueMatches];
+          
+          const matchIndex = newState[formattedDate][leagueKey].findIndex(m => m.id === newMatch.id);
+          if (matchIndex >= 0) {
+            newState[formattedDate][leagueKey][matchIndex] = newMatch; // Use entire new match data
+          } else {
+            // If it's a new match, add it to the array
+            newState[formattedDate][leagueKey].push(newMatch);
+          }
+        }
+      });
+    });
+  }
+
+  // If we have changes, check for goals
+  if (hasChanges) {
+    checkForGoals(newState, prevMatches);
+  }
+
+  return hasChanges ? newState : prevMatches;
+});
+
+  } catch (error) {
+    console.error('Error in soft update:', error);
+  } finally {
+    setIsRefreshing(false);
+  }
+}, [currentDate, userTimeZone, checkForGoals]);
+
 
   // Part 5: Main Data Fetching Function
 const fetchMatches = useCallback(async (date) => {
@@ -192,13 +288,8 @@ const fetchMatches = useCallback(async (date) => {
         [formattedDate]: groupedMatches[formattedDate] || {}
       };
       
-      // Get notifications array from checkForGoals
-      const notifications = checkForGoals(newState, prevMatches);
-      
-      // Update notifications if there are any
-      if (notifications.length > 0) {
-        setGoalNotifications(currentNotifications => [...currentNotifications, ...notifications]);
-      }
+      // Check for goals with the new state
+      checkForGoals(newState, prevMatches);
       
       return newState;
     });
@@ -243,16 +334,17 @@ const fetchMatches = useCallback(async (date) => {
     }
   }, [matches, findDateWithLiveMatches, determineActiveTab, currentDateKey, isManualTabSelect, isLoading, isInitialLoad]);
 
-  useEffect(() => {
-    const pollInterval = setInterval(() => {
-      if (!isLoading) {
-        fetchMatches(currentDate);
-      }
-    }, 30000); // Poll every 30 seconds
+useEffect(() => {
+  const pollInterval = setInterval(() => {
+    if (!isLoading) {
+      softUpdateMatches();
+    }
+  }, 30000);
 
-    return () => clearInterval(pollInterval);
-  }, [fetchMatches, currentDate, isLoading]);
+  return () => clearInterval(pollInterval);
+}, [softUpdateMatches, isLoading]);
 
+  
   // Part 7: Event Handlers
   const handleTabChange = useCallback((newTab) => {
     setIsManualTabSelect(true);
@@ -698,13 +790,20 @@ return (
               </CustomButton>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-2 sm:p-4">
-            {renderTabContent()}
+        <div className="bg-white rounded-lg shadow-md p-2 sm:p-4">
+          {renderTabContent()}
+        </div>
+
+        {/* Subtle refresh indicator */}
+        {isRefreshing && (
+          <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
+            Updating...
           </div>
-        </>
-      )}
-    </div>
-  );
+        )}
+      </>
+    )}
+  </div>
+);
 };
 
 export default Matches;
