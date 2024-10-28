@@ -11,6 +11,7 @@ import LoadingLogo from './LoadingLogo';
 import GoalNotification from './GoalNotification';
 import NotificationQueue from './NotificationQueue';
 import MatchVotingBox from './MatchVotingBox';
+import AnimatedVotingBox from './AnimatedVotingBox';
 
 // Part 2: Component Definition and Initial States
 const Matches = ({ user }) => {
@@ -749,22 +750,22 @@ return (
       <NextMatchCountdown scheduledMatches={scheduledMatches} />
     )}
 
-    {/* Match Voting Box */}
-    <div className="mb-8">
-      <MatchVotingBox 
-        matches={Object.values(allMatchesForCurrentDate)
-          .reduce((acc, leagueMatches) => [...acc, ...Object.values(leagueMatches)], [])
-          .filter(match => 
-            (match.status === 'TIMED' || match.status === 'SCHEDULED')
-          )
-          .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
-        onVote={handleVote}
-        onSkip={(matchId) => {
-          console.log('Skipped match:', matchId);
-        }}
-        user={user}
-      />
-    </div>
+{/* Match Voting Box */}
+<div className="mb-8">
+<AnimatedVotingBox 
+  matches={Object.values(allMatchesForCurrentDate)
+    .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
+    .filter(match => 
+      (match.status === 'TIMED' || match.status === 'SCHEDULED')
+    )
+    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
+  onVote={handleVote}
+  onSkip={(matchId) => {
+    console.log('Skipped match:', matchId);
+  }}
+  user={user}
+/>
+</div>
 
     {isLoading ? (
       <LoadingLogo />
