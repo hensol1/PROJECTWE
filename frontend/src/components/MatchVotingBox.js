@@ -62,11 +62,78 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
     });
     onSkip(currentMatch.id);
   };
+  
+    const getVotePercentages = (match) => {
+    const total = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+    if (total === 0) return { home: 0, draw: 0, away: 0 };
+    
+    return {
+      home: Math.round((match.voteCounts.home / total) * 100),
+      draw: Math.round((match.voteCounts.draw / total) * 100),
+      away: Math.round((match.voteCounts.away / total) * 100)
+    };
+  };
+
+const renderVoteSplit = (match) => {
+  const percentages = getVotePercentages(match);
 
   return (
-    <div className="relative w-full max-w-sm mx-auto mt-8"> {/* Added mt-8 for top margin */}
-      {/* Progress Bar - changed from absolute to relative positioning */}
-      <div className="mb-4 w-full flex items-center justify-center gap-2"> {/* Changed from absolute to relative with margin */}
+    <div className="w-3/5 mx-auto px-4 mb-3"> {/* Changed from w-4/5 to w-3/5 */}
+      <div className="flex justify-between text-xs text-white mb-1">
+        <span>{percentages.home}%</span>
+        <span>{percentages.draw}%</span>
+        <span>{percentages.away}%</span>
+      </div>
+      <div className="h-1 bg-gray-700 rounded-full overflow-hidden flex group"> {/* Reduced height and added group for hover effect */}
+        <div 
+          className="bg-blue-500 transition-all duration-500 group-hover:brightness-110"
+          style={{ width: `${percentages.home}%` }}
+        />
+        <div 
+          className="bg-yellow-500 transition-all duration-500 group-hover:brightness-110"
+          style={{ width: `${percentages.draw}%` }}
+        />
+        <div 
+          className="bg-red-500 transition-all duration-500 group-hover:brightness-110"
+          style={{ width: `${percentages.away}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+  const renderAIPrediction = (match) => {
+    if (!match.aiPrediction) return null;
+
+    const getPredictionText = () => {
+      switch(match.aiPrediction) {
+        case 'HOME_TEAM':
+          return match.homeTeam.name;
+        case 'AWAY_TEAM':
+          return match.awayTeam.name;
+        case 'DRAW':
+          return 'Draw';
+        default:
+          return null;
+      }
+    };
+
+    const predictionText = getPredictionText();
+    if (!predictionText) return null;
+
+    return (
+      <div className="text-center text-sm mb-3">
+        <span className="text-gray-400">AI Predicts: </span>
+        <span className="text-white font-medium">{predictionText}</span>
+      </div>
+    );
+  };
+
+  if (!currentMatch) return null;
+
+  return (
+    <div className="relative w-full max-w-sm mx-auto mt-8">
+      <div className="mb-4 w-full flex items-center justify-center gap-2">
         <span className="text-sm font-bold text-gray-700 bg-white px-3 py-1 rounded-full shadow-md">
           {remainingMatches.length} Matches Left
         </span>
@@ -82,22 +149,28 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
 
       <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02]">
         {/* League Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-2 px-3"> {/* Reduced padding */}
-          <div className="flex justify-center items-center space-x-2"> {/* Reduced spacing */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-2 px-3">
+          <div className="flex justify-center items-center space-x-2">
             <img 
               src={currentMatch.competition.emblem} 
               alt={currentMatch.competition.name} 
-              className="w-6 h-6" 
+              className="w-6 h-6"
             />
-            <h2 className="text-base font-bold text-white text-center"> 
+            <h2 className="text-base font-bold text-white text-center">
               {currentMatch.competition.name}
             </h2>
           </div>
         </div>
 
-        {/* Match Content */}
-        <div className="p-4"> {/* Reduced from p-6 */}
-          <div className="flex items-center justify-between space-x-3"> 
+        <div className="p-4">
+          {/* AI Prediction */}
+          {renderAIPrediction(currentMatch)}
+
+          {/* Vote Split */}
+          {renderVoteSplit(currentMatch)}
+
+          {/* Teams and Voting Buttons */}
+          <div className="flex items-center justify-between space-x-3">
             {/* Home Team */}
             <button 
               onClick={() => handleVote('home')}
@@ -107,9 +180,9 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
                 <img 
                   src={currentMatch.homeTeam.crest} 
                   alt={currentMatch.homeTeam.name}
-                  className="w-14 h-14 mx-auto mb-2" 
+                  className="w-14 h-14 mx-auto mb-2"
                 />
-                <p className="text-white text-center font-bold text-sm"> 
+                <p className="text-white text-center font-bold text-sm">
                   {currentMatch.homeTeam.name}
                 </p>
               </div>
@@ -120,7 +193,7 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
             <div className="flex flex-col justify-center">
               <button 
                 onClick={() => handleVote('draw')}
-                className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white font-bold rounded-lg transform transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 text-sm" 
+                className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white font-bold rounded-lg transform transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 text-sm"
               >
                 DRAW
               </button>
@@ -135,9 +208,9 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
                 <img 
                   src={currentMatch.awayTeam.crest} 
                   alt={currentMatch.awayTeam.name}
-                  className="w-14 h-14 mx-auto mb-2" 
+                  className="w-14 h-14 mx-auto mb-2"
                 />
-                <p className="text-white text-center font-bold text-sm"> 
+                <p className="text-white text-center font-bold text-sm">
                   {currentMatch.awayTeam.name}
                 </p>
               </div>
@@ -146,10 +219,10 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
           </div>
 
           {/* Skip Button */}
-          <div className="flex justify-center mt-4"> 
+          <div className="flex justify-center mt-4">
             <button
               onClick={handleSkip}
-              className="text-gray-400 hover:text-white text-xs underline transition-colors duration-300" 
+              className="text-gray-400 hover:text-white text-xs underline transition-colors duration-300"
             >
               Vote Later
             </button>

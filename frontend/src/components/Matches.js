@@ -485,19 +485,36 @@ const renderVoteButtons = useCallback((match) => {
   const getPercentage = (voteCount) => {
     return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
   };
+
+  const homePercent = getPercentage(match.voteCounts.home);
+  const drawPercent = getPercentage(match.voteCounts.draw);
+  const awayPercent = getPercentage(match.voteCounts.away);
   
   return (
-    <div className="flex justify-center mt-2">
-      <div className="flex space-x-1 text-xs text-gray-600">
-        <span className="px-2 py-0.5 bg-blue-100 rounded">
-          Home: {getPercentage(match.voteCounts.home)}%
-        </span>
-        <span className="px-2 py-0.5 bg-gray-100 rounded">
-          Draw: {getPercentage(match.voteCounts.draw)}%
-        </span>
-        <span className="px-2 py-0.5 bg-red-100 rounded">
-          Away: {getPercentage(match.voteCounts.away)}%
-        </span>
+    <div className="mt-2">
+      {/* Vote Percentages and Bar */}
+      <div className="w-1/2 mx-auto"> {/* Changed from w-2/3 to w-1/2 */}
+        <div className="flex justify-between px-1 text-xs text-gray-600">
+          <span>{homePercent}%</span>
+          <span>{drawPercent}%</span>
+          <span>{awayPercent}%</span>
+        </div>
+        
+        {/* Progress Bar - made slimmer and added animation */}
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden flex"> {/* Reduced height from h-1.5 to h-1 */}
+          <div 
+            className="bg-blue-500 transition-all duration-500 hover:brightness-110"
+            style={{ width: `${homePercent}%` }}
+          />
+          <div 
+            className="bg-yellow-500 transition-all duration-500 hover:brightness-110"
+            style={{ width: `${drawPercent}%` }}
+          />
+          <div 
+            className="bg-red-500 transition-all duration-500 hover:brightness-110"
+            style={{ width: `${awayPercent}%` }}
+          />
+        </div>
       </div>
     </div>
   );
