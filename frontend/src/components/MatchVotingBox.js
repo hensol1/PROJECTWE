@@ -6,13 +6,9 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
   const [remainingMatchesByLeague, setRemainingMatchesByLeague] = useState({});
   const [currentLeagueId, setCurrentLeagueId] = useState(null);
   const [isVoting, setIsVoting] = useState(false);
-  const [dragX, setDragX] = useState(0);
-  const cardRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const startTimeRef = useRef(0);
-  const [startY, setStartY] = useState(0);
-  const [isVerticalScroll, setIsVerticalScroll] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeTeam, setActiveTeam] = useState(null); 
+
 
   // Check if device is mobile
   useEffect(() => {
@@ -67,66 +63,15 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
     setCurrentLeagueId(leagues[nextIndex]);
   };
 
-const handleDragStart = (event) => {
-  if (!isMobile) return;
   
-  const clientX = event.type.startsWith('touch') ? event.touches[0].clientX : event.clientX;
-  const clientY = event.type.startsWith('touch') ? event.touches[0].clientY : event.clientY;
-  
-  setIsDragging(true);
-  setDragX(0);
-  setStartY(clientY);
-  setIsVerticalScroll(false);
-  startTimeRef.current = Date.now();
-};
-
-const handleDragMove = (event) => {
-  if (!isDragging || !isMobile) return;
-
-  const clientX = event.type.startsWith('touch') ? event.touches[0].clientX : event.clientX;
-  const clientY = event.type.startsWith('touch') ? event.touches[0].clientY : event.clientY;
-  
-  const diffY = clientY - startY;
-  const diffX = clientX - (cardRef.current?.offsetLeft + (cardRef.current?.offsetWidth / 2) || 0);
-
-  if (!isVerticalScroll && Math.abs(diffY) > Math.abs(diffX) * 2) {
-    setIsVerticalScroll(true);
-    return;
-  }
-
-  if (!isVerticalScroll) {
-    event.preventDefault();
-    setDragX(diffX);
-  }
-};
-
-
-const handleDragEnd = async () => {
-  if (!isDragging || !isMobile) return;
-
-  setIsDragging(false);
-
-  try {
-    if (dragX < -100) {
-      await handleVote('home');
-    } else if (dragX > 100) {
-      await handleVote('away');
-    }
-    // Remove the tap-for-draw condition
-  } finally {
-    setDragX(0);
-  }
-};
-  
-const handleVote = async (vote) => {
-  // Add this check at the start of the function
-  if (isVoting) return;  // Prevent double voting
-  
-  try {
-    setIsVoting(true);
-    await onVote(currentMatch.id, vote);
+  const handleVote = async (vote) => {
+    if (isVoting) return;
+    
+    try {
+      setIsVoting(true);
+      setActiveTeam(vote); // Add visual feedback
+      await onVote(currentMatch.id, vote);
       
-      // Remove voted match from current league
       setRemainingMatchesByLeague(prev => {
         const newLeagueMatches = prev[currentLeagueId].filter(match => match.id !== currentMatch.id);
         
@@ -136,10 +81,8 @@ const handleVote = async (vote) => {
           localStorage.setItem('votedMatches', JSON.stringify(votedMatches));
         }
 
-        // If league is empty, remove it
         if (newLeagueMatches.length === 0) {
           const { [currentLeagueId]: _, ...rest } = prev;
-          // Move to next league if available
           if (Object.keys(rest).length > 0) {
             handleSkipLeague();
           }
@@ -151,12 +94,13 @@ const handleVote = async (vote) => {
           [currentLeagueId]: newLeagueMatches
         };
       });
-  } catch (error) {
-    console.error('Error voting:', error);
-  } finally {
-    setIsVoting(false);
-  }
-};
+    } catch (error) {
+      console.error('Error voting:', error);
+    } finally {
+      setIsVoting(false);
+      setActiveTeam(null); // Reset visual feedback
+    }
+  };
 
   const handleSkipMatch = () => {
     setRemainingMatchesByLeague(prev => {
@@ -248,172 +192,118 @@ const handleVote = async (vote) => {
     );
   };
 
-const dragProps = isMobile ? {
-    onTouchStart: handleDragStart,
-    onTouchMove: handleDragMove,
-    onTouchEnd: handleDragEnd,
-    onMouseDown: handleDragStart,
-    onMouseMove: handleDragMove,
-    onMouseUp: handleDragEnd,
-    onMouseLeave: handleDragEnd,
-} : {};
-
 
   return (
-   <motion.div
-  ref={cardRef}
-  className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-xl overflow-hidden touch-none select-none"
-  style={{
-    x: dragX,
-    rotate: dragX * 0.02,
-    cursor: isMobile ? (isDragging ? 'grabbing' : 'grab') : 'default',
-    touchAction: 'none'  // Add this line
-  }}
-  {...dragProps}
->
-
-      {/* Vote Direction Indicators (mobile only) */}
-      {isMobile && (
-        <>
-          <div 
-            className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none"
-            style={{ opacity: dragX < -20 ? Math.abs(dragX) / 100 : 0 }}
-          >
-            <span className="text-blue-500 font-bold">← Home Win</span>
-          </div>
-          <div 
-            className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none"
-            style={{ opacity: dragX > 20 ? dragX / 100 : 0 }}
-          >
-            <span className="text-red-500 font-bold">Away Win →</span>
-          </div>
-        </>
-      )}
-
+    <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-xl overflow-hidden">
       {/* League Header */}
-<div className="bg-gradient-to-r from-blue-600 to-blue-800 py-2 px-3">
-  <div className="flex justify-center items-center space-x-2">
-    <img 
-      src={currentMatch.competition.emblem} 
-      alt={currentMatch.competition.name} 
-      className="w-6 h-6"
-    />
-    <h2 className="text-base font-bold text-white text-center">
-      {currentMatch.competition.name}
-    </h2>
-  </div>
-</div>
-
-<div className="p-4">
-{/* Voting Instructions */}
-<div className="text-center text-gray-400 text-sm mb-4">
-  {isMobile ? 
-    "Swipe left for home, right for away" :
-    "Click team for prediction"
-  }
-</div>
-
-
-  {/* AI Prediction */}
-  {renderAIPrediction()}
-  
-  {/* Teams */}
-  <div className="flex items-center justify-between space-x-3">
-{/* Home Team */}
-<button 
-  onClick={() => handleVote('home')}  
-  className="flex-1 group"
->
-      <div className={`bg-gray-800 p-3 rounded-xl transition-all duration-300 transform 
-        ${dragX < -20 ? 'scale-105 bg-blue-900' : ''}
-        ${!isMobile ? 'hover:scale-105 hover:bg-blue-900' : ''}
-      `}>
-        <img 
-          src={currentMatch.homeTeam.crest} 
-          alt={currentMatch.homeTeam.name}
-          className="w-14 h-14 mx-auto mb-2"
-        />
-        <p className="text-white text-center font-bold text-sm">
-          {currentMatch.homeTeam.name}
-        </p>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-2 px-3">
+        <div className="flex justify-center items-center space-x-2">
+          <img 
+            src={currentMatch.competition.emblem} 
+            alt={currentMatch.competition.name} 
+            className="w-6 h-6"
+          />
+          <h2 className="text-base font-bold text-white text-center">
+            {currentMatch.competition.name}
+          </h2>
+        </div>
       </div>
-    </button>
 
-{/* Draw Button */}
-{isMobile ? (
-  <button 
-    onClick={() => handleVote('draw')}
-    className="flex items-center justify-center px-4"
-  >
-    <div className="bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 px-4 py-2 rounded-lg">
-      <span className="text-white text-sm font-bold">
-        DRAW
-      </span>
+      <div className="p-4">
+        {/* AI Prediction */}
+        {renderAIPrediction()}
+        
+        {/* Teams */}
+        <div className="flex items-center justify-between space-x-3">
+          {/* Home Team */}
+          <button 
+            onClick={() => handleVote('home')}
+            className="flex-1 group relative"
+          >
+            <div className={`
+              bg-gray-800 p-3 rounded-xl transition-all duration-300 transform
+              ${activeTeam === 'home' ? 'bg-blue-900 scale-95' : 'hover:bg-blue-900 hover:scale-105'}
+              active:scale-95 active:bg-blue-900
+            `}>
+              <img 
+                src={currentMatch.homeTeam.crest} 
+                alt={currentMatch.homeTeam.name}
+                className="w-14 h-14 mx-auto mb-2"
+              />
+              <p className="text-white text-center font-bold text-sm">
+                {currentMatch.homeTeam.name}
+              </p>
+            </div>
+          </button>
+
+          {/* Draw Button */}
+          <button 
+            onClick={() => handleVote('draw')}
+            className={`
+              px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 
+              text-white font-bold rounded-lg transform transition-all duration-300 
+              ${activeTeam === 'draw' ? 'scale-95 opacity-90' : 'hover:scale-110'}
+              hover:shadow-lg active:scale-95 text-sm
+            `}
+          >
+            DRAW
+          </button>
+
+          {/* Away Team */}
+          <button 
+            onClick={() => handleVote('away')}
+            className="flex-1 group relative"
+          >
+            <div className={`
+              bg-gray-800 p-3 rounded-xl transition-all duration-300 transform
+              ${activeTeam === 'away' ? 'bg-red-900 scale-95' : 'hover:bg-red-900 hover:scale-105'}
+              active:scale-95 active:bg-red-900
+            `}>
+              <img 
+                src={currentMatch.awayTeam.crest} 
+                alt={currentMatch.awayTeam.name}
+                className="w-14 h-14 mx-auto mb-2"
+              />
+              <p className="text-white text-center font-bold text-sm">
+                {currentMatch.awayTeam.name}
+              </p>
+            </div>
+          </button>
+        </div>
+
+        {/* Vote Split */}
+        {renderVoteSplit()}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-center items-center gap-4 mt-4">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSkipMatch();
+            }}
+            className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
+          >
+            <span>Skip Match</span>
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSkipLeague();
+            }}
+            className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
+          >
+            <span>Skip League</span>
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+
+        {/* Matches Counter */}
+        <div className="text-center text-xs text-gray-500 mt-2">
+          {currentMatches.length} matches remaining in this league
+        </div>
+      </div>
     </div>
-  </button>
-) : (
-  <button 
-    onClick={() => handleVote('draw')}
-    className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white font-bold rounded-lg transform transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 text-sm"
-  >
-    DRAW
-  </button>
-)}
-
-{/* Away Team */}
-<button 
-  onClick={() => handleVote('away')}  
-  className="flex-1 group"
->
-      <div className={`bg-gray-800 p-3 rounded-xl transition-all duration-300 transform 
-        ${dragX > 20 ? 'scale-105 bg-red-900' : ''}
-        ${!isMobile ? 'hover:scale-105 hover:bg-red-900' : ''}
-      `}>
-        <img 
-          src={currentMatch.awayTeam.crest} 
-          alt={currentMatch.awayTeam.name}
-          className="w-14 h-14 mx-auto mb-2"
-        />
-        <p className="text-white text-center font-bold text-sm">
-          {currentMatch.awayTeam.name}
-        </p>
-      </div>
-    </button>
-  </div>
-
-  {/* Vote Split */}
-  {renderVoteSplit()}
-
-{/* Navigation Buttons */}
-<div className="flex justify-center items-center gap-4 mt-4">
-  <button
-    onClick={(e) => {
-      e.stopPropagation();  // Add this
-      handleSkipMatch();
-    }}
-    className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
-  >
-    <span>Skip Match</span>
-    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-  </button>
-  <button
-    onClick={(e) => {
-      e.stopPropagation();  // Add this
-      handleSkipLeague();
-    }}
-    className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
-  >
-    <span>Skip League</span>
-    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-  </button>
-</div>
-
-  {/* Matches Counter */}
-  <div className="text-center text-xs text-gray-500 mt-2">
-    {currentMatches.length} matches remaining in this league
-  </div>
-</div>
-    </motion.div>
   );
 };
 
