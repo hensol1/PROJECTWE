@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, isSameDay, parseISO } from 'date-fns';
 
 // Admin action button component
 const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
@@ -169,6 +169,20 @@ const AdminControls = () => {
   );
 };
 
+const Notification = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg transition-opacity duration-300 ${
+      type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+    }`}>
+      {message}
+    </div>
+  );
+};
 
 const MatchCard = ({ match, onPrediction }) => {
   const getStatusClass = (status) => {
@@ -237,26 +251,56 @@ const MatchCard = ({ match, onPrediction }) => {
 const AdminPage = () => {
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [notification, setNotification] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollPositionRef = useRef(0);
 
   useEffect(() => {
     fetchMatches(currentDate);
   }, [currentDate]);
 
-  const fetchMatches = async (date) => {
+  const fetchMatches = async (date, preserveScroll = false) => {
     try {
+      setIsLoading(true);
+      
+      // Store current scroll position if preserveScroll is true
+      if (preserveScroll) {
+        scrollPositionRef.current = window.scrollY;
+      }
+
       const formattedDate = format(date, 'yyyy-MM-dd');
       const response = await api.fetchMatches(formattedDate);
-      const groupedMatches = response.data.matches.reduce((acc, match) => {
+      
+      // Filter matches to only include those from the selected date
+      const filteredMatches = response.data.matches.filter(match => 
+        isSameDay(parseISO(match.utcDate), date)
+      );
+
+      // Group filtered matches by competition
+      const groupedMatches = filteredMatches.reduce((acc, match) => {
         if (!acc[match.competition.name]) {
           acc[match.competition.name] = [];
         }
         acc[match.competition.name].push(match);
         return acc;
       }, {});
+
       setMatches(groupedMatches);
+
+      // Restore scroll position after state update if preserveScroll is true
+      if (preserveScroll) {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollPositionRef.current);
+        });
+      }
     } catch (error) {
       console.error('Error fetching matches:', error);
-      alert('Failed to fetch matches. Please try again.');
+      setNotification({
+        type: 'error',
+        message: 'Failed to fetch matches. Please try again.'
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -269,16 +313,19 @@ const AdminPage = () => {
       console.log('Attempting to make prediction:', { matchId, prediction });
       const response = await api.makeAIPrediction(matchId, prediction);
       console.log('Prediction response:', response.data);
-      alert('AI prediction recorded successfully');
-      fetchMatches(currentDate);
+      setNotification({
+        type: 'success',
+        message: 'AI prediction recorded'
+      });
+      
+      // Fetch matches with scroll position preservation
+      await fetchMatches(currentDate, true);
     } catch (error) {
       console.error('Error making AI prediction:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        alert(`Failed to record AI prediction: ${error.response.data.message}`);
-      } else {
-        alert('Failed to record AI prediction. Please try again.');
-      }
+      setNotification({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to record AI prediction'
+      });
     }
   };
 
@@ -291,6 +338,7 @@ const AdminPage = () => {
         <button 
           onClick={() => handleDateChange(-1)} 
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200"
+          disabled={isLoading}
         >
           Previous Day
         </button>
@@ -298,13 +346,28 @@ const AdminPage = () => {
         <button 
           onClick={() => handleDateChange(1)} 
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200"
+          disabled={isLoading}
         >
           Next Day
         </button>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+
+      {/* No Matches Message */}
+      {!isLoading && Object.keys(matches).length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No matches scheduled for this date
+        </div>
+      )}
+
       {/* Matches Display */}
-      {Object.entries(matches).map(([competition, competitionMatches]) => (
+      {!isLoading && Object.entries(matches).map(([competition, competitionMatches]) => (
         <div key={competition} className="mb-4">
           <h2 className="text-xl font-semibold mb-2">{competition}</h2>
           {competitionMatches.map(match => (
@@ -316,6 +379,14 @@ const AdminPage = () => {
           ))}
         </div>
       ))}
+
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };
