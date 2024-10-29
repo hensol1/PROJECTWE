@@ -57,15 +57,29 @@ const Matches = ({ user }) => {
   
   const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
 
-  const filterMatchesByStatus = (matches, statuses) => {
-    return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
-      const filteredMatches = leagueMatches.filter(match => statuses.includes(match.status));
-      if (filteredMatches.length > 0) {
-        acc[leagueKey] = filteredMatches;
+const filterMatchesByStatus = (matches, statuses) => {
+  return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
+    const filteredMatches = leagueMatches.filter(match => {
+      // First check if the status matches
+      const statusMatches = statuses.includes(match.status);
+      
+      // For TIMED matches, we need to check if they're within the current date in user's timezone
+      if (statusMatches && match.status === 'TIMED') {
+        const matchDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+        const startOfToday = startOfDay(currentDate);
+        const endOfToday = endOfDay(currentDate);
+        return matchDate >= startOfToday && matchDate <= endOfToday;
       }
-      return acc;
-    }, {});
-  };
+      
+      return statusMatches;
+    });
+
+    if (filteredMatches.length > 0) {
+      acc[leagueKey] = filteredMatches;
+    }
+    return acc;
+  }, {});
+};
 
   // Part 4: Callback Functions
   const findDateWithLiveMatches = useCallback(() => {
@@ -280,20 +294,28 @@ const fetchMatches = useCallback(async (date) => {
     const response = await api.fetchMatches(formattedDate);
     
     const groupedMatches = response.data.matches.reduce((acc, match) => {
+      // Convert UTC date to user's timezone
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
       const leagueKey = `${match.competition.name}_${match.competition.id}`;
       
-      if (!acc[dateKey]) {
-        acc[dateKey] = {};
+      // Check if match is within the selected date (in user's timezone)
+      const selectedStartOfDay = startOfDay(date);
+      const selectedEndOfDay = endOfDay(date);
+      
+      if (matchLocalDate >= selectedStartOfDay && matchLocalDate <= selectedEndOfDay) {
+        if (!acc[dateKey]) {
+          acc[dateKey] = {};
+        }
+        if (!acc[dateKey][leagueKey]) {
+          acc[dateKey][leagueKey] = [];
+        }
+        acc[dateKey][leagueKey].push({
+          ...match,
+          localDate: matchLocalDate
+        });
       }
-      if (!acc[dateKey][leagueKey]) {
-        acc[dateKey][leagueKey] = [];
-      }
-      acc[dateKey][leagueKey].push({
-        ...match,
-        localDate: matchLocalDate
-      });
+      
       return acc;
     }, {});
 
