@@ -8,28 +8,22 @@ import { BiAlarm, BiAlarmOff } from "react-icons/bi";
 import CustomButton from './CustomButton';
 import NextMatchCountdown from './NextMatchCountdown';
 import LoadingLogo from './LoadingLogo';
-import GoalNotification from './GoalNotification';
 import NotificationQueue from './NotificationQueue';
-import MatchVotingBox from './MatchVotingBox';
 import AnimatedVotingBox from './AnimatedVotingBox';
+import LeagueHeader from './LeagueHeader';
 
 // Part 2: Component Definition and Initial States
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [fanAccuracy, setFanAccuracy] = useState(0);
-  const [aiAccuracy, setAIAccuracy] = useState(0);
-  const [totalPredictions, setTotalPredictions] = useState(0);
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [selectedContinent, setSelectedContinent] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [userTimeZone, setUserTimeZone] = useState('');
   const [activeTab, setActiveTab] = useState("live");
   const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
-  const [currentDateLiveMatches, setCurrentDateLiveMatches] = useState(false);
   const [isManualTabSelect, setIsManualTabSelect] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [goalNotification, setGoalNotification] = useState(null);
   const [goalNotifications, setGoalNotifications] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [processedScoreUpdates] = useState(new Set());
@@ -51,7 +45,7 @@ const Matches = ({ user }) => {
     Europe: [2, 3, 39, 40, 61, 62, 78, 79, 81, 88, 94, 103, 106, 113, 119, 135, 140, 143, 144, 172, 179, 197, 203, 207, 210, 218, 235, 271, 283, 286, 318, 327, 333, 345, 373, 383, 848],
     International: [4, 5, 6, 10, 34],
     Americas: [11, 13, 71, 128, 253],
-    Asia: [17, 30, 169, 188],
+    Asia: [17, 30, 169, 188, 307],
     Africa: [12, 20, 29]
   };
   
@@ -502,50 +496,50 @@ useEffect(() => {
     );
   };
 
-const renderVoteButtons = useCallback((match) => {
-  const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+  const renderVoteButtons = useCallback((match, isLiveTab) => {
+    // Don't show the vote bar visualization on live tab
+    if (isLiveTab) return null;
   
-  const getPercentage = (voteCount) => {
-    return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-  };
-
-  const homePercent = getPercentage(match.voteCounts.home);
-  const drawPercent = getPercentage(match.voteCounts.draw);
-  const awayPercent = getPercentage(match.voteCounts.away);
+    const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+    
+    const getPercentage = (voteCount) => {
+      return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+    };
   
-  return (
-    <div className="mt-2">
-      {/* Vote Percentages and Bar */}
-      <div className="w-1/2 mx-auto"> {/* Changed from w-2/3 to w-1/2 */}
-        <div className="flex justify-between px-1 text-xs text-gray-600">
-          <span>{homePercent}%</span>
-          <span>{drawPercent}%</span>
-          <span>{awayPercent}%</span>
-        </div>
-        
-        {/* Progress Bar - made slimmer and added animation */}
-        <div className="h-1 bg-gray-100 rounded-full overflow-hidden flex"> {/* Reduced height from h-1.5 to h-1 */}
-          <div 
-            className="bg-blue-500 transition-all duration-500 hover:brightness-110"
-            style={{ width: `${homePercent}%` }}
-          />
-          <div 
-            className="bg-yellow-500 transition-all duration-500 hover:brightness-110"
-            style={{ width: `${drawPercent}%` }}
-          />
-          <div 
-            className="bg-red-500 transition-all duration-500 hover:brightness-110"
-            style={{ width: `${awayPercent}%` }}
-          />
+    const homePercent = getPercentage(match.voteCounts.home);
+    const drawPercent = getPercentage(match.voteCounts.draw);
+    const awayPercent = getPercentage(match.voteCounts.away);
+    
+    return (
+      <div className="mt-2">
+        <div className="w-1/2 mx-auto">
+          <div className="flex justify-between px-1 text-xs text-gray-600">
+            <span>{homePercent}%</span>
+            <span>{drawPercent}%</span>
+            <span>{awayPercent}%</span>
+          </div>
+          <div className="h-1 bg-gray-100 rounded-full overflow-hidden flex">
+            <div 
+              className="bg-blue-500 transition-all duration-500 hover:brightness-110"
+              style={{ width: `${homePercent}%` }}
+            />
+            <div 
+              className="bg-yellow-500 transition-all duration-500 hover:brightness-110"
+              style={{ width: `${drawPercent}%` }}
+            />
+            <div 
+              className="bg-red-500 transition-all duration-500 hover:brightness-110"
+              style={{ width: `${awayPercent}%` }}
+            />
+          </div>
         </div>
       </div>
-    </div>
-  );
-}, []);
-
+    );
+  }, []);
+  
 
   // Part 10: Predictions Component
-  const renderPredictions = useCallback((match) => {
+  const renderPredictions = useCallback((match, isLiveTab) => {
     const getTeamPrediction = (prediction) => {
       switch(prediction) {
         case 'HOME_TEAM':
@@ -566,10 +560,29 @@ const renderVoteButtons = useCallback((match) => {
           return 'No prediction';
       }
     };
-
+  
+    const getHighestVotePercentage = () => {
+      const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
+      
+      if (totalVotes === 0) return null;
+      
+      const getPercentage = (voteCount) => {
+        return totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+      };
+  
+      const homePercent = getPercentage(match.voteCounts.home);
+      const drawPercent = getPercentage(match.voteCounts.draw);
+      const awayPercent = getPercentage(match.voteCounts.away);
+  
+      const highest = Math.max(homePercent, drawPercent, awayPercent);
+      
+      if (highest === 0) return null;
+      return `(${highest}%)`;
+    };
+  
     const getUserVote = () => {
       if (!match.userVote) return null;
-
+  
       let highlightColor = 'bg-yellow-100';
       if (match.status === 'FINISHED') {
         const homeScore = match.score.fullTime.home;
@@ -577,7 +590,7 @@ const renderVoteButtons = useCallback((match) => {
         const result = homeScore > awayScore ? 'home' : (awayScore > homeScore ? 'away' : 'draw');
         highlightColor = match.userVote === result ? 'bg-green-100' : 'bg-red-100';
       }
-
+  
       let voteContent;
       switch(match.userVote) {
         case 'home':
@@ -600,7 +613,7 @@ const renderVoteButtons = useCallback((match) => {
         default:
           return null;
       }
-
+  
       return (
         <div className="flex justify-center mt-1">
           <span className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded ${highlightColor}`}>
@@ -609,7 +622,7 @@ const renderVoteButtons = useCallback((match) => {
         </div>
       );
     };
-
+  
     const isPredictionCorrect = (prediction) => {
       if (match.status !== 'FINISHED') return false;
       const homeScore = match.score.fullTime.home;
@@ -617,12 +630,15 @@ const renderVoteButtons = useCallback((match) => {
       const actualResult = homeScore > awayScore ? 'HOME_TEAM' : (awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW');
       return prediction === actualResult;
     };
-
+  
     return (
       <div className="mt-1 text-xs space-y-1">
         <div className="flex justify-between">
           <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (isPredictionCorrect(match.fanPrediction) ? 'bg-green-100' : 'bg-red-100') : ''}`}>
             Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
+            {isLiveTab && match.fanPrediction && (
+              <span className="text-gray-500 ml-1">{getHighestVotePercentage()}</span>
+            )}
           </p>
           {match.aiPrediction && (
             <p className={`p-0.5 rounded ${match.status === 'FINISHED' ? (isPredictionCorrect(match.aiPrediction) ? 'bg-green-100' : 'bg-red-100') : ''}`}>
@@ -634,7 +650,7 @@ const renderVoteButtons = useCallback((match) => {
       </div>
     );
   }, []);
-
+    
 // Part 11: Match List Filtering and Rendering
   const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
     const [, leagueId] = leagueKey.split('_');
@@ -681,20 +697,24 @@ const renderVoteButtons = useCallback((match) => {
   const renderMatches = (matches) => {
     return sortedLeagues(matches).map(([leagueKey, competitionMatches]) => {
       const [leagueName, leagueId] = leagueKey.split('_');
-      return (
+        console.log('Competition data:', competitionMatches[0].competition); // Debug line
+        return (
         <div key={leagueKey} className="mb-2">
-          <button 
-            className="w-full text-left text-sm font-semibold mb-1 flex items-center bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
-            onClick={() => toggleLeague(leagueKey)}
-          >
-            <img src={competitionMatches[0].competition.emblem} alt={leagueName} className="w-5 h-5 mr-1" />
-            {leagueName}
-            <span className="ml-auto">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
-          </button>
-          {!collapsedLeagues[leagueKey] && (
-            <div className="space-y-1">
-              {competitionMatches.map(match => (
-                <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
+<button 
+  className="w-full text-left text-sm font-semibold mb-1 flex items-center justify-between bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
+  onClick={() => toggleLeague(leagueKey)}
+>
+  <LeagueHeader 
+    leagueName={leagueName}
+    leagueEmblem={competitionMatches[0].competition.emblem}
+    country={competitionMatches[0].competition.country}
+  />
+  <span className="ml-2">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+</button>
+{!collapsedLeagues[leagueKey] && (
+          <div className="space-y-1">
+            {competitionMatches.map(match => (
+              <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center justify-start w-5/12">
                       <div className="w-4 h-4 flex-shrink-0 mr-1">
@@ -721,16 +741,16 @@ const renderVoteButtons = useCallback((match) => {
                       </div>
                     </div>
                   </div>
-                  {renderVoteButtons(match)}
-                  {renderPredictions(match)}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    });
-  };
+                {renderVoteButtons(match, activeTab === 'live')}
+                {renderPredictions(match, activeTab === 'live')}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  });
+};
 
   const renderTabContent = () => {
     switch (activeTab) {

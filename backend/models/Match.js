@@ -10,7 +10,11 @@ const MatchSchema = new mongoose.Schema({
   competition: {
     id: Number,
     name: String,
-    emblem: String
+    emblem: String,
+    country: {
+      name: String,
+      flag: String
+    }
   },
   homeTeam: {
     id: Number,
@@ -25,16 +29,15 @@ const MatchSchema = new mongoose.Schema({
       home: Number,
       away: Number
     },
-      status: String,
-  minute: {
-    type: Number,
-    default: null
-  },
-  matchPeriod: {
-    type: String,
-    default: null
-  },
-
+    status: String,
+    minute: {
+      type: Number,
+      default: null
+    },
+    matchPeriod: {
+      type: String,
+      default: null
+    },
     halfTime: {
       home: Number,
       away: Number
@@ -42,15 +45,15 @@ const MatchSchema = new mongoose.Schema({
   },
   source: String,
   status: String,
-utcDate: {
-  type: String,
-  get: (v) => v,
-  set: (v) => {
-    if (!v) return v;
-    const date = new Date(v);
-    return date.toISOString();
-  }
-},
+  utcDate: {
+    type: String,
+    get: (v) => v,
+    set: (v) => {
+      if (!v) return v;
+      const date = new Date(v);
+      return date.toISOString();
+    }
+  },
   aiPrediction: {
     type: String,
     enum: ['HOME_TEAM', 'DRAW', 'AWAY_TEAM', null],
@@ -63,7 +66,6 @@ utcDate: {
   },
   voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   voterIPs: [{ type: String }],
-  // Add processed field here in the schema definition
   processed: { type: Boolean, default: false }
 }, { 
   collection: 'matches',

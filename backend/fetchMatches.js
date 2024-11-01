@@ -13,7 +13,7 @@ const DB_NAME = "test";
 const COLLECTION_NAME = "matches";
 
 // List of league IDs to filter
-const ALLOWED_LEAGUE_IDS = [253, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 17, 20, 29, 30, 34, 39, 40, 61, 62, 71, 78, 79, 81, 88, 94, 103, 106, 113, 119, 128, 135, 140, 143, 144, 169, 172, 179, 188, 197, 203, 207, 210, 218, 235, 253, 271, 283, 286, 318, 327, 333, 345, 373, 383, 848];
+const ALLOWED_LEAGUE_IDS = [253, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 17, 20, 29, 30, 34, 39, 40, 61, 62, 71, 78, 79, 81, 88, 94, 103, 106, 113, 119, 128, 135, 140, 143, 144, 169, 172, 179, 188, 197, 203, 207, 210, 218, 235, 253, 271, 283, 286, 307, 318, 327, 333, 345, 373, 383, 848];
 
 async function fetchMatches(date) {
     const url = `${BASE_URL}/fixtures`;
@@ -40,12 +40,16 @@ function processMatchData(match) {
         competition: {
             id: match.league.id,
             name: match.league.name,
-            emblem: match.league.logo
+            emblem: match.league.logo,
+            country: {
+                name: match.league.country,
+                flag: match.league.flag
+            }
         },
         utcDate: match.fixture.date,
-    status: mapStatus(match.fixture.status.short),
-    minute: match.fixture.status.elapsed,
-    matchPeriod: match.fixture.status.long,
+        status: mapStatus(match.fixture.status.short),
+        minute: match.fixture.status.elapsed,
+        matchPeriod: match.fixture.status.long,
         homeTeam: {
             id: match.teams.home.id,
             name: match.teams.home.name,
@@ -68,8 +72,6 @@ function processMatchData(match) {
                 away: match.score.halftime.away
             }
         },
-        
-        
         lastUpdated: new Date()
     };
 }
