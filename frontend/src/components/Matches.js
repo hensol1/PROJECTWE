@@ -11,6 +11,7 @@ import LoadingLogo from './LoadingLogo';
 import NotificationQueue from './NotificationQueue';
 import AnimatedVotingBox from './AnimatedVotingBox';
 import LeagueHeader from './LeagueHeader';
+import MatchBox from './MatchBox';
 
 // Part 2: Component Definition and Initial States
 const Matches = ({ user }) => {
@@ -650,7 +651,7 @@ useEffect(() => {
       </div>
     );
   }, []);
-    
+
 // Part 11: Match List Filtering and Rendering
   const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
     const [, leagueId] = leagueKey.split('_');
@@ -697,61 +698,37 @@ useEffect(() => {
   const renderMatches = (matches) => {
     return sortedLeagues(matches).map(([leagueKey, competitionMatches]) => {
       const [leagueName, leagueId] = leagueKey.split('_');
-        console.log('Competition data:', competitionMatches[0].competition); // Debug line
-        return (
-        <div key={leagueKey} className="mb-2">
-<button 
-  className="w-full text-left text-sm font-semibold mb-1 flex items-center justify-between bg-gray-200 p-1 rounded-lg hover:bg-gray-300 transition duration-200"
-  onClick={() => toggleLeague(leagueKey)}
->
-  <LeagueHeader 
-    leagueName={leagueName}
-    leagueEmblem={competitionMatches[0].competition.emblem}
-    country={competitionMatches[0].competition.country}
-  />
-  <span className="ml-2">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
-</button>
-{!collapsedLeagues[leagueKey] && (
-          <div className="space-y-1">
-            {competitionMatches.map(match => (
-              <div key={match.id} className="bg-white shadow-md rounded-lg p-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center justify-start w-5/12">
-                      <div className="w-4 h-4 flex-shrink-0 mr-1">
-                        <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-full h-full object-contain" />
-                      </div>
-                      <span className="font-semibold truncate">{match.homeTeam.name}</span>
-                    </div>
-                    <div className="text-center w-2/12 flex flex-col items-center">
-                      {match.status !== 'TIMED' && (
-                        <div className="mb-1">
-                          {renderMatchStatus(match)}
-                        </div>
-                      )}
-                      <span className="font-bold text-gray-900">
-                        {match.status === 'SCHEDULED' || match.status === 'TIMED'
-                          ? formatMatchDate(match.localDate)
-                          : `${match.score.fullTime.home} - ${match.score.fullTime.away}`}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-end w-5/12">
-                      <span className="font-semibold truncate">{match.awayTeam.name}</span>
-                      <div className="w-4 h-4 flex-shrink-0 ml-1">
-                        <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-full h-full object-contain" />
-                      </div>
-                    </div>
-                  </div>
-                {renderVoteButtons(match, activeTab === 'live')}
-                {renderPredictions(match, activeTab === 'live')}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  });
-};
-
+      return (
+        <div key={leagueKey} className="mb-6">
+          <button 
+            className="w-full text-left mb-3 flex items-center justify-between bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+            onClick={() => toggleLeague(leagueKey)}
+          >
+            <LeagueHeader 
+              leagueName={leagueName}
+              leagueEmblem={competitionMatches[0].competition.emblem}
+              country={competitionMatches[0].competition.country}
+            />
+            <span className="ml-2 text-gray-400">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+          </button>
+          
+          {!collapsedLeagues[leagueKey] && (
+  <div className="space-y-2"> {/* Changed from grid to vertical stack */}
+    {competitionMatches.map(match => (
+      <MatchBox 
+        key={match.id} 
+        match={match}
+        onVote={handleVote}
+        isLiveTab={activeTab === 'live'}
+      />
+    ))}
+  </div>
+)}
+        </div>
+      );
+    });
+  };
+  
   const renderTabContent = () => {
     switch (activeTab) {
       case 'live':
