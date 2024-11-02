@@ -4,17 +4,25 @@ import { format } from 'date-fns';
 const MatchBox = ({ match, onVote, isLiveTab }) => {
   const getScoreDisplay = () => {
     if (match.status === 'SCHEDULED' || match.status === 'TIMED') {
-      return <span className="text-sm font-medium text-gray-600">{format(new Date(match.localDate), 'HH:mm')}</span>;
+      return <span className="text-xs sm:text-sm font-medium text-gray-600">{format(new Date(match.localDate), 'HH:mm')}</span>;
     }
+  
     return (
-      <div className="flex items-center justify-center space-x-1">
-        <span className="text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
-        <span className="text-sm text-gray-400">-</span>
-        <span className="text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
+      <div className="flex flex-col items-center">
+        {(match.status === 'HALFTIME' || match.status === 'FINISHED') && (
+          <span className="text-[10px] sm:text-xs text-gray-500 mb-0.5">
+            {match.status === 'HALFTIME' ? 'HT' : 'FT'}
+          </span>
+        )}
+        <div className="flex items-center justify-center space-x-1">
+          <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
+          <span className="text-xs sm:text-sm text-gray-400">-</span>
+          <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
+        </div>
       </div>
     );
   };
-
+  
   const getMatchMinute = () => {
     if (!match.minute || match.status === 'TIMED') return '';
     switch (match.status) {
@@ -161,33 +169,48 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
           </span>
         </div>
 
-        {/* Center Section - Score and Draw */}
-        <div className="flex flex-col items-center w-16 sm:w-20">
-          {match.status === 'IN_PLAY' && (
-            <span className="text-[10px] sm:text-xs text-indigo-600 font-medium animate-pulse mb-0.5">
-              {getMatchMinute()}
-            </span>
-          )}
-          {match.status === 'SCHEDULED' || match.status === 'TIMED' ? (
-            <span className="text-xs sm:text-sm font-medium text-gray-600">
-              {format(new Date(match.localDate), 'HH:mm')}
-            </span>
-          ) : (
-            <div className="flex items-center justify-center space-x-1">
-              <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
-              <span className="text-xs sm:text-sm text-gray-400">-</span>
-              <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
-            </div>
-          )}
-          {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && (
-            <button
-              onClick={() => onVote(match.id, 'draw')}
-              className="mt-1 px-2 py-0.5 text-[10px] sm:text-xs bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-200"
-            >
-              Draw
-            </button>
-          )}
-        </div>
+{/* Center Section - Score and Draw */}
+<div className="flex flex-col items-center w-16 sm:w-20">
+  {/* Status display (minute, HT, or FT) */}
+  {match.status === 'IN_PLAY' && (
+    <span className="text-[10px] sm:text-xs text-indigo-600 font-medium animate-pulse mb-0.5">
+      {match.minute}'
+    </span>
+  )}
+  {match.status === 'HALFTIME' && (
+    <span className="text-[10px] sm:text-xs text-indigo-600 font-medium mb-0.5">
+      HT
+    </span>
+  )}
+  {match.status === 'FINISHED' && (
+    <span className="text-[10px] sm:text-xs text-gray-500 mb-0.5">
+      FT
+    </span>
+  )}
+
+  {/* Score or Time */}
+  {match.status === 'SCHEDULED' || match.status === 'TIMED' ? (
+    <span className="text-xs sm:text-sm font-medium text-gray-600">
+      {format(new Date(match.localDate), 'HH:mm')}
+    </span>
+  ) : (
+    <div className="flex items-center justify-center space-x-1">
+      <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
+      <span className="text-xs sm:text-sm text-gray-400">-</span>
+      <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
+    </div>
+  )}
+
+  {/* Draw button */}
+  {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && (
+    <button
+      onClick={() => onVote(match.id, 'draw')}
+      className="mt-1 px-2 py-0.5 text-[10px] sm:text-xs bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-200"
+    >
+      Draw
+    </button>
+  )}
+</div>
 
         {/* Right Section - Away Team */}
         <div className="flex flex-col items-center w-20 sm:w-28">

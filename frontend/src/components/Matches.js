@@ -699,9 +699,9 @@ useEffect(() => {
     return sortedLeagues(matches).map(([leagueKey, competitionMatches]) => {
       const [leagueName, leagueId] = leagueKey.split('_');
       return (
-        <div key={leagueKey} className="mb-6">
+<div key={leagueKey} className={`${!collapsedLeagues[leagueKey] ? 'mb-2' : ''}`}>
 <button 
-  className="w-full text-left mb-2 flex items-center justify-between bg-indigo-50 rounded-lg p-1.5 hover:bg-indigo-100 transition-colors duration-200 relative"
+  className="w-full text-left flex items-center justify-between bg-indigo-50 rounded-lg p-1.5 hover:bg-indigo-100 transition-colors duration-200 relative"
   onClick={() => toggleLeague(leagueKey)}
 >
   <LeagueHeader 
