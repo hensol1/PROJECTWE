@@ -700,17 +700,17 @@ useEffect(() => {
       const [leagueName, leagueId] = leagueKey.split('_');
       return (
         <div key={leagueKey} className="mb-6">
-          <button 
-            className="w-full text-left mb-3 flex items-center justify-between bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
-            onClick={() => toggleLeague(leagueKey)}
-          >
-            <LeagueHeader 
-              leagueName={leagueName}
-              leagueEmblem={competitionMatches[0].competition.emblem}
-              country={competitionMatches[0].competition.country}
-            />
-            <span className="ml-2 text-gray-400">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
-          </button>
+<button 
+  className="w-full text-left mb-2 flex items-center justify-between bg-indigo-50 rounded-lg p-1.5 hover:bg-indigo-100 transition-colors duration-200 relative"
+  onClick={() => toggleLeague(leagueKey)}
+>
+  <LeagueHeader 
+    leagueName={leagueName}
+    leagueEmblem={competitionMatches[0].competition.emblem}
+    country={competitionMatches[0].competition.country}
+  />
+  <span className="ml-2 text-indigo-400 text-xs">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+</button>
           
           {!collapsedLeagues[leagueKey] && (
   <div className="space-y-2"> {/* Changed from grid to vertical stack */}
