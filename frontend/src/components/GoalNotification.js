@@ -3,7 +3,7 @@ import Lottie from 'lottie-react';
 import { X } from 'lucide-react';
 import goalAnimation from '../assets/goal.json';
 
-const GoalNotification = ({ match, scoringTeam, onClose, autoClose = true }) => {
+const GoalNotification = React.memo(({ match, scoringTeam, onClose, autoClose = true }) => {
   console.log('GoalNotification render:', { match, scoringTeam, autoClose });
   const [startY, setStartY] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -142,6 +142,6 @@ const GoalNotification = ({ match, scoringTeam, onClose, autoClose = true }) => 
       </div>
     </div>
   );
-};
+});;
 
 export default GoalNotification;

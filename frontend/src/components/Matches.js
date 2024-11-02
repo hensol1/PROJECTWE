@@ -12,6 +12,7 @@ import NotificationQueue from './NotificationQueue';
 import AnimatedVotingBox from './AnimatedVotingBox';
 import LeagueHeader from './LeagueHeader';
 import MatchBox from './MatchBox';
+import AnimatedList from './AnimatedList';
 
 // Part 2: Component Definition and Initial States
 const Matches = ({ user }) => {
@@ -699,36 +700,51 @@ useEffect(() => {
     return sortedLeagues(matches).map(([leagueKey, competitionMatches]) => {
       const [leagueName, leagueId] = leagueKey.split('_');
       return (
-<div key={leagueKey} className={`${!collapsedLeagues[leagueKey] ? 'mb-2' : ''}`}>
-<button 
-  className="w-full text-left flex items-center justify-between bg-indigo-50 rounded-lg p-1.5 hover:bg-indigo-100 transition-colors duration-200 relative"
-  onClick={() => toggleLeague(leagueKey)}
->
-  <LeagueHeader 
-    leagueName={leagueName}
-    leagueEmblem={competitionMatches[0].competition.emblem}
-    country={competitionMatches[0].competition.country}
-  />
-  <span className="ml-2 text-indigo-400 text-xs">{collapsedLeagues[leagueKey] ? '▼' : '▲'}</span>
+<div key={leagueKey} className="mb-4 last:mb-0"> {/* Reduced space between league groups */}
+  <button 
+    className="w-full group relative overflow-hidden" // Removed mb-2/mb-3
+    onClick={() => toggleLeague(leagueKey)}
+  >
+  <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 opacity-90" />
+  
+  <div className="relative flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 backdrop-blur-sm border border-indigo-100/50 rounded-lg group-hover:border-indigo-200/70 transition-all duration-300">
+    <LeagueHeader 
+      leagueName={leagueName}
+      leagueEmblem={competitionMatches[0].competition.emblem}
+      country={competitionMatches[0].competition.country}
+    />
+    
+    {/* Animated Arrow - smaller on mobile */}
+    <div className={`
+      transition-transform duration-300 text-indigo-500 scale-75 sm:scale-100
+      ${collapsedLeagues[leagueKey] ? 'rotate-180' : 'rotate-0'}
+    `}>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    </div>
+  </div>
 </button>
           
-          {!collapsedLeagues[leagueKey] && (
-  <div className="space-y-2"> {/* Changed from grid to vertical stack */}
-    {competitionMatches.map(match => (
-      <MatchBox 
-        key={match.id} 
-        match={match}
-        onVote={handleVote}
-        isLiveTab={activeTab === 'live'}
-      />
-    ))}
-  </div>
-)}
-        </div>
+{!collapsedLeagues[leagueKey] && (
+    <div className="mt-1"> {/* Added small top margin */}
+      <AnimatedList delay={200} className="!overflow-visible gap-1"> {/* Reduced gap between matches */}
+        {competitionMatches.map(match => (
+          <MatchBox 
+            key={match.id} 
+            match={match}
+            onVote={handleVote}
+            isLiveTab={activeTab === 'live'}
+          />
+        ))}
+      </AnimatedList>
+    </div>
+  )}
+</div>
       );
     });
   };
-  
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'live':
@@ -858,9 +874,12 @@ return (
               </CustomButton>
             </div>
           </div>
-        <div className="bg-white rounded-lg shadow-md p-2 sm:p-4">
-          {renderTabContent()}
-        </div>
+          <div className="bg-transparent p-2 sm:p-4"> {/* Removed bg-white and shadow-md */}
+  {renderTabContent()}
+</div>
+
+
+
 
         {/* Subtle refresh indicator */}
         {isRefreshing && (

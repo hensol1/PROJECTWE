@@ -140,8 +140,8 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
+<div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
+<div className="flex items-center justify-center gap-2 sm:gap-4">
         {/* Left Section - Home Team */}
         <div className="flex flex-col items-center w-20 sm:w-28">
           {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
@@ -173,7 +173,7 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
 <div className="flex flex-col items-center w-16 sm:w-20">
   {/* Status display (minute, HT, or FT) */}
   {match.status === 'IN_PLAY' && (
-    <span className="text-[10px] sm:text-xs text-indigo-600 font-medium animate-pulse mb-0.5">
+    <span className="text-[10px] sm:text-xs text-green-600 font-medium animate-pulse mb-0.5">
       {match.minute}'
     </span>
   )}
