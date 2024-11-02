@@ -1,7 +1,7 @@
 // LeagueHeader.js
 import React from 'react';
 
-const LeagueHeader = ({ leagueName, leagueEmblem, country }) => {
+const LeagueHeader = React.memo(({ leagueName, leagueEmblem, country }) => {
   return (
     <div className="grid grid-cols-3 w-full items-center">
       {/* Left section - Country */}
@@ -40,6 +40,6 @@ const LeagueHeader = ({ leagueName, leagueEmblem, country }) => {
       <div></div>
     </div>
   );
-};
+});;
 
 export default LeagueHeader;

@@ -874,8 +874,8 @@ return (
               </CustomButton>
             </div>
           </div>
-          <div className="bg-transparent p-2 sm:p-4"> {/* Removed bg-white and shadow-md */}
-  {renderTabContent()}
+          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
+          {renderTabContent()}
 </div>
 
 
