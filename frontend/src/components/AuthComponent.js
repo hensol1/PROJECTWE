@@ -1,7 +1,7 @@
 // frontend/src/components/AuthComponent.js
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import api from '../api';
@@ -9,8 +9,8 @@ import Select from 'react-select';
 import countryList from 'react-select-country-list';
 import { City } from 'country-state-city';
 import { VscAccount } from "react-icons/vsc";
-import { IoExitOutline } from "react-icons/io5";
 import logo from '../assets/images/logo.svg';
+import { IoExitOutline, IoPersonOutline } from "react-icons/io5";
 
 // Utility function for debouncing
 const debounce = (func, wait) => {
@@ -390,7 +390,19 @@ const AuthComponent = ({ setUser, user }) => {
   );
   
   return (
-    <div>
+    <div className="flex items-center gap-2">  {/* Added container with flex and gap */}
+      {user && (
+        <Link
+          to="/profile"
+          className="w-10 h-10 rounded-full shadow-md flex justify-center items-center text-xl
+                     transition-all duration-500 ease-in-out cursor-pointer
+                     text-gray-600 hover:text-blue-500"
+          aria-label="Profile"
+        >
+          <IoPersonOutline />
+        </Link>
+      )}
+      
       {user ? (
         <button
           onClick={handleLogout}
@@ -410,9 +422,9 @@ const AuthComponent = ({ setUser, user }) => {
           aria-label="Sign In"
         >
           <VscAccount />
-          </button>
+        </button>
       )}
-  
+    
   {isModalOpen && (
   <div className="fixed inset-0 w-full h-full flex items-center justify-center z-[9999]">
     <div 

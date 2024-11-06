@@ -860,22 +860,28 @@ return (
           </div>
 
           <div className="flex justify-between items-center my-4 sm:px-4 md:px-12 lg:px-20">
-            <div className="sm:flex-grow sm:flex sm:justify-end sm:pr-4">
-              <CustomButton onClick={() => handleDateChange(-1)}>
-                Previous Day
-              </CustomButton>
-            </div>
-            <h2 className="text-sm sm:text-lg font-bold text-gray-800 sm:flex-shrink-0">
-              {format(currentDate, 'dd MMM yyyy')}
-            </h2>
-            <div className="sm:flex-grow sm:flex sm:justify-start sm:pl-4">
-              <CustomButton onClick={() => handleDateChange(1)}>
-                Next Day
-              </CustomButton>
-            </div>
-          </div>
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
-          {renderTabContent()}
+  <div className="sm:flex-grow sm:flex sm:justify-end sm:pr-4">
+    <CustomButton 
+      onClick={() => handleDateChange(-1)}
+      className="w-10 h-10 flex items-center justify-center" // Add fixed width and height
+    >
+      <span className="text-xl font-bold">&lt;</span>
+    </CustomButton>
+  </div>
+  <h2 className="text-sm sm:text-lg font-bold text-gray-800 sm:flex-shrink-0">
+    {format(currentDate, 'dd MMM yyyy')}
+  </h2>
+  <div className="sm:flex-grow sm:flex sm:justify-start sm:pl-4">
+    <CustomButton 
+      onClick={() => handleDateChange(1)}
+      className="w-10 h-10 flex items-center justify-center" // Add fixed width and height
+    >
+      <span className="text-xl font-bold">&gt;</span>
+    </CustomButton>
+  </div>
+</div>
+<div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
+  {renderTabContent()}
 </div>
 
 

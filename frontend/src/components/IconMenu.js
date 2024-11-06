@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IoHomeOutline, IoTrophyOutline, IoPersonOutline, IoStatsChartOutline } from 'react-icons/io5';
+import { IoHomeOutline, IoTrophyOutline, IoStatsChartOutline } from 'react-icons/io5';
 
 const IconMenu = ({ user }) => {
   const location = useLocation();
@@ -9,7 +9,6 @@ const IconMenu = ({ user }) => {
     { name: 'Home', path: '/', Icon: IoHomeOutline },
     { name: 'Leaderboard', path: '/leaderboard', Icon: IoTrophyOutline },
     ...(user ? [
-      { name: 'Profile', path: '/profile', Icon: IoPersonOutline },
       { name: 'Stats', path: '/stats', Icon: IoStatsChartOutline },
     ] : []),
   ];
