@@ -15,6 +15,11 @@ const UserStats = () => {
   const [activeTab, setActiveTab] = useState('league');
   const [selectedCompetition, setSelectedCompetition] = useState('all');
   const leaguesPerPage = 5;
+  const calculateLeagueAccuracy = (league) => {
+    if (!league.totalVotes || league.totalVotes === 0) return 0;
+    return (league.correctVotes / league.totalVotes) * 100;
+  };
+
 
   // Define priority leagues
   const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
@@ -36,9 +41,9 @@ useEffect(() => {
   fetchStats();
 }, []);
 
-  if (loading) return <LoadingLogo />; 
-  if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
-  if (!stats) return null;
+if (loading) return <LoadingLogo />; 
+if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
+if (!stats || !stats.leagueStats) return <div className="text-center mt-8">No stats available</div>;
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -101,7 +106,14 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
            `${vote.competition.name}_${vote.competition.id}` === selectedCompetition;
   });
 
-  const sortedLeagueStats = [...stats.leagueStats].sort((a, b) => b.accuracy - a.accuracy);
+  const sortedLeagueStats = stats.leagueStats 
+    ? [...stats.leagueStats]
+        .map(league => ({
+          ...league,
+          accuracy: calculateLeagueAccuracy(league)
+        }))
+        .sort((a, b) => b.accuracy - a.accuracy)
+    : [];
   
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -122,31 +134,38 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
             </tr>
           </thead>
           <tbody>
-            {currentLeagues.map((league, index) => (
-              <tr key={index} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-2">
-                  <div className="flex items-center">
-                    <div className="w-8 flex justify-center">
-                      <img 
-                        src={league.leagueEmblem} 
-                        alt={league.leagueName}
-                        className="w-6 h-6"
-                      />
+            {currentLeagues.map((league, index) => {
+              // Ensure we have valid numbers before calculation
+              const accuracy = league.accuracy || 0;
+
+              return (
+                <tr key={index} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-2">
+                    <div className="flex items-center">
+                      <div className="w-8 flex justify-center">
+                        {league.leagueEmblem && (
+                          <img 
+                            src={league.leagueEmblem} 
+                            alt={league.leagueName}
+                            className="w-6 h-6"
+                          />
+                        )}
+                      </div>
+                      <span className="ml-2">{league.leagueName}</span>
                     </div>
-                    <span className="ml-2">{league.leagueName}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-2 text-center">
-                  <span className={`inline-block min-w-[60px] px-2 py-0.5 rounded text-sm ${
-                    league.accuracy >= 70 ? 'bg-green-100 text-green-800' :
-                    league.accuracy >= 50 ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {league.accuracy.toFixed(1)}%
-                  </span>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-2 text-center">
+                    <span className={`inline-block min-w-[60px] px-2 py-0.5 rounded text-sm ${
+                      accuracy >= 70 ? 'bg-green-100 text-green-800' :
+                      accuracy >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {accuracy.toFixed(1)}%
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

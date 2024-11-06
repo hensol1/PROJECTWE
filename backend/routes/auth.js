@@ -30,13 +30,13 @@ router.options('*', cors(corsOptions));
 
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: config.email.user,
     pass: config.email.pass
-  },
-  debug: true,
-  logger: true
+  }
 });
 
 // Test transporter
@@ -48,173 +48,16 @@ transporter.verify((error, success) => {
   }
 });
 
-// Forgot Password Route
-router.post('/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    console.log('Processing password reset for:', email);
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const resetToken = jwt.sign({ userId: user._id }, config.jwt.secret, { expiresIn: '1h' });
-    
-const mailOptions = {
-  from: {
-    name: 'We Know Better',
-    address: config.email.user
-  },
-  to: email,
-  subject: 'Password Reset Request',
-  html: `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        .container {
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
-          font-family: Arial, sans-serif;
-        }
-        .logo {
-          width: 150px;
-          margin-bottom: 20px;
-          display: block;
-          margin-left: auto;
-          margin-right: auto;
-        }
-        .button {
-          background-color: #3b82f6;
-          color: white;
-          padding: 12px 24px;
-          text-decoration: none;
-          border-radius: 5px;
-          display: inline-block;
-          margin: 20px 0;
-        }
-        .text-center {
-          text-align: center;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <img src="https://i.ibb.co/d4t6h9t/11.png" alt="We Know Better Logo" class="logo">
-        <h1 style="text-align: center; color: #333;">Password Reset Request</h1>
-        <p style="text-align: center; color: #666;">Click the button below to reset your password. This link will expire in 1 hour.</p>
-        <div class="text-center">
-          <a href="${config.frontend.url}/reset-password?token=${resetToken}" class="button">Reset Password</a>
-        </div>
-        <p style="text-align: center; color: #666; margin-top: 20px;">
-          If you didn't request this password reset, please ignore this email.
-        </p>
-      </div>
-    </body>
-    </html>
-  `
-};
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Reset email sent:', info.messageId);
-    
-    res.json({ message: 'Password reset email sent' });
-  } catch (error) {
-    console.error('Password reset error:', error);
-    res.status(500).json({ 
-      message: 'Failed to process password reset request',
-      error: error.message 
-    });
-  }
-});
-
-
-// Reset Password Route
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { token, newPassword } = req.body;
-    
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
-
-    res.json({ message: 'Password successfully reset' });
-  } catch (error) {
-    console.error('Reset password error:', error);
-    res.status(500).json({ message: 'Error resetting password' });
-  }
-});
-
-router.post('/google', async (req, res) => {
-  console.log('Received Google auth request');
-  const { googleId, email, name } = req.body;
-
-  try {
-    if (!googleId || !email) {
-      return res.status(400).json({ message: 'Google ID and email are required' });
-    }
-
-    let user = await User.findOne({ email });
-    if (!user) {
-      return res.json({ isNewUser: true });
-    }
-
-    const token = createToken(user._id);
-
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email  } });
-  } catch (error) {
-    console.error('Google auth error:', error);
-    res.status(500).json({ message: 'Authentication failed', error: error.message });
-  }
-});
-
-router.post('/google/complete-profile', async (req, res) => {
-  const { googleId, email, name, username, country } = req.body;
-
-  try {
-    if (!googleId || !email || !username || !country) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    let user = await User.findOne({ username });
-    if (user) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
-
-    user = new User({
-      username,
-      email,
-      googleId,
-      country,
-      name
-    });
-    await user.save();
-
-    const token = createToken(user._id);
-
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
-  } catch (error) {
-    console.error('Complete profile error:', error);
-    res.status(500).json({ message: 'Failed to complete profile', error: error.message });
-  }
-});
-
 // Register
 router.post('/register', async (req, res) => {
   console.log('Received register request:', req.body);
   try {
-    const { username, email, password, country } = req.body;
+    const { username, email, password, country, city } = req.body;
+
+    // Validate required fields
+    if (!username || !email || !password || !country || !city) {
+      return res.status(400).json({ msg: 'All fields are required' });
+    }
 
     let user = await User.findOne({ username });
     if (user) {
@@ -225,7 +68,8 @@ router.post('/register', async (req, res) => {
       username,
       email,
       password,
-      country
+      country,
+      city
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -241,7 +85,9 @@ router.post('/register', async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
+        country: user.country,
+        city: user.city
       }
     });
   } catch (err) {
@@ -273,12 +119,211 @@ router.post('/login', async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
+        country: user.country,
+        city: user.city
       }
     });
   } catch (err) {
     console.error('Login error:', err.message);
     res.status(500).send('Server error');
+  }
+});
+
+// Google Auth
+router.post('/google', async (req, res) => {
+  console.log('Received Google auth request');
+  const { googleId, email, name } = req.body;
+
+  try {
+    if (!googleId || !email) {
+      return res.status(400).json({ message: 'Google ID and email are required' });
+    }
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ isNewUser: true });
+    }
+
+    const token = createToken(user._id);
+
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,
+        country: user.country,
+        city: user.city
+      } 
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ message: 'Authentication failed', error: error.message });
+  }
+});
+
+router.post('/google/complete-profile', async (req, res) => {
+  const { googleId, email, name, username, country, city } = req.body;
+
+  try {
+    if (!googleId || !email || !username || !country || !city) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    let user = await User.findOne({ username });
+    if (user) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    user = new User({
+      username,
+      email,
+      googleId,
+      country,
+      city,
+      name
+    });
+    await user.save();
+
+    const token = createToken(user._id);
+
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,
+        country: user.country,
+        city: user.city
+      } 
+    });
+  } catch (error) {
+    console.error('Complete profile error:', error);
+    res.status(500).json({ message: 'Failed to complete profile', error: error.message });
+  }
+});
+
+// Forgot Password Route (remains the same)
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log('Processing password reset for:', email);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const resetToken = jwt.sign({ userId: user._id }, config.jwt.secret, { expiresIn: '1h' });
+    
+    const mailOptions = {
+      from: `"We Know Better" <${config.email.user}>`,
+      to: email,
+      subject: 'Password Reset Request',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reset Your Password</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0;">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 20px auto; background-color: #ffffff;">
+              <tr>
+                <td style="text-align: center; padding: 20px;">
+                  <img src="https://i.ibb.co/d4t6h9t/11.png" alt="We Know Better Logo" style="width: 150px; margin-bottom: 20px;">
+                  
+                  <h1 style="color: #333333; margin-bottom: 20px;">Password Reset Request</h1>
+                  
+                  <p style="color: #666666; margin-bottom: 30px;">
+                    You requested to reset your password. Click the button below to reset it. 
+                    This link will expire in 1 hour.
+                  </p>
+                  
+                  <a href="${config.frontend.url}/reset-password?token=${resetToken}" 
+                     style="background-color: #3b82f6; color: white; padding: 12px 24px; 
+                            text-decoration: none; border-radius: 5px; display: inline-block; 
+                            margin: 20px 0;">
+                    Reset Password
+                  </a>
+                  
+                  <p style="color: #666666; margin-top: 30px; font-size: 14px;">
+                    If you didn't request this password reset, please ignore this email 
+                    or contact support if you have concerns.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+      // Add a text version as fallback
+      text: `
+        Reset Your Password
+        
+        You requested to reset your password. Click the link below to reset it:
+        ${config.frontend.url}/reset-password?token=${resetToken}
+        
+        This link will expire in 1 hour.
+        
+        If you didn't request this password reset, please ignore this email.
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Reset email sent:', info.messageId);
+    
+    res.json({ message: 'Password reset email sent' });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({ 
+      message: 'Failed to process password reset request',
+      error: error.message 
+    });
+  }
+});
+
+// Reset Password Route (remains the same)
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    // Verify token
+    const decoded = jwt.verify(token, config.jwt.secret);
+    
+    // Find user without validation
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password directly using updateOne to bypass validation
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { password: hashedPassword } },
+      { runValidators: false }
+    );
+
+    res.json({ message: 'Password successfully reset' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    
+    // Better error handling
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error resetting password',
+      error: error.message 
+    });
   }
 });
 

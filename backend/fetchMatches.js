@@ -121,6 +121,7 @@ async function updateMatchesInMongoDB(matches) {
         }
         
         console.log(`Updated or inserted ${updatedCount} matches in MongoDB`);
+        return updatedCount;
     } finally {
         await client.close();
     }
@@ -130,19 +131,32 @@ function filterMatchesByLeague(matches) {
     return matches.filter(match => ALLOWED_LEAGUE_IDS.includes(match.league.id));
 }
 
-async function main() {
-    const currentDate = new Date();
-    console.log(`Fetching matches for today (${format(currentDate, 'yyyy-MM-dd')})`);
+async function processMatchesForDate(date) {
+    console.log(`Processing matches for date: ${format(date, 'yyyy-MM-dd')}`);
     
-    const matches = await fetchMatches(currentDate);
+    const matches = await fetchMatches(date);
     if (matches) {
         const filteredMatches = filterMatchesByLeague(matches);
         console.log(`Filtered ${filteredMatches.length} out of ${matches.length} matches for allowed leagues`);
         const processedMatches = filteredMatches.map(processMatchData);
-        await updateMatchesInMongoDB(processedMatches);
-    } else {
-        console.log(`No matches found for ${format(currentDate, 'yyyy-MM-dd')}`);
+        const updatedCount = await updateMatchesInMongoDB(processedMatches);
+        
+        return {
+            total: matches.length,
+            filtered: filteredMatches.length,
+            processed: updatedCount
+        };
     }
+    
+    return {
+        total: 0,
+        filtered: 0,
+        processed: 0
+    };
 }
 
-module.exports = main;
+// Export both the date-specific function and a default current date function
+module.exports = {
+    processMatchesForDate,
+    default: () => processMatchesForDate(new Date())
+};

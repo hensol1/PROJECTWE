@@ -4,6 +4,9 @@ const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Match = require('../models/Match');
 const { recalculateUserStats, safelyUpdateUser } = require('../utils/userStats');
+const UserStatsCache = require('../models/UserStatsCache');
+const { updateUserStatsCache } = require('../utils/statsCache');
+
 
 async function updateAllUsersStats() {
   try {
@@ -84,6 +87,7 @@ router.get('/profile', auth, async (req, res) => {
       username: user.username,
       email: user.email,
       country: user.country,
+      city: user.city,
       isAdmin: user.isAdmin
     };
 
@@ -95,82 +99,311 @@ router.get('/profile', auth, async (req, res) => {
   }
 });
 
-// Stats route
-router.get('/stats', auth, async (req, res) => {
+// Global Location Rankings
+router.get('/rankings/locations', async (req, res) => {
   try {
-    const user = await recalculateUserStats(req.user.id);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Fetch league emblems
-    const leagueEmblems = await Match.aggregate([
-      { $group: { 
-          _id: "$competition.id", 
-          name: { $first: "$competition.name" }, 
-          emblem: { $first: "$competition.emblem" } 
-        } 
-      }
-    ]);
-    const leagueEmblemMap = new Map(leagueEmblems.map(league => [league._id.toString(), league.emblem]));
-
-    // Fetch detailed vote history
-    const voteHistory = await Promise.all(user.votes.map(async (vote) => {
-      const match = await Match.findOne({ id: vote.matchId });
-      if (!match) return null;
-
-      return {
-        matchId: vote.matchId,
-        vote: vote.vote,
-        homeTeam: match.homeTeam.name,
-        awayTeam: match.awayTeam.name,
-        score: match.score.fullTime,
-        date: match.utcDate,
-        status: match.status,
-        isCorrect: vote.isCorrect,
-        competition: {
-          name: match.competition.name,
-          emblem: match.competition.emblem
+    // Get top 5 countries
+    const topCountries = await User.aggregate([
+      { 
+        $match: { 
+          finishedVotes: { $gte: 10 },
+          wilsonScore: { $gt: 0 }
         }
-      };
-    }));
+      },
+      {
+        $group: {
+          _id: '$country',
+          averageScore: { $avg: '$wilsonScore' },
+          userCount: { $sum: 1 },
+          totalCorrectVotes: { $sum: '$correctVotes' },
+          totalFinishedVotes: { $sum: '$finishedVotes' }
+        }
+      },
+      { 
+        $project: {
+          country: '$_id',
+          averageScore: { $multiply: ['$averageScore', 100] },
+          userCount: 1,
+          accuracy: {
+            $multiply: [
+              { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
+              100
+            ]
+          }
+        }
+      },
+      { $sort: { averageScore: -1 } },
+      { $limit: 5 }
+    ]);
 
-    // Filter out null values and sort the vote history
-    const filteredVoteHistory = voteHistory
-      .filter(vote => vote !== null)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Get top 5 cities
+    const topCities = await User.aggregate([
+      { 
+        $match: { 
+          finishedVotes: { $gte: 10 },
+          wilsonScore: { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: { 
+            country: '$country', 
+            city: '$city' 
+          },
+          averageScore: { $avg: '$wilsonScore' },
+          userCount: { $sum: 1 },
+          totalCorrectVotes: { $sum: '$correctVotes' },
+          totalFinishedVotes: { $sum: '$finishedVotes' }
+        }
+      },
+      { 
+        $project: {
+          country: '$_id.country',
+          city: '$_id.city',
+          averageScore: { $multiply: ['$averageScore', 100] },
+          userCount: 1,
+          accuracy: {
+            $multiply: [
+              { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
+              100
+            ]
+          }
+        }
+      },
+      { $sort: { averageScore: -1 } },
+      { $limit: 5 }
+    ]);
 
-    // Prepare league stats for response
-    const leagueStatsArray = user.leagueStats.map(stats => ({
-      leagueName: stats.leagueName,
-      leagueId: stats.leagueId,
-      accuracy: stats.totalVotes > 0 ? (stats.correctVotes / stats.totalVotes) * 100 : 0,
-      leagueEmblem: leagueEmblemMap.get(stats.leagueId) || ''
-    }));
-
-    res.json({
-      totalVotes: user.totalVotes,
-      finishedVotes: user.finishedVotes,
-      correctVotes: user.correctVotes,
-      accuracy: user.finishedVotes > 0 ? (user.correctVotes / user.finishedVotes) * 100 : 0,
-      leagueStats: leagueStatsArray,
-      voteHistory: filteredVoteHistory
-    });
+    res.json({ topCountries, topCities });
   } catch (error) {
-    console.error('Error fetching user stats:', error);
+    console.error('Error fetching location rankings:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Leaderboard route
+// Get user's ranking in their location
+router.get('/rankings/my-location', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user's country ranking
+    const countryUsers = await User.find({ 
+      country: user.country,
+      finishedVotes: { $gte: 10 }
+    }).sort({ wilsonScore: -1 });
+
+    const countryRank = countryUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    // Get user's city ranking
+    const cityUsers = await User.find({
+      country: user.country,
+      city: user.city,
+      finishedVotes: { $gte: 10 }
+    }).sort({ wilsonScore: -1 });
+
+    const cityRank = cityUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    res.json({
+      country: {
+        name: user.country,
+        rank: countryRank,
+        totalUsers: countryUsers.length,
+        topUsers: countryUsers.slice(0, 5).map(u => ({
+          username: u.username,
+          score: (u.wilsonScore * 100).toFixed(2)
+        }))
+      },
+      city: {
+        name: user.city,
+        rank: cityRank,
+        totalUsers: cityUsers.length,
+        topUsers: cityUsers.slice(0, 5).map(u => ({
+          username: u.username,
+          score: (u.wilsonScore * 100).toFixed(2)
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user location rankings:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// User's Location Ranking
+router.get('/rankings/user-location/:userId', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user's country ranking
+    const countryRanking = await User.aggregate([
+      { 
+        $match: { 
+          country: user.country,
+          finishedVotes: { $gte: 10 },
+          wilsonScore: { $gt: 0 }
+        }
+      },
+      { $sort: { wilsonScore: -1 } },
+      {
+        $group: {
+          _id: null,
+          users: { 
+            $push: { 
+              _id: '$_id',
+              username: '$username',
+              wilsonScore: '$wilsonScore',
+              correctVotes: '$correctVotes',
+              finishedVotes: '$finishedVotes'
+            }
+          },
+          totalUsers: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get user's city ranking
+    const cityRanking = await User.aggregate([
+      { 
+        $match: { 
+          country: user.country,
+          city: user.city,
+          finishedVotes: { $gte: 10 },
+          wilsonScore: { $gt: 0 }
+        }
+      },
+      { $sort: { wilsonScore: -1 } },
+      {
+        $group: {
+          _id: null,
+          users: { 
+            $push: { 
+              _id: '$_id',
+              username: '$username',
+              wilsonScore: '$wilsonScore',
+              correctVotes: '$correctVotes',
+              finishedVotes: '$finishedVotes'
+            }
+          },
+          totalUsers: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Calculate user's rankings
+    const countryData = countryRanking[0] || { users: [], totalUsers: 0 };
+    const cityData = cityRanking[0] || { users: [], totalUsers: 0 };
+
+    const userCountryRank = countryData.users.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+    const userCityRank = cityData.users.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    // Get nearby users within 50km
+    const nearbyUsers = await User.aggregate([
+      {
+        $geoNear: {
+          near: user.location,
+          distanceField: "distance",
+          maxDistance: 50000, // 50km in meters
+          spherical: true
+        }
+      },
+      { $match: { 
+        _id: { $ne: user._id },
+        finishedVotes: { $gte: 10 },
+        wilsonScore: { $gt: 0 }
+      }},
+      { $sort: { wilsonScore: -1 } },
+      { $limit: 10 }
+    ]);
+
+    res.json({
+      user: {
+        username: user.username,
+        wilsonScore: user.wilsonScore * 100,
+        correctVotes: user.correctVotes,
+        finishedVotes: user.finishedVotes
+      },
+      rankings: {
+        country: {
+          rank: userCountryRank,
+          total: countryData.totalUsers,
+          name: user.country
+        },
+        city: {
+          rank: userCityRank,
+          total: cityData.totalUsers,
+          name: user.city
+        }
+      },
+      nearbyUsers: nearbyUsers.map(u => ({
+        username: u.username,
+        wilsonScore: u.wilsonScore * 100,
+        distance: Math.round(u.distance / 1000), // Convert to km
+        correctVotes: u.correctVotes,
+        finishedVotes: u.finishedVotes
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching user location ranking:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Other existing routes remain the same
+router.get('/stats', auth, async (req, res) => {
+  try {
+    console.log('Starting /stats route for user:', req.user.id);
+    
+    // Try to get cached stats first
+    let statsCache = await UserStatsCache.findOne({ userId: req.user.id });
+    console.log('Found stats cache:', statsCache ? 'yes' : 'no');
+    
+    // If cache doesn't exist or is older than 15 minutes, update it
+    if (!statsCache || Date.now() - statsCache.lastUpdated > 15 * 60 * 1000) {
+      console.log('Cache needs update, fetching new data...');
+      await updateUserStatsCache(req.user.id);
+      statsCache = await UserStatsCache.findOne({ userId: req.user.id });
+      console.log('Updated cache:', statsCache ? 'success' : 'failed');
+    }
+
+    if (!statsCache) {
+      console.log('No stats cache found after update attempt');
+      return res.status(404).json({ message: 'User stats not found' });
+    }
+
+    const response = {
+      totalVotes: statsCache.totalVotes,
+      finishedVotes: statsCache.finishedVotes,
+      correctVotes: statsCache.correctVotes,
+      leagueStats: statsCache.leagueStats,
+      voteHistory: statsCache.voteHistory
+    };
+    
+    console.log('Sending response with stats');
+    res.json(response);
+  } catch (error) {
+    console.error('Error in /stats route:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// Existing leaderboard route
 router.get('/leaderboard', async (req, res) => {
   console.log('Leaderboard route hit');
   try {
     console.log('Fetching users');
     const users = await User.find(
       { finishedVotes: { $gte: 10 } },
-      '_id username country totalVotes finishedVotes correctVotes wilsonScore'
+      '_id username country city totalVotes finishedVotes correctVotes wilsonScore'
     ).sort({ wilsonScore: -1 });  // Sort at database level
     
     console.log(`Found ${users.length} users with 10+ finished votes`);
@@ -179,6 +412,7 @@ router.get('/leaderboard', async (req, res) => {
       _id: user._id,
       username: user.username,
       country: user.country,
+      city: user.city,
       finishedVotes: user.finishedVotes,
       correctVotes: user.correctVotes,
       accuracy: (user.correctVotes / user.finishedVotes * 100).toFixed(2),
@@ -193,6 +427,139 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
+router.get('/rankings/locations', async (req, res) => {
+  try {
+    // Get top 5 countries
+    const topCountries = await User.aggregate([
+      { 
+        $match: { 
+          finishedVotes: { $gte: 10 },
+          wilsonScore: { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: '$country',
+          averageScore: { $avg: '$wilsonScore' },
+          userCount: { $sum: 1 },
+          totalCorrectVotes: { $sum: '$correctVotes' },
+          totalFinishedVotes: { $sum: '$finishedVotes' }
+        }
+      },
+      { 
+        $project: {
+          country: '$_id',
+          averageScore: { $multiply: ['$averageScore', 100] },
+          userCount: 1,
+          accuracy: {
+            $multiply: [
+              { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
+              100
+            ]
+          }
+        }
+      },
+      { $sort: { averageScore: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Get top 5 cities
+    const topCities = await User.aggregate([
+      { 
+        $match: { 
+          finishedVotes: { $gte: 10 },
+          wilsonScore: { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: { 
+            country: '$country', 
+            city: '$city' 
+          },
+          averageScore: { $avg: '$wilsonScore' },
+          userCount: { $sum: 1 },
+          totalCorrectVotes: { $sum: '$correctVotes' },
+          totalFinishedVotes: { $sum: '$finishedVotes' }
+        }
+      },
+      { 
+        $project: {
+          country: '$_id.country',
+          city: '$_id.city',
+          averageScore: { $multiply: ['$averageScore', 100] },
+          userCount: 1,
+          accuracy: {
+            $multiply: [
+              { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
+              100
+            ]
+          }
+        }
+      },
+      { $sort: { averageScore: -1 } },
+      { $limit: 5 }
+    ]);
+
+    res.json({ topCountries, topCities });
+  } catch (error) {
+    console.error('Error fetching location rankings:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Also add a route to get user's personal location rankings
+router.get('/rankings/my-location', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user's country ranking
+    const countryUsers = await User.find({ 
+      country: user.country,
+      finishedVotes: { $gte: 10 }
+    }).sort({ wilsonScore: -1 });
+
+    const countryRank = countryUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    // Get user's city ranking
+    const cityUsers = await User.find({
+      country: user.country,
+      city: user.city,
+      finishedVotes: { $gte: 10 }
+    }).sort({ wilsonScore: -1 });
+
+    const cityRank = cityUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    res.json({
+      country: {
+        name: user.country,
+        rank: countryRank,
+        totalUsers: countryUsers.length,
+        topUsers: countryUsers.slice(0, 5).map(u => ({
+          username: u.username,
+          score: (u.wilsonScore * 100).toFixed(2)
+        }))
+      },
+      city: {
+        name: user.city,
+        rank: cityRank,
+        totalUsers: cityUsers.length,
+        topUsers: cityUsers.slice(0, 5).map(u => ({
+          username: u.username,
+          score: (u.wilsonScore * 100).toFixed(2)
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user location rankings:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
 router.delete('/profile', auth, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.user.id);
@@ -205,6 +572,5 @@ router.delete('/profile', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 
 module.exports = router;

@@ -10,6 +10,11 @@ const AccuracyStats = require('./models/AccuracyStats');
 const { recalculateAllStats } = require('./utils/statsProcessor');
 const { endOfDay, parseISO, addDays, format } = require('date-fns');
 const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
+const cleanup = async () => {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  await UserStatsCache.deleteMany({ lastUpdated: { $lt: thirtyDaysAgo } });
+};
+
 
 async function updateDailyPredictionStats() {
   try {

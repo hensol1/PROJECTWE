@@ -1,5 +1,6 @@
 import axios from 'axios';
 import config from './config';
+import { format } from 'date-fns'; // Add this import at the top
 
 const api = axios.create({
   baseURL: config.apiUrl,
@@ -34,35 +35,13 @@ api.interceptors.response.use(
   }
 );
 
+// Add all API methods here
 api.fetchMatches = (date) => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  console.log('Fetching matches:', {
-    date,
-    clientTimeZone: timeZone,
-    clientTime: new Date().toISOString()
-  });
-  
   return api.get(`/api/matches?date=${date}`, {
     headers: {
       'x-timezone': timeZone
     }
-  }).then(response => {
-    console.log('Match fetch response:', {
-      matchCount: response.data.matches.length,
-      sampleMatch: response.data.matches.length > 0 ? {
-        id: response.data.matches[0].id,
-        date: response.data.matches[0].utcDate,
-        status: response.data.matches[0].status
-      } : null
-    });
-    return response;
-  }).catch(error => {
-    console.error('Match fetch error:', {
-      error: error.message,
-      date,
-      timeZone
-    });
-    throw error;
   });
 };
 
@@ -88,21 +67,21 @@ api.fetchDailyAccuracy = async () => {
   }
 };
 
+// Location rankings methods
+api.getLocationRankings = () => api.get('/api/user/rankings/locations');
+api.getMyLocationRankings = () => api.get('/api/user/rankings/my-location');
 
 // Match related endpoints
-api.voteForMatch = (matchId, vote) => {
-  return api.post(`/api/matches/${matchId}/vote`, { vote });
-};
-
-api.fetchMatches = (date) => api.get(`/api/matches?date=${date}`);
+api.voteForMatch = (matchId, vote) => api.post(`/api/matches/${matchId}/vote`, { vote });
 
 // User related endpoints
 api.getUserProfile = () => api.get('/api/user/profile');
 api.getUserStats = () => api.get('/api/user/stats');
 api.getLeaderboard = () => api.get('/api/user/leaderboard');
 api.deleteAccount = () => api.delete('/api/user/profile');
+
+// Auth related endpoints
 api.forgotPassword = (email) => api.post('/api/auth/forgot-password', { email });
-api.resetPassword = (token, newPassword) => api.post('/api/auth/reset-password', { token, newPassword });
 api.resetPassword = (token, newPassword) => 
   api.post('/api/auth/reset-password', { token, newPassword });
 
@@ -112,7 +91,11 @@ api.makeAIPrediction = (matchId, prediction) => {
   return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
 
-api.triggerFetchMatches = () => api.post('/api/admin/fetch-matches');
+// Admin routes
+api.triggerFetchMatches = (date) => {
+  const formattedDate = format(date, 'yyyy-MM-dd');
+  return api.post('/api/admin/fetch-matches', { date: formattedDate });
+};
 api.recalculateStats = () => api.post('/api/admin/recalculate-stats');
 api.resetStats = () => api.post('/api/accuracy/reset');
 api.resetAllStats = () => api.post('/api/accuracy/reset-all');
@@ -123,7 +106,7 @@ api.resetFanStats = () => api.post('/api/accuracy/reset-fans');
 api.fetchAccuracy = async () => {
   try {
     const response = await api.get('/api/accuracy');
-    console.log('API accuracy response:', response); // Debug log
+    console.log('API accuracy response:', response);
     return response.data;
   } catch (error) {
     console.error('Error in fetchAccuracy:', error);

@@ -3,10 +3,10 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 const Match = require('../models/Match');
-const fetchMatches = require('../fetchMatches');
+const { processMatchesForDate } = require('../fetchMatches');
 const { recalculateAllStats } = require('../utils/statsProcessor');
 
-// Existing prediction route
+// AI Prediction route
 router.post('/:matchId/predict', [auth, admin], async (req, res) => {
   console.log('Admin prediction route called');
   console.log('Request body:', req.body);
@@ -45,7 +45,7 @@ router.post('/:matchId/predict', [auth, admin], async (req, res) => {
   }
 });
 
-// New route to process finished matches
+// Process finished matches route
 router.post('/process-finished', [auth, admin], async (req, res) => {
   try {
     const finishedMatches = await Match.find({ 
@@ -89,13 +89,23 @@ router.post('/process-finished', [auth, admin], async (req, res) => {
   }
 });
 
-
-// New route for fetching matches manually
+// Updated fetch matches route with date parameter
 router.post('/fetch-matches', [auth, admin], async (req, res) => {
   try {
-    console.log('Manual fetch matches triggered');
-    await fetchMatches();
-    res.json({ message: 'Matches fetched successfully' });
+    const { date } = req.body;
+    console.log('Manual fetch matches triggered for date:', date);
+    
+    const fetchDate = date ? new Date(date) : new Date();
+    const result = await processMatchesForDate(fetchDate);
+    
+    res.json({ 
+      message: 'Matches fetched successfully',
+      stats: {
+        total: result.total,
+        filtered: result.filtered,
+        processed: result.processed
+      }
+    });
   } catch (error) {
     console.error('Error in manual fetch matches:', error);
     res.status(500).json({ 
@@ -105,7 +115,7 @@ router.post('/fetch-matches', [auth, admin], async (req, res) => {
   }
 });
 
-// New route for updating finished matches manually
+// Update finished matches route
 router.post('/update-finished', [auth, admin], async (req, res) => {
   try {
     console.log('Manual update finished matches triggered');
@@ -120,7 +130,7 @@ router.post('/update-finished', [auth, admin], async (req, res) => {
   }
 });
 
-// routes/admin.js
+// Recalculate stats route
 router.post('/recalculate-stats', [auth, admin], async (req, res) => {
   try {
     console.log('Starting full stats recalculation');

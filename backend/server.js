@@ -50,8 +50,28 @@ app.use('/api/accuracy', accuracyRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
+  console.error('Error details:', {
+    name: err.name,
+    message: err.message,
+    stack: err.stack
+  });
+
+  // Handle mongoose validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      message: 'Validation Error',
+      errors: Object.keys(err.errors).reduce((acc, key) => {
+        acc[key] = err.errors[key].message;
+        return acc;
+      }, {})
+    });
+  }
+
+  // Handle other types of errors
+  res.status(500).json({
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred'
+  });
 });
 
 // 404 Not Found middleware

@@ -1,3 +1,5 @@
+// backend/models/User.js
+
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
@@ -19,6 +21,13 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  city: {
+    type: String,
+    // Change from required: true to this:
+    required: function() {
+      return this.isNew; // Only required for new documents
+    }
+  },
   googleId: {
     type: String,
     sparse: true
@@ -39,9 +48,11 @@ const UserSchema = new mongoose.Schema({
     leagueId: String,
     leagueName: String,
     totalVotes: { type: Number, default: 0 },
-    correctVotes: { type: Number, default: 0 }
+    correctVotes: { type: Number, default: 0 },
+    leagueEmblem: { type: String, default: '' }  // Add this if you're using emblems
   }],
-  wilsonScore: { type: Number, default: 0 }
+    wilsonScore: { type: Number, default: 0 }
 });
+
 
 module.exports = mongoose.model('User', UserSchema);

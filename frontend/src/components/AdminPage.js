@@ -25,7 +25,7 @@ const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
   );
 };
 
-const AdminControls = () => {
+const AdminControls = ({ selectedDate }) => {  // Add selectedDate prop
   const [isFetching, setIsFetching] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isResetting, setIsResetting] = useState({
@@ -38,12 +38,18 @@ const AdminControls = () => {
   const handleFetchMatches = async () => {
     try {
       setIsFetching(true);
-      const response = await api.triggerFetchMatches();
+      const response = await api.triggerFetchMatches(selectedDate);
       console.log('Fetch matches result:', response.data);
-      setLastAction({ type: 'success', message: 'Matches fetched successfully!' });
+      setLastAction({ 
+        type: 'success', 
+        message: `Matches fetched successfully! Found ${response.data.stats.filtered} matches.`
+      });
     } catch (error) {
       console.error('Fetch matches error:', error);
-      setLastAction({ type: 'error', message: 'Error fetching matches: ' + (error.response?.data?.message || error.message) });
+      setLastAction({ 
+        type: 'error', 
+        message: 'Error fetching matches: ' + (error.response?.data?.message || error.message) 
+      });
     } finally {
       setIsFetching(false);
     }
@@ -331,7 +337,7 @@ const AdminPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <AdminControls />
+      <AdminControls selectedDate={currentDate} />
       
       {/* Date Navigation */}
       <div className="flex justify-between items-center mb-6">

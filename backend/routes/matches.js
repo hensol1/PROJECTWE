@@ -8,6 +8,7 @@ const { startOfDay, endOfDay, parseISO, isValid, subHours, addHours } = require(
 const { recalculateUserStats } = require('../utils/userStats');
 const optionalAuth = require('../middleware/optionalAuth');
 const auth = require('../middleware/auth');
+const UserStatsCache = require('../models/UserStatsCache');
 
 // Add these helper functions at the top of the file
 const checkPredictionCorrect = (prediction, match) => {
@@ -345,66 +346,62 @@ router.post('/:matchId/vote', optionalAuth, async (req, res) => {
     console.log(`Match voterIPs:`, match.voterIPs);
 
     if (match.status !== 'TIMED' && match.status !== 'SCHEDULED') {
-      return res.status(400).json({ message: `Voting is not allowed for this match. Current status: ${match.status}` });
-    }
-
-    let isUpdatingVote = false;
-    // Check if the user or IP has already voted
-    if (userId) {
-      if (match.voters.includes(userId)) {
-        isUpdatingVote = true;
-        console.log(`User ${userId} is updating their vote for match ${matchId}`);
-      }
-    } else if (match.voterIPs.includes(userIP)) {
-      return res.status(400).json({ message: 'You have already voted for this match' });
-    }
-
-    // Update or record the vote
-    if (isUpdatingVote) {
-      // Remove the old vote
-      Object.keys(match.votes).forEach(key => {
-        if (match.votes[key] > 0) match.votes[key]--;
+      return res.status(400).json({ 
+        message: `Voting is not allowed for this match. Current status: ${match.status}` 
       });
-    } else {
-      if (userId) {
-        match.voters.push(userId);
-      } else {
-        match.voterIPs.push(userIP);
-      }
     }
+
+    // Handle vote recording for the match
     match.votes[vote]++;
-
-    if (userId) {
-      const user = await User.findById(userId);
-      if (user) {
-        const existingVoteIndex = user.votes.findIndex(v => v.matchId === matchId);
-        if (existingVoteIndex !== -1) {
-          console.log(`Updating existing vote for user ${userId} on match ${matchId}`);
-          user.votes[existingVoteIndex].vote = vote;
-        } else {
-          console.log(`Adding new vote for user ${userId} on match ${matchId}`);
-          user.votes.push({ matchId, vote });
-          if (!isUpdatingVote) user.totalVotes++; // Increment total votes only for new votes
-        }
-        await user.save();
-      } else {
-        console.log(`User ${userId} not found`);
-      }
-    }
-
     await match.save();
 
+    // Handle user vote recording if user is authenticated
+    if (userId) {
+      try {
+        await Promise.all([
+          User.findOneAndUpdate(
+            { _id: userId },
+            { 
+              $push: { 
+                votes: { 
+                  matchId, 
+                  vote,
+                  date: new Date() 
+                } 
+              },
+              $inc: { totalVotes: 1 }
+            },
+            { runValidators: false }
+          ),
+          UserStatsCache.findOneAndUpdate(
+            { userId },
+            { $set: { lastUpdated: new Date(0) } }, // Force cache refresh
+            { upsert: true }
+          )
+        ]);
+
+        console.log(`Vote recorded successfully for user ${userId} on match ${matchId}`);
+      } catch (userUpdateError) {
+        console.error('Error updating user vote:', userUpdateError);
+        // Even if user update fails, we don't want to roll back the match vote
+        // Just log the error and continue
+      }
+    }
+
     res.json({
-      message: isUpdatingVote ? 'Vote updated successfully' : 'Vote recorded successfully',
+      message: 'Vote recorded successfully',
       votes: match.votes,
       userVote: vote
     });
+
   } catch (error) {
     console.error('Error recording vote:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Internal server error', 
+      error: error.message 
+    });
   }
 });
-
 
 // Add a new route to manually trigger fan accuracy recalculation
 router.post('/recalculate-accuracy', auth, async (req, res) => {
