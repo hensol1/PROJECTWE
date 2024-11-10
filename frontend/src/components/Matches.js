@@ -29,10 +29,103 @@ const Matches = ({ user }) => {
   const [goalNotifications, setGoalNotifications] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [processedScoreUpdates] = useState(new Set());
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
 
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
   const allMatchesForCurrentDate = matches[currentDateKey] || {};
+
+  const preloadImages = useCallback(async (matchesData) => {
+    const imageUrls = new Set();
+    const failedImages = new Set();
+    
+    // Collect all unique image URLs
+    Object.values(matchesData).forEach(dateMatches => {
+      Object.values(dateMatches).forEach(leagueMatches => {
+        leagueMatches.forEach(match => {
+          // Add team crests
+          if (match.homeTeam?.crest) imageUrls.add(match.homeTeam.crest);
+          if (match.awayTeam?.crest) imageUrls.add(match.awayTeam.crest);
+          // Add competition emblem
+          if (match.competition?.emblem) imageUrls.add(match.competition.emblem);
+        });
+      });
+    });
+  
+    // Function to load a single image with retries
+    const loadImageWithRetry = async (url, retries = 3, delay = 1000) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => reject();
+            img.src = url;
+          });
+          return; // Success, exit the function
+        } catch (error) {
+          if (i === retries - 1) {
+            // If all retries failed, add to failed images set
+            failedImages.add(url);
+            console.warn(`Failed to load image after ${retries} retries:`, url);
+          } else {
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+    };
+  
+    try {
+      // Load all images in parallel with retry mechanism
+      await Promise.all([...imageUrls].map(url => loadImageWithRetry(url)));
+  
+      // Update match data with fallback images for failed loads
+      if (failedImages.size > 0) {
+        setMatches(prevMatches => {
+          const newMatches = { ...prevMatches };
+          Object.keys(newMatches).forEach(date => {
+            Object.keys(newMatches[date]).forEach(league => {
+              newMatches[date][league] = newMatches[date][league].map(match => {
+                const updatedMatch = { ...match };
+                
+                // Check and replace failed team crests
+                if (match.homeTeam?.crest && failedImages.has(match.homeTeam.crest)) {
+                  updatedMatch.homeTeam = {
+                    ...match.homeTeam,
+                    crest: '/fallback-team-logo.png' // Add a fallback image to your public folder
+                  };
+                }
+                if (match.awayTeam?.crest && failedImages.has(match.awayTeam.crest)) {
+                  updatedMatch.awayTeam = {
+                    ...match.awayTeam,
+                    crest: '/fallback-team-logo.png'
+                  };
+                }
+                
+                // Check and replace failed competition emblems
+                if (match.competition?.emblem && failedImages.has(match.competition.emblem)) {
+                  updatedMatch.competition = {
+                    ...match.competition,
+                    emblem: '/fallback-league-logo.png' // Add a fallback image to your public folder
+                  };
+                }
+                
+                return updatedMatch;
+              });
+            });
+          });
+          return newMatches;
+        });
+      }
+    } catch (error) {
+      console.error('Error in image preloading:', error);
+    } finally {
+      setImagesLoaded(true);
+    }
+  }, [setMatches]);
+  
 
   // Part 3: Constants and Utility Functions
   const hasAnyLiveMatches = Object.values(matches).some(dateMatches => 
@@ -196,7 +289,7 @@ const softUpdateMatches = useCallback(async () => {
     const response = await api.fetchMatches(formattedDate);
     
     const groupedMatches = response.data.matches.reduce((acc, match) => {
-      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+    const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
       const leagueKey = `${match.competition.name}_${match.competition.id}`;
       
@@ -213,7 +306,10 @@ const softUpdateMatches = useCallback(async () => {
       return acc;
     }, {});
 
-  setMatches(prevMatches => {
+      // Preload images before updating state
+      await preloadImages(groupedMatches);
+
+      setMatches(prevMatches => {
     const prevMatchesCopy = JSON.parse(JSON.stringify(prevMatches));
     const newState = {
       ...prevMatches,
@@ -272,24 +368,25 @@ const softUpdateMatches = useCallback(async () => {
     return newState;
   });
 
-  } catch (error) {
-    console.error('Error in soft update:', error);
-  } finally {
-    setIsRefreshing(false);
-  }
-}, [currentDate, userTimeZone]);
+} catch (error) {
+  console.error('Error in soft update:', error);
+} finally {
+  setIsRefreshing(false);
+}
+}, [currentDate, userTimeZone, preloadImages]);
 
 
   // Part 5: Main Data Fetching Function
-const fetchMatches = useCallback(async (date) => {
-  setIsLoading(true);
-  let formattedDate;
+  const fetchMatches = useCallback(async (date) => {
+    setIsLoading(true);
+    setImagesLoaded(false); // Reset images loaded state
+    let formattedDate;
 
-  try {
-    formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
-    const response = await api.fetchMatches(formattedDate);
-    
-    const groupedMatches = response.data.matches.reduce((acc, match) => {
+    try {
+      formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
+      const response = await api.fetchMatches(formattedDate);
+      
+      const groupedMatches = response.data.matches.reduce((acc, match) => {
       // Convert UTC date to user's timezone
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
@@ -315,28 +412,30 @@ const fetchMatches = useCallback(async (date) => {
       return acc;
     }, {});
 
-    setMatches(prevMatches => {
-      const newState = {
-        ...prevMatches,
-        [formattedDate]: groupedMatches[formattedDate] || {}
-      };
-      
-      // Check for goals with the new state
-      checkForGoals(newState, prevMatches);
-      
-      return newState;
-    });
+      // Preload images before updating state
+      await preloadImages(groupedMatches);
 
-  } catch (error) {
-    console.error('Error in component fetchMatches:', error);
-    setMatches(prevMatches => ({
-      ...prevMatches,
-      [format(date, 'yyyy-MM-dd')]: {}
-    }));
-  } finally {
-    setIsLoading(false);
-  }
-}, [userTimeZone, checkForGoals]);
+      setMatches(prevMatches => {
+        const newState = {
+          ...prevMatches,
+          [formattedDate]: groupedMatches[formattedDate] || {}
+        };
+        
+        checkForGoals(newState, prevMatches);
+        
+        return newState;
+      });
+
+    } catch (error) {
+      console.error('Error in component fetchMatches:', error);
+      setMatches(prevMatches => ({
+        ...prevMatches,
+        [format(date, 'yyyy-MM-dd')]: {}
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userTimeZone, checkForGoals, preloadImages]);
 
   // Part 6: Effect Hooks
   useEffect(() => {
@@ -802,9 +901,13 @@ return (
 />
 </div>
 
-    {isLoading ? (
-      <LoadingLogo />
-    ) : (
+{isLoading ? (
+        <LoadingLogo />
+      ) : !imagesLoaded ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-pulse text-gray-600">Loading images...</div>
+        </div>
+      ) : (
       <>
         <div className="flex flex-col space-y-4 mb-4">
             <div className="flex justify-center">

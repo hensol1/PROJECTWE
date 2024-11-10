@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { InfoIcon, MapPinIcon } from 'lucide-react';
 import LoadingLogo from './LoadingLogo';
+import { Country } from 'country-state-city';
 
 const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -17,6 +18,22 @@ const Leaderboard = () => {
   // Add local cache
   const [lastFetchTime, setLastFetchTime] = useState(0);
   const REFRESH_INTERVAL = 60 * 1000; // 1 minute
+
+  const formatCountryCode = (countryName) => {
+    if (!countryName) return '';
+    
+    // If it's already a 2-letter code, just return it lowercase
+    if (countryName.length === 2) {
+      return countryName.toLowerCase();
+    }
+
+    // Find the country code using country-state-city
+    const country = Country.getAllCountries().find(
+      country => country.name.toLowerCase() === countryName.toLowerCase()
+    );
+
+    return country ? country.isoCode.toLowerCase() : countryName.toLowerCase();
+  };
 
   const fetchAllRankings = async (force = false) => {
     try {
@@ -125,9 +142,13 @@ const Leaderboard = () => {
               <div className="flex items-center space-x-3">
                 <span className="text-sm font-semibold w-6">#{index + 1}</span>
                 <img 
-                  src={`https://flagcdn.com/24x18/${country.country.toLowerCase()}.png`}
+                  src={`https://flagcdn.com/24x18/${formatCountryCode(country.country)}.png`}
                   alt={`${country.country} flag`}
                   className="w-6 h-4"
+                  onError={(e) => {
+                    console.log(`Failed to load flag for country: ${country.country}`);
+                    e.target.style.display = 'none';
+                  }}
                 />
                 <span>{country.country}</span>
               </div>
@@ -244,11 +265,17 @@ const Leaderboard = () => {
                     </td>
                     <td className="py-1 px-1 sm:py-2 sm:px-4">
                       <div className="flex items-center justify-start space-x-1">
-                        <img 
-                          src={`https://flagcdn.com/24x18/${user.country.toLowerCase()}.png`}
-                          alt={`${user.country} flag`}
-                          className="w-4 h-3 sm:w-6 sm:h-4"
-                        />
+                        {user.country && (
+                          <img 
+                            src={`https://flagcdn.com/24x18/${formatCountryCode(user.country)}.png`}
+                            alt={`${user.country} flag`}
+                            className="w-4 h-3 sm:w-6 sm:h-4"
+                            onError={(e) => {
+                              console.log(`Failed to load flag for country: ${user.country}`);
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        )}
                         <span className="truncate">{user.username}</span>
                       </div>
                     </td>
