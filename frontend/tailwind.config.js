@@ -27,6 +27,21 @@ module.exports = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        backdropBlur: {
+          sm: '4px',
+        },
+        keyframes: {
+          pulse: {
+            '0%': { opacity: 0.1 },
+            '30%': { opacity: 0.8 },
+            '100%': { opacity: 0.1 }
+          }
+        },
+        animation: {
+          'pulse': 'pulse 1s infinite'
+        }
+  
+  
       },
       borderRadius: {
         lg: "var(--radius)",
