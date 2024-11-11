@@ -14,6 +14,23 @@ import LeagueHeader from './LeagueHeader';
 import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
 
+const GuestVotesManager = {
+  getKey: (matchId) => `guest_vote_${matchId}`,
+  
+  saveVote: (matchId, vote) => {
+    localStorage.setItem(GuestVotesManager.getKey(matchId), vote);
+  },
+  
+  getVote: (matchId) => {
+    return localStorage.getItem(GuestVotesManager.getKey(matchId));
+  },
+  
+  hasVote: (matchId) => {
+    return !!localStorage.getItem(GuestVotesManager.getKey(matchId));
+  }
+};
+
+
 // Part 2: Component Definition and Initial States
 const Matches = ({ user }) => {
   const [matches, setMatches] = useState({});
@@ -289,9 +306,12 @@ const softUpdateMatches = useCallback(async () => {
     const response = await api.fetchMatches(formattedDate);
     
     const groupedMatches = response.data.matches.reduce((acc, match) => {
-    const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
       const leagueKey = `${match.competition.name}_${match.competition.id}`;
+      
+      // Check for guest vote
+      const guestVote = !user ? GuestVotesManager.getVote(match.id) : null;
       
       if (!acc[dateKey]) {
         acc[dateKey] = {};
@@ -301,7 +321,14 @@ const softUpdateMatches = useCallback(async () => {
       }
       acc[dateKey][leagueKey].push({
         ...match,
-        localDate: matchLocalDate
+        localDate: matchLocalDate,
+        // Preserve guest vote if it exists
+        userVote: guestVote || match.userVote,
+        // Update voteCounts if there's a guest vote
+        voteCounts: guestVote ? {
+          ...match.voteCounts,
+          [guestVote]: (match.voteCounts[guestVote] || 0)
+        } : match.voteCounts
       });
       return acc;
     }, {});
@@ -373,7 +400,7 @@ const softUpdateMatches = useCallback(async () => {
 } finally {
   setIsRefreshing(false);
 }
-}, [currentDate, userTimeZone, preloadImages]);
+}, [currentDate, userTimeZone, preloadImages, user]); 
 
 
   // Part 5: Main Data Fetching Function
@@ -381,40 +408,57 @@ const softUpdateMatches = useCallback(async () => {
     setIsLoading(true);
     setImagesLoaded(false); // Reset images loaded state
     let formattedDate;
-
+  
     try {
       formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
       const response = await api.fetchMatches(formattedDate);
       
       const groupedMatches = response.data.matches.reduce((acc, match) => {
-      // Convert UTC date to user's timezone
-      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
-      const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
-      const leagueKey = `${match.competition.name}_${match.competition.id}`;
-      
-      // Check if match is within the selected date (in user's timezone)
-      const selectedStartOfDay = startOfDay(date);
-      const selectedEndOfDay = endOfDay(date);
-      
-      if (matchLocalDate >= selectedStartOfDay && matchLocalDate <= selectedEndOfDay) {
-        if (!acc[dateKey]) {
-          acc[dateKey] = {};
+        // Convert UTC date to user's timezone
+        const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+        const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
+        const leagueKey = `${match.competition.name}_${match.competition.id}`;
+        
+        // Get guest vote if user is not logged in
+        const guestVote = !user ? GuestVotesManager.getVote(match.id) : null;
+        
+        // Check if match is within the selected date (in user's timezone)
+        const selectedStartOfDay = startOfDay(date);
+        const selectedEndOfDay = endOfDay(date);
+        
+        if (matchLocalDate >= selectedStartOfDay && matchLocalDate <= selectedEndOfDay) {
+          if (!acc[dateKey]) {
+            acc[dateKey] = {};
+          }
+          if (!acc[dateKey][leagueKey]) {
+            acc[dateKey][leagueKey] = [];
+          }
+  
+          // Create updated match object with guest vote if it exists
+          const updatedMatch = {
+            ...match,
+            localDate: matchLocalDate,
+            // Use guest vote if it exists, otherwise use match.userVote
+            userVote: guestVote || match.userVote
+          };
+  
+          // Update vote counts if there's a guest vote
+          if (guestVote) {
+            updatedMatch.voteCounts = {
+              ...match.voteCounts,
+              [guestVote]: (match.voteCounts[guestVote] || 0)
+            };
+          }
+  
+          acc[dateKey][leagueKey].push(updatedMatch);
         }
-        if (!acc[dateKey][leagueKey]) {
-          acc[dateKey][leagueKey] = [];
-        }
-        acc[dateKey][leagueKey].push({
-          ...match,
-          localDate: matchLocalDate
-        });
-      }
-      
-      return acc;
-    }, {});
-
+        
+        return acc;
+      }, {});
+  
       // Preload images before updating state
       await preloadImages(groupedMatches);
-
+  
       setMatches(prevMatches => {
         const newState = {
           ...prevMatches,
@@ -425,7 +469,7 @@ const softUpdateMatches = useCallback(async () => {
         
         return newState;
       });
-
+  
     } catch (error) {
       console.error('Error in component fetchMatches:', error);
       setMatches(prevMatches => ({
@@ -435,8 +479,8 @@ const softUpdateMatches = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-  }, [userTimeZone, checkForGoals, preloadImages]);
-
+  }, [userTimeZone, checkForGoals, preloadImages, user]); // Added user to dependencies
+  
   // Part 6: Effect Hooks
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -504,6 +548,32 @@ useEffect(() => {
 
   const handleVote = async (matchId, vote) => {
     try {
+      // If user is not logged in, save vote to localStorage
+      if (!user) {
+        GuestVotesManager.saveVote(matchId, vote);
+        // Update the UI immediately for guest users
+        setMatches(prevMatches => {
+          const updatedMatches = { ...prevMatches };
+          for (let date in updatedMatches) {
+            for (let league in updatedMatches[date]) {
+              updatedMatches[date][league] = updatedMatches[date][league].map(match => 
+                match.id === matchId ? { 
+                  ...match,
+                  userVote: vote,
+                  voteCounts: {
+                    ...match.voteCounts,
+                    [vote]: (match.voteCounts[vote] || 0) + 1
+                  }
+                } : match
+              );
+            }
+          }
+          return updatedMatches;
+        });
+        return;
+      }
+  
+      // Regular flow for logged-in users
       const response = await api.voteForMatch(matchId, vote);
       setMatches(prevMatches => {
         const updatedMatches = { ...prevMatches };
@@ -530,7 +600,7 @@ useEffect(() => {
       alert(error.response?.data?.message || 'Failed to record vote. Please try again.');
     }
   };
-
+  
 // Part 8: Utility Functions
   const getLeagueContinent = (leagueId) => {
     for (const [continent, leagues] of Object.entries(continentalLeagues)) {
