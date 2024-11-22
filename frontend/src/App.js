@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import logo from './assets/images/logo.svg';
+import HeaderLogo from './components/HeaderLogo';  // Import the new HeaderLogo component
+import LoadingLogo from './components/LoadingLogo';  // Keep this for loading screens
 import AuthComponent from './components/AuthComponent';
 import Matches from './components/Matches';
 import UserProfile from './components/UserProfile';
@@ -61,16 +62,11 @@ function App() {
           <header className="bg-white shadow-sm py-2 px-4 relative">
             <div className="container mx-auto flex items-center">
               <div className="w-1/4 sm:w-1/3 flex items-center space-x-2 sm:space-x-3">
-                <img 
-                  src={logo} 
-                  alt="We Know Better" 
-                  className="h-8 sm:h-12 md:h-14 w-auto"
-                  style={{ maxWidth: '200px', minHeight: '32px' }}
-                />
+                <HeaderLogo />
                 <div className="flex items-center">
                   <span className="font-sans text-xs sm:text-xl md:text-2xl font-extrabold tracking-tight text-gray-800"
                         style={{
-                          background: 'linear-gradient(to right, #2563eb, #3b82f6)',
+                          background: 'linear-gradient(to right, #40c456, #2d8b3c)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           letterSpacing: '0.05em'

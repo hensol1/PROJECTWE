@@ -1,9 +1,9 @@
 // Part 1: Imports
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import ModernAccuracyComparison from './AccuracyComparison';
 import api from '../api';
 import { format, addDays, subDays, parseISO, startOfDay, endOfDay, isToday } from 'date-fns';
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
-import AccuracyComparison from './AccuracyComparison';
 import { BiAlarm, BiAlarmOff } from "react-icons/bi";
 import CustomButton from './CustomButton';
 import NextMatchCountdown from './NextMatchCountdown';
@@ -158,7 +158,7 @@ const Matches = ({ user }) => {
     International: [4, 5, 6, 10, 34],
     Americas: [11, 13, 71, 128, 253],
     Asia: [17, 30, 169, 188, 307],
-    Africa: [12, 20, 29]
+    Africa: [12, 20, 29, 36]
   };
   
   const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
@@ -940,37 +940,37 @@ useEffect(() => {
   };
 
   // Part 13: Component Return
-return (
-  <div className="max-w-3xl mx-auto px-2">
-    <NotificationQueue 
-      notifications={goalNotifications}
-      onDismiss={handleNotificationDismiss}
-    />
-    
-    <AccuracyComparison fanAccuracy={accuracyData.fanAccuracy} aiAccuracy={accuracyData.aiAccuracy} />
-    
-    {/* Only show NextMatchCountdown if there are no live matches */}
-    {Object.keys(liveMatches).length === 0 && (
-      <NextMatchCountdown scheduledMatches={scheduledMatches} />
-    )}
-
-{/* Match Voting Box */}
-<div className="mb-8">
-<AnimatedVotingBox 
-  matches={Object.values(allMatchesForCurrentDate)
-    .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
-    .filter(match => 
-      (match.status === 'TIMED' || match.status === 'SCHEDULED')
-    )
-    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
-  onVote={handleVote}
-  onSkip={(matchId) => {
-    console.log('Skipped match:', matchId);
-  }}
-  user={user}
-/>
-</div>
-
+  return (
+    <div className="max-w-3xl mx-auto px-2">
+      <NotificationQueue 
+        notifications={goalNotifications}
+        onDismiss={handleNotificationDismiss}
+      />
+      
+      <ModernAccuracyComparison user={user} />
+      
+      {/* Only show NextMatchCountdown if there are no live matches */}
+      {Object.keys(liveMatches).length === 0 && (
+        <NextMatchCountdown scheduledMatches={scheduledMatches} />
+      )}
+  
+      {/* Match Voting Box */}
+      <div className="mb-8">
+        <AnimatedVotingBox 
+          matches={Object.values(allMatchesForCurrentDate)
+            .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
+            .filter(match => 
+              (match.status === 'TIMED' || match.status === 'SCHEDULED')
+            )
+            .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
+          onVote={handleVote}
+          onSkip={(matchId) => {
+            console.log('Skipped match:', matchId);
+          }}
+          user={user}
+        />
+      </div>
+  
 {isLoading ? (
         <LoadingLogo />
       ) : !imagesLoaded ? (
