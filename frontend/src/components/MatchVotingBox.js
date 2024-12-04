@@ -194,7 +194,7 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
 
 
   return (
-    <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-xl overflow-hidden">
+    <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-xl overflow-hidden relative z-10">
       {/* League Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-2 px-3">
         <div className="flex justify-center items-center space-x-2">

@@ -102,34 +102,47 @@ router.get('/profile', auth, async (req, res) => {
 // Global Location Rankings
 router.get('/rankings/locations', async (req, res) => {
   try {
+    console.log('Fetching location rankings with raw accuracy...');
+    
     // Get top 5 countries
     const topCountries = await User.aggregate([
       { 
         $match: { 
-          finishedVotes: { $gte: 10 },
-          wilsonScore: { $gt: 0 }
+          finishedVotes: { $gte: 10 } // Minimum 10 predictions
         }
       },
       {
         $group: {
           _id: '$country',
-          averageScore: { $avg: '$wilsonScore' },
-          userCount: { $sum: 1 },
           totalCorrectVotes: { $sum: '$correctVotes' },
-          totalFinishedVotes: { $sum: '$finishedVotes' }
+          totalFinishedVotes: { $sum: '$finishedVotes' },
+          userCount: { $sum: 1 },
+          // Add individual accuracies for debugging
+          users: {
+            $push: {
+              username: '$username',
+              accuracy: {
+                $multiply: [
+                  { $divide: ['$correctVotes', '$finishedVotes'] },
+                  100
+                ]
+              }
+            }
+          }
         }
       },
-      { 
+      {
         $project: {
           country: '$_id',
-          averageScore: { $multiply: ['$averageScore', 100] },
           userCount: 1,
-          accuracy: {
+          averageScore: {
             $multiply: [
               { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
               100
             ]
-          }
+          },
+          users: 1, // Keep for debugging
+          totalPredictions: '$totalFinishedVotes'
         }
       },
       { $sort: { averageScore: -1 } },
@@ -141,7 +154,7 @@ router.get('/rankings/locations', async (req, res) => {
       { 
         $match: { 
           finishedVotes: { $gte: 10 },
-          wilsonScore: { $gt: 0 }
+          city: { $exists: true, $ne: null }
         }
       },
       {
@@ -150,31 +163,79 @@ router.get('/rankings/locations', async (req, res) => {
             country: '$country', 
             city: '$city' 
           },
-          averageScore: { $avg: '$wilsonScore' },
-          userCount: { $sum: 1 },
           totalCorrectVotes: { $sum: '$correctVotes' },
-          totalFinishedVotes: { $sum: '$finishedVotes' }
+          totalFinishedVotes: { $sum: '$finishedVotes' },
+          userCount: { $sum: 1 },
+          // Add individual accuracies for debugging
+          users: {
+            $push: {
+              username: '$username',
+              accuracy: {
+                $multiply: [
+                  { $divide: ['$correctVotes', '$finishedVotes'] },
+                  100
+                ]
+              }
+            }
+          }
         }
       },
-      { 
+      {
         $project: {
           country: '$_id.country',
           city: '$_id.city',
-          averageScore: { $multiply: ['$averageScore', 100] },
           userCount: 1,
-          accuracy: {
+          averageScore: {
             $multiply: [
               { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
               100
             ]
-          }
+          },
+          users: 1, // Keep for debugging
+          totalPredictions: '$totalFinishedVotes'
         }
       },
       { $sort: { averageScore: -1 } },
       { $limit: 5 }
     ]);
 
-    res.json({ topCountries, topCities });
+    // Add detailed logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Location Rankings Debug Info:');
+      topCountries.forEach(country => {
+        console.log(`\nCountry: ${country.country}`);
+        console.log(`Average Score: ${country.averageScore.toFixed(2)}%`);
+        console.log('Individual user accuracies:', 
+          country.users.map(u => `${u.username}: ${u.accuracy.toFixed(2)}%`).join(', ')
+        );
+      });
+
+      topCities.forEach(city => {
+        console.log(`\nCity: ${city.city}, ${city.country}`);
+        console.log(`Average Score: ${city.averageScore.toFixed(2)}%`);
+        console.log('Individual user accuracies:', 
+          city.users.map(u => `${u.username}: ${u.accuracy.toFixed(2)}%`).join(', ')
+        );
+      });
+    }
+
+    // Remove debug info before sending response
+    const cleanTopCountries = topCountries.map(({ country, averageScore, userCount, totalPredictions }) => ({
+      country,
+      averageScore,
+      userCount,
+      totalPredictions
+    }));
+
+    const cleanTopCities = topCities.map(({ city, country, averageScore, userCount, totalPredictions }) => ({
+      city,
+      country,
+      averageScore,
+      userCount,
+      totalPredictions
+    }));
+
+    res.json({ topCountries: cleanTopCountries, topCities: cleanTopCities });
   } catch (error) {
     console.error('Error fetching location rankings:', error);
     res.status(500).json({ message: 'Server error' });
@@ -424,87 +485,6 @@ router.get('/leaderboard', async (req, res) => {
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
-router.get('/rankings/locations', async (req, res) => {
-  try {
-    // Get top 5 countries
-    const topCountries = await User.aggregate([
-      { 
-        $match: { 
-          finishedVotes: { $gte: 10 },
-          wilsonScore: { $gt: 0 }
-        }
-      },
-      {
-        $group: {
-          _id: '$country',
-          averageScore: { $avg: '$wilsonScore' },
-          userCount: { $sum: 1 },
-          totalCorrectVotes: { $sum: '$correctVotes' },
-          totalFinishedVotes: { $sum: '$finishedVotes' }
-        }
-      },
-      { 
-        $project: {
-          country: '$_id',
-          averageScore: { $multiply: ['$averageScore', 100] },
-          userCount: 1,
-          accuracy: {
-            $multiply: [
-              { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
-              100
-            ]
-          }
-        }
-      },
-      { $sort: { averageScore: -1 } },
-      { $limit: 5 }
-    ]);
-
-    // Get top 5 cities
-    const topCities = await User.aggregate([
-      { 
-        $match: { 
-          finishedVotes: { $gte: 10 },
-          wilsonScore: { $gt: 0 }
-        }
-      },
-      {
-        $group: {
-          _id: { 
-            country: '$country', 
-            city: '$city' 
-          },
-          averageScore: { $avg: '$wilsonScore' },
-          userCount: { $sum: 1 },
-          totalCorrectVotes: { $sum: '$correctVotes' },
-          totalFinishedVotes: { $sum: '$finishedVotes' }
-        }
-      },
-      { 
-        $project: {
-          country: '$_id.country',
-          city: '$_id.city',
-          averageScore: { $multiply: ['$averageScore', 100] },
-          userCount: 1,
-          accuracy: {
-            $multiply: [
-              { $divide: ['$totalCorrectVotes', '$totalFinishedVotes'] },
-              100
-            ]
-          }
-        }
-      },
-      { $sort: { averageScore: -1 } },
-      { $limit: 5 }
-    ]);
-
-    res.json({ topCountries, topCities });
-  } catch (error) {
-    console.error('Error fetching location rankings:', error);
-    res.status(500).json({ message: 'Server error' });
   }
 });
 
