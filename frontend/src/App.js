@@ -15,6 +15,8 @@ import LoadingScreen from './components/LoadingScreen';
 import api from './api';
 import config from './config';
 import ResetPassword from './components/ResetPassword';
+import CookieConsent from './components/CookieConsent.js';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -89,11 +91,13 @@ function App() {
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/" />} />
               <Route path="/stats" element={user ? <UserStats user={user} /> : <Navigate to="/" />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} /> {/* Add this line */}
               {user && user.isAdmin && (<Route path="/admin" element={<AdminPage />} />)}
               <Route path="*" element={<Navigate to="/" />} />
               <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
           </main>
+          <CookieConsent />
         </div>
       </Router>
     </GoogleOAuthProvider>

@@ -131,6 +131,8 @@ api.makeAIPrediction = (matchId, prediction) => {
   console.log('Making AI prediction:', { matchId, prediction });
   return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
+// Auto Votes
+api.autoVote = () => api.post('/api/matches/auto-vote');
 
 // Admin routes
 api.triggerFetchMatches = (date) => {

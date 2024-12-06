@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { format, parseISO } from 'date-fns';
-import { BiTrophy, BiHistory } from "react-icons/bi";
+import { BiTrophy, BiHistory, BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import LoadingLogo from './LoadingLogo';
 
 const UserStats = () => {
@@ -11,87 +11,159 @@ const UserStats = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [leaguePage, setLeaguePage] = useState(1);
-  const [itemsPerPage] = useState(15); // Changed to 15 to match your screenshot
+  const [itemsPerPage] = useState(15);
   const [activeTab, setActiveTab] = useState('league');
   const [selectedCompetition, setSelectedCompetition] = useState('all');
   const leaguesPerPage = 5;
+
   const calculateLeagueAccuracy = (league) => {
     if (!league.totalVotes || league.totalVotes === 0) return 0;
     return (league.correctVotes / league.totalVotes) * 100;
   };
 
-
-  // Define priority leagues
   const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
 
-useEffect(() => {
-  const fetchStats = async () => {
-    try {
-      const response = await api.getUserStats();
-      console.log('Fetched stats:', response.data); // Debug log
-      setStats(response.data);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-      setError('Failed to load stats');
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.getUserStats();
+        console.log('Fetched stats:', response.data);
+        setStats(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+        setError('Failed to load stats');
+        setLoading(false);
+      }
+    };
 
-  fetchStats();
-}, []);
-
-if (loading) return <LoadingLogo />; 
-if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
-if (!stats || !stats.leagueStats) return <div className="text-center mt-8">No stats available</div>;
+    fetchStats();
+  }, []);
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
   };
 
-const getUniqueLeagues = () => {
-  if (!stats || !stats.voteHistory || !Array.isArray(stats.voteHistory)) return [];
-  
-  // Create a map for storing leagues with their vote data
-  const leaguesMap = new Map();
-  
-  stats.voteHistory.forEach(vote => {
-    if (vote.competition) {
-      const leagueKey = `${vote.competition.name}_${vote.competition.id}`;
-      let displayName = vote.competition.name;
+  const getUniqueLeagues = () => {
+    if (!stats || !stats.voteHistory || !Array.isArray(stats.voteHistory)) return [];
+    
+    const leaguesMap = new Map();
+    
+    stats.voteHistory.forEach(vote => {
+      if (vote.competition) {
+        const leagueKey = `${vote.competition.name}_${vote.competition.id}`;
+        let displayName = vote.competition.name;
 
-      // If it's a Premier League or any other duplicate name, add the full competition info
-      if (vote.competition.id) {
-        displayName = `${vote.competition.name} (${vote.competition.id})`;
-      }
+        if (vote.competition.id) {
+          displayName = `${vote.competition.name} (${vote.competition.id})`;
+        }
 
-      if (!leaguesMap.has(leagueKey)) {
-        leaguesMap.set(leagueKey, {
-          id: leagueKey,
-          name: displayName,
-          originalName: vote.competition.name,
-          competitionId: vote.competition.id,
-          emblem: vote.competition.emblem
-        });
+        if (!leaguesMap.has(leagueKey)) {
+          leaguesMap.set(leagueKey, {
+            id: leagueKey,
+            name: displayName,
+            originalName: vote.competition.name,
+            competitionId: vote.competition.id,
+            emblem: vote.competition.emblem
+          });
+        }
       }
+    });
+
+    return Array.from(leaguesMap.values())
+      .sort((a, b) => {
+        const nameCompare = a.originalName.localeCompare(b.originalName);
+        if (nameCompare !== 0) return nameCompare;
+        return (a.competitionId || 0) - (b.competitionId || 0);
+      })
+      .map(league => ({
+        ...league,
+        name: league.originalName + (league.competitionId ? ` #${league.competitionId}` : '')
+      }));
+  };
+
+  const renderPagination = (totalItems, itemsPerPage, currentPage, setCurrentPage) => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    
+    if (totalPages <= 5) {
+      return (
+        <div className="mt-4 flex justify-center items-center gap-1">
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentPage(i + 1)}
+              className={`min-w-[32px] px-2 py-1 rounded text-sm ${
+                currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      );
     }
-  });
 
-  // Convert to array and sort
-  return Array.from(leaguesMap.values())
-    .sort((a, b) => {
-      // First sort by original name
-      const nameCompare = a.originalName.localeCompare(b.originalName);
-      if (nameCompare !== 0) return nameCompare;
-      // Then by ID if names are the same
-      return (a.competitionId || 0) - (b.competitionId || 0);
-    })
-    .map(league => ({
-      ...league,
-      // Format the display name only for selection display
-      name: league.originalName + (league.competitionId ? ` #${league.competitionId}` : '')
-    }));
-};
+    let pagesToShow = [];
+    pagesToShow.push(1);
+    
+    if (currentPage > 3) {
+      pagesToShow.push('...');
+    }
+    
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(currentPage + 1, totalPages - 1); i++) {
+      if (pagesToShow[pagesToShow.length - 1] !== '...' && pagesToShow[pagesToShow.length - 1] !== i - 1) {
+        pagesToShow.push('...');
+      }
+      pagesToShow.push(i);
+    }
+    
+    if (currentPage < totalPages - 2) {
+      pagesToShow.push('...');
+    }
+    
+    if (pagesToShow[pagesToShow.length - 1] !== totalPages) {
+      pagesToShow.push(totalPages);
+    }
+
+    return (
+      <div className="mt-4 flex justify-center items-center gap-1">
+        <button
+          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="min-w-[32px] px-2 py-1 rounded text-sm bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+        >
+          <BiChevronLeft className="w-4 h-4" />
+        </button>
+        
+        {pagesToShow.map((page, index) => (
+          page === '...' ? (
+            <span key={`ellipsis-${index}`} className="px-2">...</span>
+          ) : (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`min-w-[32px] px-2 py-1 rounded text-sm ${
+                currentPage === page ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {page}
+            </button>
+          )
+        ))}
+        
+        <button
+          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          className="min-w-[32px] px-2 py-1 rounded text-sm bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+        >
+          <BiChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  };
+  if (loading) return <LoadingLogo />; 
+  if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
+  if (!stats || !stats.leagueStats) return <div className="text-center mt-8">No stats available</div>;
 
   const sortedVoteHistory = [...stats.voteHistory].sort((a, b) => {
     const dateA = new Date(a.date);
@@ -99,12 +171,12 @@ const getUniqueLeagues = () => {
     return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
-const filteredAndSortedVoteHistory = sortedVoteHistory
-  .filter(vote => {
-    if (selectedCompetition === 'all') return true;
-    return vote.competition && 
-           `${vote.competition.name}_${vote.competition.id}` === selectedCompetition;
-  });
+  const filteredAndSortedVoteHistory = sortedVoteHistory
+    .filter(vote => {
+      if (selectedCompetition === 'all') return true;
+      return vote.competition && 
+             `${vote.competition.name}_${vote.competition.id}` === selectedCompetition;
+    });
 
   const sortedLeagueStats = stats.leagueStats 
     ? [...stats.leagueStats]
@@ -135,7 +207,6 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
           </thead>
           <tbody>
             {currentLeagues.map((league, index) => {
-              // Ensure we have valid numbers before calculation
               const accuracy = league.accuracy || 0;
 
               return (
@@ -170,22 +241,9 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
         </table>
       </div>
       
-      {/* League Pagination */}
-      {sortedLeagueStats.length > leaguesPerPage && (
-        <div className="mt-4 flex justify-center gap-1">
-          {Array.from({ length: Math.ceil(sortedLeagueStats.length / leaguesPerPage) }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setLeaguePage(i + 1)}
-              className={`min-w-[32px] px-2 py-1 rounded text-sm ${
-                leaguePage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
+      {sortedLeagueStats.length > leaguesPerPage && 
+        renderPagination(sortedLeagueStats.length, leaguesPerPage, leaguePage, setLeaguePage)
+      }
     </div>
   );
 
@@ -200,21 +258,21 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
             Sort ↓
           </button>
           
-<select
-  value={selectedCompetition}
-  onChange={(e) => {
-    setSelectedCompetition(e.target.value);
-    setCurrentPage(1);
-  }}
-  className="border rounded px-3 py-2 text-sm"
->
-  <option key="all" value="all">All Leagues</option>
-  {getUniqueLeagues().map(league => (
-    <option key={league.id} value={league.id}>
-      {league.name}
-    </option>
-  ))}
-</select>
+          <select
+            value={selectedCompetition}
+            onChange={(e) => {
+              setSelectedCompetition(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="border rounded px-3 py-2 text-sm"
+          >
+            <option key="all" value="all">All Leagues</option>
+            {getUniqueLeagues().map(league => (
+              <option key={league.id} value={league.id}>
+                {league.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="text-sm">
@@ -259,22 +317,14 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
         </table>
       </div>
 
-      {/* Vote History Pagination */}
-      {filteredAndSortedVoteHistory.length > itemsPerPage && (
-        <div className="mt-4 flex justify-center gap-1">
-          {Array.from({ length: Math.ceil(filteredAndSortedVoteHistory.length / itemsPerPage) }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`min-w-[32px] px-2 py-1 rounded text-sm ${
-                currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
+      {filteredAndSortedVoteHistory.length > itemsPerPage && 
+        renderPagination(
+          filteredAndSortedVoteHistory.length,
+          itemsPerPage,
+          currentPage,
+          setCurrentPage
+        )
+      }
     </div>
   );
 
@@ -282,7 +332,6 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
     <div className="max-w-4xl mx-auto mt-4 sm:mt-8 p-2 sm:p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-xl sm:text-2xl font-bold mb-4 text-center">User Statistics</h1>
       
-      {/* Stats Cards */}
       <div className="flex flex-row justify-between gap-2 mb-6">
         <div className="bg-blue-50 p-1.5 sm:p-2 rounded-lg shadow-sm text-center flex-1">
           <div className="text-lg sm:text-xl font-bold text-blue-600">{stats.totalVotes}</div>
@@ -304,7 +353,6 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex justify-center mb-6 bg-gray-100 rounded-lg p-1">
         <button
           onClick={() => setActiveTab('league')}
@@ -330,7 +378,6 @@ const filteredAndSortedVoteHistory = sortedVoteHistory
         </button>
       </div>
 
-      {/* Content */}
       {activeTab === 'league' ? renderLeagueStats() : renderVoteHistory()}
     </div>
   );

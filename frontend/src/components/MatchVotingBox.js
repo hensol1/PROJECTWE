@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronRight, X } from 'lucide-react';
 
-const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
+const MatchVotingBox = ({ matches, onVote, onSkip, user, onClose }) => {
   const [remainingMatchesByLeague, setRemainingMatchesByLeague] = useState({});
   const [currentLeagueId, setCurrentLeagueId] = useState(null);
   const [isVoting, setIsVoting] = useState(false);
@@ -194,117 +194,130 @@ const MatchVotingBox = ({ matches, onVote, onSkip, user }) => {
 
 
   return (
-    <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-xl overflow-hidden relative z-10">
-      {/* League Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-2 px-3">
-        <div className="flex justify-center items-center space-x-2">
-          <img 
-            src={currentMatch.competition.emblem} 
-            alt={currentMatch.competition.name} 
-            className="w-6 h-6"
-          />
-          <h2 className="text-base font-bold text-white text-center">
-            {currentMatch.competition.name}
-          </h2>
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-lg z-50">
+        <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl shadow-xl overflow-hidden relative">
+          {/* League Header with Exit Button */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-2 px-3 relative">
+            {/* Exit Button */}
+            <button 
+              onClick={onClose}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-blue-700 transition-colors duration-200"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+  
+            <div className="flex justify-center items-center space-x-2">
+              <img 
+                src={currentMatch.competition.emblem} 
+                alt={currentMatch.competition.name} 
+                className="w-6 h-6"
+              />
+              <h2 className="text-base font-bold text-white text-center">
+                {currentMatch.competition.name}
+              </h2>
+            </div>
+          </div>
+  
+          <div className="p-4">
+            {/* AI Prediction */}
+            {renderAIPrediction()}
+            
+            {/* Teams */}
+            <div className="flex items-center justify-between space-x-3">
+              {/* Home Team */}
+              <button 
+                onClick={() => handleVote('home')}
+                className="flex-1 group relative"
+              >
+                <div className={`
+                  bg-gray-800 p-3 rounded-xl transition-all duration-300 transform
+                  ${activeTeam === 'home' ? 'bg-blue-900 scale-95' : 'hover:bg-blue-900 hover:scale-105'}
+                  active:scale-95 active:bg-blue-900
+                `}>
+                  <img 
+                    src={currentMatch.homeTeam.crest} 
+                    alt={currentMatch.homeTeam.name}
+                    className="w-14 h-14 mx-auto mb-2"
+                  />
+                  <p className="text-white text-center font-bold text-sm">
+                    {currentMatch.homeTeam.name}
+                  </p>
+                </div>
+              </button>
+  
+              {/* Draw Button */}
+              <button 
+                onClick={() => handleVote('draw')}
+                className={`
+                  px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 
+                  text-white font-bold rounded-lg transform transition-all duration-300 
+                  ${activeTeam === 'draw' ? 'scale-95 opacity-90' : 'hover:scale-110'}
+                  hover:shadow-lg active:scale-95 text-sm
+                `}
+              >
+                DRAW
+              </button>
+  
+              {/* Away Team */}
+              <button 
+                onClick={() => handleVote('away')}
+                className="flex-1 group relative"
+              >
+                <div className={`
+                  bg-gray-800 p-3 rounded-xl transition-all duration-300 transform
+                  ${activeTeam === 'away' ? 'bg-red-900 scale-95' : 'hover:bg-red-900 hover:scale-105'}
+                  active:scale-95 active:bg-red-900
+                `}>
+                  <img 
+                    src={currentMatch.awayTeam.crest} 
+                    alt={currentMatch.awayTeam.name}
+                    className="w-14 h-14 mx-auto mb-2"
+                  />
+                  <p className="text-white text-center font-bold text-sm">
+                    {currentMatch.awayTeam.name}
+                  </p>
+                </div>
+              </button>
+            </div>
+  
+            {/* Vote Split */}
+            {renderVoteSplit()}
+  
+            {/* Navigation Buttons */}
+            <div className="flex justify-center items-center gap-4 mt-4">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSkipMatch();
+                }}
+                className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
+              >
+                <span>Skip Match</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSkipLeague();
+                }}
+                className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
+              >
+                <span>Skip League</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+  
+            {/* Matches Counter */}
+            <div className="text-center text-xs text-gray-500 mt-2">
+              {currentMatches.length} matches remaining in this league
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className="p-4">
-        {/* AI Prediction */}
-        {renderAIPrediction()}
-        
-        {/* Teams */}
-        <div className="flex items-center justify-between space-x-3">
-          {/* Home Team */}
-          <button 
-            onClick={() => handleVote('home')}
-            className="flex-1 group relative"
-          >
-            <div className={`
-              bg-gray-800 p-3 rounded-xl transition-all duration-300 transform
-              ${activeTeam === 'home' ? 'bg-blue-900 scale-95' : 'hover:bg-blue-900 hover:scale-105'}
-              active:scale-95 active:bg-blue-900
-            `}>
-              <img 
-                src={currentMatch.homeTeam.crest} 
-                alt={currentMatch.homeTeam.name}
-                className="w-14 h-14 mx-auto mb-2"
-              />
-              <p className="text-white text-center font-bold text-sm">
-                {currentMatch.homeTeam.name}
-              </p>
-            </div>
-          </button>
-
-          {/* Draw Button */}
-          <button 
-            onClick={() => handleVote('draw')}
-            className={`
-              px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 
-              text-white font-bold rounded-lg transform transition-all duration-300 
-              ${activeTeam === 'draw' ? 'scale-95 opacity-90' : 'hover:scale-110'}
-              hover:shadow-lg active:scale-95 text-sm
-            `}
-          >
-            DRAW
-          </button>
-
-          {/* Away Team */}
-          <button 
-            onClick={() => handleVote('away')}
-            className="flex-1 group relative"
-          >
-            <div className={`
-              bg-gray-800 p-3 rounded-xl transition-all duration-300 transform
-              ${activeTeam === 'away' ? 'bg-red-900 scale-95' : 'hover:bg-red-900 hover:scale-105'}
-              active:scale-95 active:bg-red-900
-            `}>
-              <img 
-                src={currentMatch.awayTeam.crest} 
-                alt={currentMatch.awayTeam.name}
-                className="w-14 h-14 mx-auto mb-2"
-              />
-              <p className="text-white text-center font-bold text-sm">
-                {currentMatch.awayTeam.name}
-              </p>
-            </div>
-          </button>
-        </div>
-
-        {/* Vote Split */}
-        {renderVoteSplit()}
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-center items-center gap-4 mt-4">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSkipMatch();
-            }}
-            className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
-          >
-            <span>Skip Match</span>
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSkipLeague();
-            }}
-            className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors duration-300 group"
-          >
-            <span>Skip League</span>
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-
-        {/* Matches Counter */}
-        <div className="text-center text-xs text-gray-500 mt-2">
-          {currentMatches.length} matches remaining in this league
-        </div>
-      </div>
-    </div>
+    </>
   );
-};
+  };
 
 export default MatchVotingBox;

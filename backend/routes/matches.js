@@ -74,6 +74,116 @@ const updatePredictionStats = async (modelType, isCorrect) => {
   }
 };
 
+const determineAutoVote = async (match) => {
+  // Weights based on typical football statistics
+  const weights = {
+    home: 0.45,  // 45% chance for home win
+    draw: 0.25,  // 25% chance for draw
+    away: 0.30   // 30% chance for away win
+  };
+  
+  // Generate a random number between 0 and 1
+  const random = Math.random();
+
+  // Determine vote based on probability ranges
+  if (random < weights.home) {
+    return 'home';
+  } else if (random < weights.home + weights.draw) {
+    return 'draw';
+  } else {
+    return 'away';
+  }
+};
+
+// Auto-vote route
+router.post('/auto-vote', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get the user's current date
+    const userTimeZone = req.headers['x-timezone'] || 'UTC';
+    const userDate = new Date();
+    const startOfDay = new Date(userDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(userDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Get only matches for the current date
+    const matches = await Match.find({
+      status: { $in: ['TIMED', 'SCHEDULED'] },
+      utcDate: {
+        $gte: startOfDay.toISOString(),
+        $lte: endOfDay.toISOString()
+      }
+    });
+
+    // Get user's existing votes
+    const userVotedMatchIds = user.votes.map(vote => vote.matchId);
+
+    // Filter out matches that user has already voted on
+    const unvotedMatches = matches.filter(match => 
+      !userVotedMatchIds.includes(match.id)
+    );
+
+    if (unvotedMatches.length === 0) {
+      return res.json({ 
+        message: 'No matches available for auto-voting today',
+        votedMatches: [] 
+      });
+    }
+
+    // Process each unvoted match
+    const votedMatches = [];
+    for (const match of unvotedMatches) {
+      try {
+        const autoVote = await determineAutoVote(match);
+        
+        // Record the vote
+        match.votes[autoVote]++;
+        await match.save();
+
+        // Update user's votes
+        user.votes.push({
+          matchId: match.id,
+          vote: autoVote,
+          date: new Date()
+        });
+        user.totalVotes++;
+
+        votedMatches.push({
+          matchId: match.id,
+          vote: autoVote,
+          votes: match.votes
+        });
+      } catch (error) {
+        console.error(`Error auto-voting for match ${match.id}:`, error);
+      }
+    }
+
+    // Save user's votes
+    await user.save();
+
+    // Clear user stats cache to force refresh
+    await UserStatsCache.findOneAndUpdate(
+      { userId: user._id },
+      { $set: { lastUpdated: new Date(0) } },
+      { upsert: true }
+    );
+
+    res.json({
+      message: `Successfully auto-voted for ${votedMatches.length} matches`,
+      votedMatches
+    });
+
+  } catch (error) {
+    console.error('Error in auto-vote:', error);
+    res.status(500).json({ message: 'Error processing auto-votes' });
+  }
+});
+
 // Add this function to handle match completion
 const handleMatchCompletion = async (match) => {
   if (match.status === 'FINISHED') {

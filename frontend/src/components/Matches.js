@@ -9,7 +9,7 @@ import CustomButton from './CustomButton';
 import NextMatchCountdown from './NextMatchCountdown';
 import LoadingLogo from './LoadingLogo';
 import NotificationQueue from './NotificationQueue';
-import AnimatedVotingBox from './AnimatedVotingBox';
+import MatchVotingBox from './MatchVotingBox';
 import LeagueHeader from './LeagueHeader';
 import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
@@ -47,7 +47,8 @@ const Matches = ({ user }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [processedScoreUpdates] = useState(new Set());
   const [imagesLoaded, setImagesLoaded] = useState(false);
-
+  const [isAutoVoting, setIsAutoVoting] = useState(false);
+  const [isVotingBoxVisible, setIsVotingBoxVisible] = useState(false);
 
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
@@ -401,6 +402,57 @@ const softUpdateMatches = useCallback(async () => {
   setIsRefreshing(false);
 }
 }, [currentDate, userTimeZone, preloadImages, user]); 
+
+const handleAutoVote = async () => {
+  if (!user) {
+    alert('Please log in to use auto-vote feature');
+    return;
+  }
+
+  try {
+    setIsAutoVoting(true);
+    const response = await api.autoVote();
+    
+    // Update matches state with new votes
+    setMatches(prevMatches => {
+      const newMatches = { ...prevMatches };
+      response.data.votedMatches.forEach(({ matchId, vote, votes }) => {
+        for (const dateKey in newMatches) {
+          for (const leagueKey in newMatches[dateKey]) {
+            newMatches[dateKey][leagueKey] = newMatches[dateKey][leagueKey].map(match => {
+              if (match.id === matchId) {
+                return {
+                  ...match,
+                  userVote: vote,
+                  voteCounts: votes
+                };
+              }
+              return match;
+            });
+          }
+        }
+      });
+      return newMatches;
+    });
+
+    // Show success message
+    alert(`Auto-voted for ${response.data.votedMatches.length} matches!`);
+  } catch (error) {
+    console.error('Error in auto-vote:', error);
+    alert('Failed to auto-vote. Please try again.');
+  } finally {
+    setIsAutoVoting(false);
+  }
+};
+
+const hasAvailableMatches = () => {
+  return Object.values(allMatchesForCurrentDate)
+    .flat()
+    .some(match => 
+      (match.status === 'TIMED' || match.status === 'SCHEDULED') && 
+      !match.userVote
+    );
+};
 
 
   // Part 5: Main Data Fetching Function
@@ -954,23 +1006,50 @@ useEffect(() => {
         <NextMatchCountdown scheduledMatches={scheduledMatches} />
       )}
   
-      {/* Match Voting Box */}
-      <div className="mb-8">
-        <AnimatedVotingBox 
-          matches={Object.values(allMatchesForCurrentDate)
-            .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
-            .filter(match => 
-              (match.status === 'TIMED' || match.status === 'SCHEDULED')
-            )
-            .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
-          onVote={handleVote}
-          onSkip={(matchId) => {
-            console.log('Skipped match:', matchId);
-          }}
-          user={user}
-        />
+{/* Match Voting Box */}
+{hasAvailableMatches() ? (
+  <div className="mb-8 flex justify-center gap-4">
+    {isVotingBoxVisible ? (
+      <MatchVotingBox 
+        matches={Object.values(allMatchesForCurrentDate)
+          .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
+          .filter(match => 
+            (match.status === 'TIMED' || match.status === 'SCHEDULED')
+          )
+          .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
+        onVote={handleVote}
+        onSkip={(matchId) => {
+          console.log('Skipped match:', matchId);
+        }}
+        onClose={() => setIsVotingBoxVisible(false)}
+        user={user}
+      />
+    ) : (
+      <div className="flex gap-4">
+        <button
+          onClick={() => setIsVotingBoxVisible(true)}
+          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
+                    shadow transition-all duration-200"
+        >
+          Start Voting
+        </button>
+        {user && (
+          <button
+            onClick={handleAutoVote}
+            disabled={isAutoVoting}
+            className={`px-4 py-2 rounded-lg text-sm font-medium
+              ${isAutoVoting 
+                ? 'bg-gray-300 cursor-not-allowed' 
+                : 'bg-blue-500 hover:bg-blue-600 text-white shadow transition-all duration-200'}`}
+          >
+            {isAutoVoting ? 'Auto-voting...' : 'Auto Vote'}
+          </button>
+        )}
       </div>
-  
+    )}
+  </div>
+) : null}
+
 {isLoading ? (
         <LoadingLogo />
       ) : !imagesLoaded ? (
@@ -979,93 +1058,95 @@ useEffect(() => {
         </div>
       ) : (
       <>
-        <div className="flex flex-col space-y-4 mb-4">
-            <div className="flex justify-center">
-              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
-                {['live', 'finished', 'scheduled'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => handleTabChange(tab)}
-                    className={`
-                      px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                      flex items-center justify-center
-                      ${activeTab === tab
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-200'
-                      }
-                    `}
-                  >
-                    {tab === 'live' && (
-                      <span 
-                        className={`
-                          inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
-                          ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
-                        `}
-                      />
-                    )}
-                    {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
-                    {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+<div className="flex flex-col space-y-4 mb-4">
+  {/* Tab Filters */}
+  <div className="flex justify-center">
+    <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+      {['live', 'finished', 'scheduled'].map((tab) => (
+        <button
+          key={tab}
+          onClick={() => handleTabChange(tab)}
+          className={`
+            px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+            flex items-center justify-center
+            ${activeTab === tab
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:bg-gray-200'
+            }
+          `}
+        >
+          {tab === 'live' && (
+            <span 
+              className={`
+                inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
+                ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
+              `}
+            />
+          )}
+          {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
+          {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
+          {tab.charAt(0).toUpperCase() + tab.slice(1)}
+        </button>
+      ))}
+    </div>
+  </div>
 
-            <div className="flex justify-center">
-              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
-                {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map((continent) => (
-                  <button
-                    key={continent}
-                    onClick={() => setSelectedContinent(continent)}
-                    className={`
-                      px-2 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                      ${selectedContinent === continent
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-200'
-                      }
-                    `}
-                  >
-                    {continent}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+  {/* Continent Filters */}
+  <div className="flex justify-center">
+    <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+      {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map((continent) => (
+        <button
+          key={continent}
+          onClick={() => setSelectedContinent(continent)}
+          className={`
+            px-2 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+            ${selectedContinent === continent
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:bg-gray-200'
+            }
+          `}
+        >
+          {continent}
+        </button>
+      ))}
+    </div>
+  </div>
 
-          <div className="flex justify-between items-center my-4 sm:px-4 md:px-12 lg:px-20">
-  <div className="sm:flex-grow sm:flex sm:justify-end sm:pr-4">
+</div>
+
+{/* Centered Date Navigation */}
+<div className="flex justify-center my-4">
+  <div className="flex items-center gap-2">
     <CustomButton 
       onClick={() => handleDateChange(-1)}
-      className="w-10 h-10 flex items-center justify-center" // Add fixed width and height
+      className="w-10 h-10 flex items-center justify-center"
     >
       <span className="text-xl font-bold">&lt;</span>
     </CustomButton>
-  </div>
-  <h2 className="text-sm sm:text-lg font-bold text-gray-800 sm:flex-shrink-0">
-    {format(currentDate, 'dd MMM yyyy')}
-  </h2>
-  <div className="sm:flex-grow sm:flex sm:justify-start sm:pl-4">
+    
+    <h2 className="text-sm sm:text-lg font-bold text-gray-800">
+      {format(currentDate, 'dd MMM yyyy')}
+    </h2>
+    
     <CustomButton 
       onClick={() => handleDateChange(1)}
-      className="w-10 h-10 flex items-center justify-center" // Add fixed width and height
+      className="w-10 h-10 flex items-center justify-center"
     >
       <span className="text-xl font-bold">&gt;</span>
     </CustomButton>
   </div>
 </div>
+
 <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
   {renderTabContent()}
 </div>
 
-
-
-
-        {/* Subtle refresh indicator */}
-        {isRefreshing && (
-          <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
-            Updating...
-          </div>
-        )}
+{/* Subtle refresh indicator */}
+{isRefreshing && (
+  <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
+    Updating...
+  </div>
+)}
       </>
     )}
   </div>
