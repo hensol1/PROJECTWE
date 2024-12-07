@@ -17,6 +17,10 @@ import config from './config';
 import ResetPassword from './components/ResetPassword';
 import CookieConsent from './components/CookieConsent.js';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import AboutUs from './components/AboutUs';
+import ContactUs from './components/ContactUs';
+import Footer from './components/Footer';
+import ContactAdmin from './components/ContactAdmin';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -95,9 +99,20 @@ function App() {
               {user && user.isAdmin && (<Route path="/admin" element={<AdminPage />} />)}
               <Route path="*" element={<Navigate to="/" />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/contact" element={<ContactUs />} />
+              <Route 
+  path="/admin/contacts" 
+  element={user?.isAdmin ? <ContactAdmin /> : <Navigate to="/" />} 
+/>
+
+
+
+
             </Routes>
           </main>
           <CookieConsent />
+          <Footer />
         </div>
       </Router>
     </GoogleOAuthProvider>

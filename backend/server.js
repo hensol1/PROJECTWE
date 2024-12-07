@@ -7,6 +7,7 @@ const matchesRoutes = require('./routes/matches');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
 const accuracyRoutes = require('./routes/accuracy');
+const contactRoutes = require('./routes/contact');
 
 dotenv.config();
 require('./scheduledTasks');
@@ -47,6 +48,7 @@ app.use('/api/matches', matchesRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/accuracy', accuracyRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

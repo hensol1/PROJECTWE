@@ -43,7 +43,7 @@ const PrivacyPolicy = () => {
         <p>
           If you have any questions about our cookie policy, please contact us at{' '}
           <a href="mailto:contact@weknowbetter.com" className="text-blue-500 hover:text-blue-600">
-            contact@weknowbetter.com
+            f.data.app@gmail.com
           </a>
         </p>
       </section>

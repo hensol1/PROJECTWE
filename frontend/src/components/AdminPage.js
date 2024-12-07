@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import { format, addDays, subDays, isSameDay, parseISO } from 'date-fns';
+import ContactAdmin from './ContactAdmin';
 
 // Admin action button component
 const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
@@ -255,6 +256,7 @@ const MatchCard = ({ match, onPrediction }) => {
 };
 
 const AdminPage = () => {
+  const [activeTab, setActiveTab] = useState('matches'); 
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
   const [notification, setNotification] = useState(null);
@@ -337,8 +339,35 @@ const AdminPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <AdminControls selectedDate={currentDate} />
-      
+      {/* Add this tab navigation */}
+      <div className="flex space-x-4 mb-6">
+        <button
+          onClick={() => setActiveTab('matches')}
+          className={`px-4 py-2 rounded-lg transition duration-200 ${
+            activeTab === 'matches' 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+          }`}
+        >
+          Match Management
+        </button>
+        <button
+          onClick={() => setActiveTab('contacts')}
+          className={`px-4 py-2 rounded-lg transition duration-200 ${
+            activeTab === 'contacts' 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+          }`}
+        >
+          Contact Messages
+        </button>
+      </div>
+  
+      {/* Conditional rendering based on active tab */}
+      {activeTab === 'matches' ? (
+        <>
+          <AdminControls selectedDate={currentDate} />
+        
       {/* Date Navigation */}
       <div className="flex justify-between items-center mb-6">
         <button 
@@ -393,8 +422,12 @@ const AdminPage = () => {
           onClose={() => setNotification(null)}
         />
       )}
-    </div>
-  );
-};
+      </>
+    ) : (
+      <ContactAdmin />
+    )}
+  </div>
+);
+}
 
 export default AdminPage;

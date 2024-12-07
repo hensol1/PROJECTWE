@@ -144,5 +144,11 @@ api.resetStats = () => api.post('/api/accuracy/reset');
 api.resetAllStats = () => api.post('/api/accuracy/reset-all');
 api.resetAIStats = () => api.post('/api/accuracy/reset-ai');
 api.resetFanStats = () => api.post('/api/accuracy/reset-fans');
+// Contact submission
+api.submitContactForm = (formData) => {
+  console.log('Submitting contact form:', formData); // Add this log
+  return api.post('/api/contact', formData);
+};
+api.getContactSubmissions = () => api.get('/api/contact/submissions');
 
 export default api;
