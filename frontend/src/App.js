@@ -1,6 +1,6 @@
 // App.js
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import HeaderLogo from './components/HeaderLogo';  // Import the new HeaderLogo component
 import LoadingLogo from './components/LoadingLogo';  // Keep this for loading screens
@@ -21,6 +21,7 @@ import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
 import Footer from './components/Footer';
 import ContactAdmin from './components/ContactAdmin';
+import WelcomeSlides from './components/WelcomeSlides';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -64,23 +65,26 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={config.googleClientId}>
       <Router>
-        <div className="bg-gray-100 min-h-screen flex flex-col">
+        <WelcomeSlides />
+          <div className="bg-gray-100 min-h-screen flex flex-col">
           <header className="bg-white shadow-sm py-2 px-4 relative">
             <div className="container mx-auto flex items-center">
-              <div className="w-1/4 sm:w-1/3 flex items-center space-x-2 sm:space-x-3">
-                <HeaderLogo />
-                <div className="flex items-center">
-                  <span className="font-sans text-xs sm:text-xl md:text-2xl font-extrabold tracking-tight text-gray-800"
-                        style={{
-                          background: 'linear-gradient(to right, #40c456, #2d8b3c)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          letterSpacing: '0.05em'
-                        }}>
-                    WE KNOW BETTER
-                  </span>
-                </div>
-              </div>
+            <div className="w-1/4 sm:w-1/3 flex items-center space-x-2 sm:space-x-3">
+  <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
+    <HeaderLogo />
+    <div className="flex items-center">
+      <span className="font-sans text-xs sm:text-xl md:text-2xl font-extrabold tracking-tight text-gray-800"
+            style={{
+              background: 'linear-gradient(to right, #40c456, #2d8b3c)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '0.05em'
+            }}>
+        WE KNOW BETTER
+      </span>
+    </div>
+  </Link>
+</div>
               <div className="w-1/2 sm:w-1/3 flex justify-center">
                 <IconMenu user={user} />
               </div>

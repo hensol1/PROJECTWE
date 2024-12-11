@@ -190,15 +190,27 @@ const AuthComponent = ({ setUser, user }) => {
       await handleLoginSuccess(response.data.token, response.data.user);
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Error:', error.response ? error.response.data : error.message);
+      let errorMessage;
+  
+      if (error.response?.data?.msg === 'User already exists') {
+        errorMessage = 'This username is already taken';
+      } else if (error.response?.status === 500) {
+        // Since we know the 500 error in this context means email duplicate
+        errorMessage = 'This email is already registered';
+      } else if (error.response?.data?.msg) {
+        errorMessage = error.response.data.msg;
+      } else {
+        errorMessage = 'An error occurred. Please try again.';
+      }
+      
       setMessage({ 
-        text: error.response?.data?.message || 'An error occurred. Please try again.', 
+        text: errorMessage,
         type: 'error' 
       });
     }
     setIsLoading(false);
   };
-  
+    
   const handleLogout = () => {
     setIsLoggingOut(true);
     setIsModalOpen(true);
