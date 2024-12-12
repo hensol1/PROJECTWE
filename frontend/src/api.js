@@ -144,6 +144,7 @@ api.resetStats = () => api.post('/api/accuracy/reset');
 api.resetAllStats = () => api.post('/api/accuracy/reset-all');
 api.resetAIStats = () => api.post('/api/accuracy/reset-ai');
 api.resetFanStats = () => api.post('/api/accuracy/reset-fans');
+api.getUserRankings = () => api.get('/api/user/rankings');
 // Contact submission
 api.submitContactForm = (formData) => {
   console.log('Submitting contact form:', formData); // Add this log

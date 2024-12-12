@@ -3,6 +3,7 @@ import api from '../api';
 import { format, parseISO } from 'date-fns';
 import { BiTrophy, BiHistory, BiChevronLeft, BiChevronRight } from "react-icons/bi";
 import LoadingLogo from './LoadingLogo';
+import ShareStats from './ShareStats';
 
 const UserStats = () => {
   const [stats, setStats] = useState(null);
@@ -15,6 +16,59 @@ const UserStats = () => {
   const [activeTab, setActiveTab] = useState('league');
   const [selectedCompetition, setSelectedCompetition] = useState('all');
   const leaguesPerPage = 5;
+  const [rankings, setRankings] = useState(null);
+  const [user, setUser] = useState(null);
+  const [leaderboardRank, setLeaderboardRank] = useState(null);
+
+  useEffect(() => {
+    const fetchLeaderboardRank = async () => {
+      try {
+        const leaderboardResponse = await api.getLeaderboard();
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+          const userIndex = leaderboardResponse.data.findIndex(user => 
+            user._id === userId || user._id.endsWith(userId) || userId.endsWith(user._id)
+          );
+          if (userIndex !== -1) {
+            setLeaderboardRank(userIndex + 1);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching leaderboard rank:', err);
+      }
+    };
+  
+    fetchLeaderboardRank();
+  }, []);
+  
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await api.getUserProfile();
+        setUser(response.data);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    };
+  
+    fetchUserData();
+  }, []);
+    
+
+  useEffect(() => {
+    const fetchRankings = async () => {
+      try {
+        const response = await api.getUserRankings(); // You'll need to implement this API endpoint
+        setRankings(response.data);
+      } catch (err) {
+        console.error('Error fetching rankings:', err);
+      }
+    };
+  
+    fetchRankings();
+  }, []);
+  
 
   const calculateLeagueAccuracy = (league) => {
     if (!league.totalVotes || league.totalVotes === 0) return 0;
@@ -328,6 +382,14 @@ const UserStats = () => {
     </div>
   );
 
+  console.log('ShareStats received props:', {
+    stats,
+    rankings,
+    user,
+    userCountry: user?.country,
+    userCity: user?.city
+  });
+  
   return (
     <div className="max-w-4xl mx-auto mt-4 sm:mt-8 p-2 sm:p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-xl sm:text-2xl font-bold mb-4 text-center">User Statistics</h1>
@@ -352,6 +414,23 @@ const UserStats = () => {
           <div className="text-[10px] sm:text-xs text-gray-600">Overall Accuracy</div>
         </div>
       </div>
+
+
+      <div className="flex justify-end mb-6">
+  {stats && user && (
+    <ShareStats 
+      stats={stats}
+      rankings={{
+        global: leaderboardRank,
+        country: rankings?.country,
+        city: rankings?.city
+      }}
+      user={user}
+    />
+  )}
+</div>
+
+
 
       <div className="flex justify-center mb-6 bg-gray-100 rounded-lg p-1">
         <button
