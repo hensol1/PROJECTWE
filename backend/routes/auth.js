@@ -143,23 +143,31 @@ router.post('/google', async (req, res) => {
       return res.status(400).json({ message: 'Google ID and email are required' });
     }
 
-    let user = await User.findOne({ email });
+    // First try to find user by googleId
+    let user = await User.findOne({ googleId });
+    
+    // If not found by googleId, try to find by email
     if (!user) {
-      return res.json({ isNewUser: true });
+      user = await User.findOne({ email });
     }
 
-    const token = createToken(user._id);
+    if (user) {
+      // User exists - generate token and return user data
+      const token = createToken(user._id);
+      return res.json({ 
+        token, 
+        user: { 
+          id: user._id, 
+          username: user.username, 
+          email: user.email,
+          country: user.country,
+          city: user.city
+        } 
+      });
+    }
 
-    res.json({ 
-      token, 
-      user: { 
-        id: user._id, 
-        username: user.username, 
-        email: user.email,
-        country: user.country,
-        city: user.city
-      } 
-    });
+    // If no user found, return isNewUser true
+    return res.json({ isNewUser: true });
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ message: 'Authentication failed', error: error.message });
