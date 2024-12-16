@@ -68,15 +68,55 @@ const ShareStats = ({ stats, rankings, user }) => {
       await generateImage();
     }
 
+    // Function to convert base64 to blob
+    const base64ToBlob = async (base64) => {
+      const response = await fetch(base64);
+      const blob = await response.blob();
+      return blob;
+    };
+
     switch (platform) {
       case 'facebook':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`, '_blank');
         break;
       case 'whatsapp':
-        // Share image via WhatsApp
-        const shareImageUrl = imageUrl;
-        const whatsappUrl = `whatsapp://send?text=Check out my football prediction stats on We Know Better! ${encodeURIComponent(shareImageUrl)}`;
-        window.location.href = whatsappUrl;
+        try {
+          // Convert base64 to blob
+          const blob = await base64ToBlob(imageUrl);
+          
+          // Create a file from the blob
+          const file = new File([blob], 'stats.png', { type: 'image/png' });
+
+          // Check if Web Share API is supported
+          if (navigator.share) {
+            await navigator.share({
+              files: [file],
+              title: 'My Football Prediction Stats',
+              text: 'Check out my football prediction stats on We Know Better!'
+            });
+          } else {
+            // Fallback for desktop or unsupported browsers
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = 'we-know-better-stats.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Open WhatsApp in new tab with text
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Check out my football prediction stats on We Know Better!')}`;
+            window.open(whatsappUrl, '_blank');
+          }
+        } catch (error) {
+          console.error('Error sharing to WhatsApp:', error);
+          // Fallback to just downloading the image
+          const link = document.createElement('a');
+          link.href = imageUrl;
+          link.download = 'we-know-better-stats.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
         break;
       case 'instagram':
         const link = document.createElement('a');
