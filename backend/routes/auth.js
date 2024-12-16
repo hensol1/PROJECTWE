@@ -20,13 +20,16 @@ const createToken = (userId) => {
 
 // CORS options
 const corsOptions = {
-  origin: ['https://projectwe-tau.vercel.app', 'http://localhost:3000'],
-  optionsSuccessStatus: 204
+  origin: [
+    'https://projectwe-tau.vercel.app', 
+    'http://localhost:3000',
+    'https://weknowbetter.app',
+    'https://www.weknowbetter.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-timezone']
 };
-
-router.use(cors());
-router.use(cors(corsOptions));
-router.options('*', cors(corsOptions));
 
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
