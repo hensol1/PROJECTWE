@@ -315,22 +315,22 @@ async function updateCorrectVotes(match) {
 
 
 router.get('/', optionalAuth, async (req, res) => {
-  const { date } = req.query;
-  const timeZone = req.headers['x-timezone'] || 'UTC';
-  const userId = req.user ? req.user.id : null;
-  
-  console.log('Match request received:', {
-    requestDate: date,
-    userTimezone: timeZone,
-    userId: userId,
-    serverTime: new Date().toISOString()
-  });
-
-  if (!date) {
-    return res.status(400).json({ message: 'Date is required' });
-  }
-
   try {
+    const { date } = req.query;
+    const timeZone = req.headers['x-timezone'] || 'UTC';
+    const userId = req.user ? req.user.id : null;
+    
+    console.log('Match request received:', {
+      requestDate: date,
+      userTimezone: timeZone,
+      userId: userId,
+      serverTime: new Date().toISOString()
+    });
+
+    if (!date) {
+      return res.status(400).json({ message: 'Date is required' });
+    }
+
     const userDate = parseISO(date);
     if (!isValid(userDate)) {
       return res.status(400).json({ message: 'Invalid date format' });
@@ -340,7 +340,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const tzOffset = new Date().getTimezoneOffset() / 60;
     
     // Adjust date range based on timezone offset
-    const start = subHours(startOfDay(userDate), tzOffset);
+    const start = subHours(startOfDay(userDate), tzOffset + 12); // Look back 12 hours
     const end = subHours(endOfDay(userDate), tzOffset);
 
     console.log('Query parameters:', {
@@ -350,24 +350,28 @@ router.get('/', optionalAuth, async (req, res) => {
       endTime: end.toISOString()
     });
 
-    // Find matches within the adjusted time range
-    const [matches, user] = await Promise.all([
-      Match.find({
-        $or: [
-          // Match starts within the user's day
-          { utcDate: { $gte: start.toISOString(), $lte: end.toISOString() } },
-          // Include matches that ended up to 8 hours before the start of the day
-          {
-            status: 'FINISHED',
-            utcDate: { 
-              $gte: subHours(start, 8).toISOString(),
-              $lt: start.toISOString()
-            }
+    // Modified query to include live matches regardless of date
+    const matches = await Match.find({
+      $or: [
+        // Regular date-based matches within the selected timeframe
+        { 
+          utcDate: { 
+            $gte: start.toISOString(), 
+            $lte: end.toISOString() 
           }
-        ]
-      }).sort({ utcDate: 1 }),
-      userId ? User.findById(userId, 'votes') : null
-    ]);
+        },
+        // Include live matches from previous day that might still be ongoing
+        {
+          status: { 
+            $in: ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'] 
+          },
+          utcDate: { 
+            $gte: subHours(start, 24).toISOString(), // Look back up to 24 hours for live matches
+            $lt: start.toISOString() 
+          }
+        }
+      ]
+    }).sort({ utcDate: 1 });
 
     console.log('Found matches:', {
       count: matches.length,
@@ -378,42 +382,51 @@ router.get('/', optionalAuth, async (req, res) => {
       }))
     });
 
-    const userVotes = user ? user.votes : [];
+    const [processedMatches, user] = await Promise.all([
+      Promise.all(matches.map(async match => {
+        const matchObj = match.toObject();
+        const matchDate = new Date(match.utcDate);
+        matchObj.localDate = addHours(matchDate, tzOffset);
+        matchObj.voteCounts = match.votes;
 
-    const processedMatches = matches.map(match => {
-      const matchObj = match.toObject();
-      
-      // Convert UTC date to local time
-      const matchDate = new Date(match.utcDate);
-      matchObj.localDate = addHours(matchDate, tzOffset);
-      matchObj.voteCounts = match.votes;
-
-      const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
-      if (totalVotes > 0) {
-        const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
-        if (matchObj.voteCounts.home === maxVotes) {
-          matchObj.fanPrediction = 'HOME_TEAM';
-        } else if (matchObj.voteCounts.away === maxVotes) {
-          matchObj.fanPrediction = 'AWAY_TEAM';
+        // Add fan prediction
+        const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
+        if (totalVotes > 0) {
+          const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
+          if (matchObj.voteCounts.home === maxVotes) {
+            matchObj.fanPrediction = 'HOME_TEAM';
+          } else if (matchObj.voteCounts.away === maxVotes) {
+            matchObj.fanPrediction = 'AWAY_TEAM';
+          } else {
+            matchObj.fanPrediction = 'DRAW';
+          }
         } else {
-          matchObj.fanPrediction = 'DRAW';
+          matchObj.fanPrediction = null;
         }
-      } else {
-        matchObj.fanPrediction = null;
-      }
 
-      const userVote = userVotes.find(v => v.matchId === match.id);
-      if (userVote) {
-        matchObj.userVote = userVote.vote;
-      }
+        return matchObj;
+      })),
+      userId ? User.findById(userId, 'votes') : null
+    ]);
 
-      return matchObj;
-    });
+    // Add user votes if user is logged in
+    if (user) {
+      processedMatches.forEach(match => {
+        const userVote = user.votes.find(v => v.matchId === match.id);
+        if (userVote) {
+          match.userVote = userVote.vote;
+        }
+      });
+    }
 
     res.json({ matches: processedMatches });
   } catch (error) {
     console.error('Error in matches route:', error);
-    res.status(500).json({ message: 'Error fetching matches', error: error.message });
+    res.status(500).json({ 
+      message: 'Error fetching matches', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -618,6 +631,29 @@ router.post('/update-match-status', async (req, res) => {
     res.status(500).json({ message: 'Error updating match' });
   }
 });
+
+router.get('/live', async (req, res) => {
+  try {
+    // Fetch all matches that are currently live
+    const liveMatches = await Match.find({
+      status: { 
+        $in: ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']
+      }
+    });
+
+    res.json({
+      success: true,
+      matches: liveMatches
+    });
+  } catch (error) {
+    console.error('Error fetching live matches:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching live matches'
+    });
+  }
+});
+
 
 
 

@@ -26,7 +26,7 @@ const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
   );
 };
 
-const AdminControls = ({ selectedDate }) => {  // Add selectedDate prop
+const AdminControls = ({ selectedDate, onRefreshMatches }) => {  
   const [isFetching, setIsFetching] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isResetting, setIsResetting] = useState({
@@ -39,12 +39,22 @@ const AdminControls = ({ selectedDate }) => {  // Add selectedDate prop
   const handleFetchMatches = async () => {
     try {
       setIsFetching(true);
+      console.log('Triggering fetch for date:', selectedDate); // Debug log
+      
       const response = await api.triggerFetchMatches(selectedDate);
-      console.log('Fetch matches result:', response.data);
-      setLastAction({ 
-        type: 'success', 
-        message: `Matches fetched successfully! Found ${response.data.stats.filtered} matches.`
-      });
+      if (response.data.success) {
+        console.log('Fetch matches result:', response.data);
+        
+        // Refresh the matches display after fetching
+        await onRefreshMatches(selectedDate, true);
+  
+        setLastAction({ 
+          type: 'success', 
+          message: `Matches fetched successfully! Found ${response.data.stats?.filtered || 0} matches.`
+        });
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch matches');
+      }
     } catch (error) {
       console.error('Fetch matches error:', error);
       setLastAction({ 
@@ -55,7 +65,8 @@ const AdminControls = ({ selectedDate }) => {  // Add selectedDate prop
       setIsFetching(false);
     }
   };
-
+  
+      
   const handleRecalculateStats = async () => {
     try {
       setIsRecalculating(true);
@@ -365,8 +376,11 @@ const AdminPage = () => {
   
       {/* Conditional rendering based on active tab */}
       {activeTab === 'matches' ? (
-        <>
-          <AdminControls selectedDate={currentDate} />
+  <>
+    <AdminControls 
+      selectedDate={currentDate} 
+      onRefreshMatches={fetchMatches} // Move this inside AdminControls
+    />
         
       {/* Date Navigation */}
       <div className="flex justify-between items-center mb-6">

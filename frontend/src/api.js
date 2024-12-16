@@ -52,6 +52,26 @@ api.fetchMatches = (date) => {
   });
 };
 
+api.fetchMatches = (date) => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return api.get(`/api/matches?date=${date}`, {
+    headers: {
+      'x-timezone': timeZone
+    }
+  });
+};
+
+// New method for fetching live matches
+api.fetchLiveMatches = () => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return api.get('/api/matches/live', {
+    headers: {
+      'x-timezone': timeZone
+    }
+  });
+};
+
+
 api.fetchAccuracy = async () => {
   try {
     const response = await api.get('/api/accuracy');
@@ -136,9 +156,13 @@ api.autoVote = () => api.post('/api/matches/auto-vote');
 
 // Admin routes
 api.triggerFetchMatches = (date) => {
-  const formattedDate = format(date, 'yyyy-MM-dd');
-  return api.post('/api/admin/fetch-matches', { date: formattedDate });
+  // Ensure we send a properly formatted date string
+  const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+  return api.post('/api/admin/fetch-matches', { 
+    date: formattedDate 
+  });
 };
+
 api.recalculateStats = () => api.post('/api/admin/recalculate-stats');
 api.resetStats = () => api.post('/api/accuracy/reset');
 api.resetAllStats = () => api.post('/api/accuracy/reset-all');

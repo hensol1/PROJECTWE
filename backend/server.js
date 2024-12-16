@@ -31,6 +31,7 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200
 }));
+
 // Middleware
 app.use(express.json());
 

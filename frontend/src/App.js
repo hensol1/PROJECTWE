@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import HeaderLogo from './components/HeaderLogo';  // Import the new HeaderLogo component
-import LoadingLogo from './components/LoadingLogo';  // Keep this for loading screens
+import HeaderLogo from './components/HeaderLogo';
+import LoadingLogo from './components/LoadingLogo';
 import AuthComponent from './components/AuthComponent';
 import Matches from './components/Matches';
 import UserProfile from './components/UserProfile';
@@ -66,53 +66,73 @@ function App() {
     <GoogleOAuthProvider clientId={config.googleClientId}>
       <Router>
         <WelcomeSlides />
-          <div className="bg-gray-100 min-h-screen flex flex-col">
-          <header className="bg-white shadow-sm py-2 px-4 relative">
-            <div className="container mx-auto flex items-center">
-            <div className="w-1/4 sm:w-1/3 flex items-center space-x-2 sm:space-x-3">
-  <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
-    <HeaderLogo />
-    <div className="flex items-center">
-      <span className="font-sans text-xs sm:text-xl md:text-2xl font-extrabold tracking-tight text-gray-800"
-            style={{
-              background: 'linear-gradient(to right, #40c456, #2d8b3c)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '0.05em'
-            }}>
-        WE KNOW BETTER
-      </span>
-    </div>
-  </Link>
-</div>
-              <div className="w-1/2 sm:w-1/3 flex justify-center">
-                <IconMenu user={user} />
-              </div>
-              <div className="w-1/4 sm:w-1/3 flex justify-end">
-                <AuthComponent setUser={setUser} user={user} />
+        <div className="bg-gray-100 min-h-screen flex flex-col">
+          {/* Updated header with responsive text layout */}
+          <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
+            <div className="container mx-auto">
+              <div className="grid grid-cols-3 items-center gap-2">
+                {/* Logo section with responsive text layout */}
+                <div className="flex items-center">
+                  <Link to="/" className="flex items-center space-x-1 md:space-x-2">
+                    <div className="w-6 md:w-8">
+                      <HeaderLogo />
+                    </div>
+                    {/* Mobile: Stacked layout */}
+                    <div className="flex flex-col md:hidden leading-tight">
+                      <div className="flex space-x-1">
+                        <span className="font-sans text-[10px] font-extrabold tracking-tight text-[#40c456]">
+                          WE
+                        </span>
+                        <span className="font-sans text-[10px] font-extrabold tracking-tight text-[#40c456]">
+                          KNOW
+                        </span>
+                      </div>
+                      <span className="font-sans text-[10px] font-extrabold tracking-tight text-[#40c456]">
+                        BETTER
+                      </span>
+                    </div>
+                    {/* Desktop: Single line */}
+                    <div className="hidden md:flex items-center space-x-1">
+                      <span className="font-sans text-xl font-extrabold tracking-tight text-[#40c456]">
+                        WE KNOW BETTER
+                      </span>
+                    </div>
+                  </Link>
+                </div>
+
+                {/* Icons section */}
+                <div className="flex justify-center">
+                  <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
+                    <IconMenu user={user} />
+                  </div>
+                </div>
+
+                {/* Auth section */}
+                <div className="flex justify-end">
+                  <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
+                    <AuthComponent setUser={setUser} user={user} />
+                  </div>
+                </div>
               </div>
             </div>
           </header>
+
           <main className="flex-grow container mx-auto p-4 relative">
             <Routes>
               <Route path="/" element={<Matches user={user} />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/" />} />
               <Route path="/stats" element={user ? <UserStats user={user} /> : <Navigate to="/" />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} /> {/* Add this line */}
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               {user && user.isAdmin && (<Route path="/admin" element={<AdminPage />} />)}
               <Route path="*" element={<Navigate to="/" />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactUs />} />
               <Route 
-  path="/admin/contacts" 
-  element={user?.isAdmin ? <ContactAdmin /> : <Navigate to="/" />} 
-/>
-
-
-
-
+                path="/admin/contacts" 
+                element={user?.isAdmin ? <ContactAdmin /> : <Navigate to="/" />} 
+              />
             </Routes>
           </main>
           <CookieConsent />

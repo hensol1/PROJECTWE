@@ -95,10 +95,25 @@ router.post('/fetch-matches', [auth, admin], async (req, res) => {
     const { date } = req.body;
     console.log('Manual fetch matches triggered for date:', date);
     
-    const fetchDate = date ? new Date(date) : new Date();
+    if (!date) {
+      return res.status(400).json({ 
+        error: 'Date is required',
+        message: 'Please provide a valid date' 
+      });
+    }
+    
+    const fetchDate = new Date(date);
+    if (isNaN(fetchDate.getTime())) {
+      return res.status(400).json({ 
+        error: 'Invalid date format',
+        message: 'Please provide a valid date format' 
+      });
+    }
+
     const result = await processMatchesForDate(fetchDate);
     
     res.json({ 
+      success: true,
       message: 'Matches fetched successfully',
       stats: {
         total: result.total,
@@ -109,11 +124,13 @@ router.post('/fetch-matches', [auth, admin], async (req, res) => {
   } catch (error) {
     console.error('Error in manual fetch matches:', error);
     res.status(500).json({ 
+      success: false,
       error: 'Error fetching matches',
       message: error.message 
     });
   }
 });
+
 
 // Update finished matches route
 router.post('/update-finished', [auth, admin], async (req, res) => {

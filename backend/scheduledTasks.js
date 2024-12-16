@@ -237,7 +237,12 @@ async function handleMatchFetching() {
         const currentDate = new Date();
         const results = await processMatchesForDate(currentDate);
         
-        // Also fetch next day's matches during late hours
+        // Also fetch previous day's matches to catch any ongoing games
+        const yesterday = new Date(currentDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        await processMatchesForDate(yesterday);
+        
+        // Fetch next day's matches during late hours
         if (currentDate.getHours() >= 22) {
             const tomorrow = new Date(currentDate);
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -249,11 +254,7 @@ async function handleMatchFetching() {
             results
         });
     } catch (error) {
-        console.error('Error in match fetching:', {
-            timestamp: new Date().toISOString(),
-            error: error.message,
-            stack: error.stack
-        });
+        console.error('Error in match fetching:', error);
     }
 }
 

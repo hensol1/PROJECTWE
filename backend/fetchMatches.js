@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { MongoClient } = require('mongodb');
-const { format } = require('date-fns');
+const { format, subDays } = require('date-fns'); // Add subDays to the imports
 
 // API-Football Configuration
 const API_KEY = "5f3eb3a125615327d83d13e16a1a7f77";
@@ -8,7 +8,7 @@ const BASE_URL = "https://v3.football.api-sports.io";
 const HEADERS = { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" };
 
 // MongoDB Configuration
-const MONGO_URI = "mongodb+srv://weknowbetteradmin:dMMZV14rCKTYLJXG@cluster0.sbr1j.mongodb.net/";
+const MONGO_URI = "mongodb://localhost:27017/";
 const DB_NAME = "test";
 const COLLECTION_NAME = "matches";
 
@@ -16,22 +16,46 @@ const COLLECTION_NAME = "matches";
 const ALLOWED_LEAGUE_IDS = [253, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 17, 20, 29, 30, 34, 36, 39, 40, 61, 62, 71, 78, 79, 81, 88, 94, 103, 106, 113, 119, 128, 135, 140, 143, 144, 169, 172, 179, 188, 197, 203, 207, 210, 218, 235, 253, 271, 283, 286, 307, 318, 327, 333, 345, 373, 383, 848];
 
 async function fetchMatches(date) {
-    const url = `${BASE_URL}/fixtures`;
-    const params = { date: format(date, 'yyyy-MM-dd') };
+    // Fetch both current date and previous day to catch ongoing matches
+    const currentDateStr = format(date, 'yyyy-MM-dd');
+    const previousDateStr = format(subDays(date, 1), 'yyyy-MM-dd');
+
     try {
-        const response = await axios.get(url, { headers: HEADERS, params });
-        console.log(`API request for ${date}: ${response.config.url}`);
-        if (response.data.results > 0) {
-            console.log(`Found ${response.data.results} matches for ${date}`);
-            return response.data.response;
-        } else {
-            console.log(`No matches found for ${date}`);
+        // Fetch matches for both dates
+        const [currentDayResponse, previousDayResponse] = await Promise.all([
+            axios.get(`${BASE_URL}/fixtures`, { 
+                headers: HEADERS, 
+                params: { date: currentDateStr } 
+            }),
+            axios.get(`${BASE_URL}/fixtures`, { 
+                headers: HEADERS, 
+                params: { date: previousDateStr } 
+            })
+        ]);
+
+        let matches = [];
+
+        // Process current day matches
+        if (currentDayResponse.data.results > 0) {
+            matches = matches.concat(currentDayResponse.data.response);
         }
+
+        // Add previous day's IN_PLAY matches only
+        if (previousDayResponse.data.results > 0) {
+            const liveMatches = previousDayResponse.data.response.filter(match => 
+                ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.fixture.status.short)
+            );
+            matches = matches.concat(liveMatches);
+        }
+
+        console.log(`Found total ${matches.length} matches for ${currentDateStr} (including live from previous day)`);
+        return matches;
     } catch (error) {
-        console.error(`Error fetching data for ${date}: ${error.message}`);
+        console.error(`Error fetching data: ${error.message}`);
+        return null;
     }
-    return null;
 }
+
 
 function processMatchData(match) {
     return {
