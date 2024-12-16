@@ -9,11 +9,6 @@ const AIPredictionStat = require('./models/AIPredictionStat');
 const AccuracyStats = require('./models/AccuracyStats');
 const { recalculateAllStats } = require('./utils/statsProcessor');
 
-// Helper to check if time is within match hours (12:00 - 02:59)
-const isMatchHour = () => {
-    const hour = new Date().getHours();
-    return (hour >= 12 && hour <= 23) || (hour >= 0 && hour <= 2);
-};
 
 const cleanup = async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -226,12 +221,8 @@ async function updateUserStats() {
 }
 
 // Main match fetching function
+// Main match fetching function
 async function handleMatchFetching() {
-    if (!isMatchHour()) {
-        console.log('Outside match hours, skipping fetch');
-        return;
-    }
-
     console.log(`Starting scheduled match fetch at ${new Date().toISOString()}`);
     try {
         const currentDate = new Date();
@@ -258,14 +249,12 @@ async function handleMatchFetching() {
     }
 }
 
-// Schedule match fetching every 15 minutes
-const matchFetchingJob = cron.schedule('*/15 * * * *', async () => {
-    if (isMatchHour()) {
-        console.log('Scheduled task triggered: fetchMatches');
-        await handleMatchFetching().catch(error => {
-            console.error('Error in fetchMatches:', error);
-        });
-    }
+// Schedule match fetching every 1 minute, running 24/7
+const matchFetchingJob = cron.schedule('* * * * *', async () => {
+    console.log('Scheduled task triggered: fetchMatches');
+    await handleMatchFetching().catch(error => {
+        console.error('Error in fetchMatches:', error);
+    });
 }, {
     scheduled: true,
     timezone: "UTC"
