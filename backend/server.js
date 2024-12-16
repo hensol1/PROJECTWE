@@ -20,13 +20,17 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['https://projectwe-tau.vercel.app', 'http://localhost:3000'],
+  origin: [
+    'https://projectwe-tau.vercel.app', 
+    'http://localhost:3000',
+    'https://weknowbetter.app',
+    'https://www.weknowbetter.app'  // Include www subdomain just in case
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-timezone'],  // Added x-timezone
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-timezone'],
   credentials: true,
   optionsSuccessStatus: 200
 }));
-
 // Middleware
 app.use(express.json());
 
