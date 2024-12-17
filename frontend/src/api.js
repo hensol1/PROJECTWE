@@ -61,6 +61,12 @@ api.fetchMatches = (date) => {
   });
 };
 
+//Standing
+api.getStandings = (leagueId, season) => {
+  return api.get(`/api/standings/${leagueId}/${season}`);
+};
+
+
 // New method for fetching live matches
 api.fetchLiveMatches = () => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;

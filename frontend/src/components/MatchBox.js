@@ -1,5 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
+import StandingsButton from './StandingsButton';
+import { shouldShowStandings } from '../constants/leagueConfig';
 
 const MatchBox = ({ match, onVote, isLiveTab }) => {
   const getScoreDisplay = () => {
@@ -140,8 +142,21 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
   };
 
   return (
-<div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
-<div className="flex items-center justify-center gap-2 sm:gap-4">
+    <div className="relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
+      {shouldShowStandings(match.competition.id) && (
+        <div className="absolute right-2 top-2 z-10">
+          <StandingsButton 
+            leagueId={match.competition.id}
+            season={new Date(match.localDate).getFullYear()}
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
+            leagueName={match.competition.name}
+            leagueFlag={match.competition.country?.flag}
+          />
+        </div>
+      )}
+  
+      <div className="flex items-center justify-center gap-2 sm:gap-4">
         {/* Left Section - Home Team */}
         <div className="flex flex-col items-center w-20 sm:w-28">
           {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
@@ -168,50 +183,50 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
             {match.homeTeam.name}
           </span>
         </div>
-
-{/* Center Section - Score and Draw */}
-<div className="flex flex-col items-center w-16 sm:w-20">
-  {/* Status display (minute, HT, or FT) */}
-  {match.status === 'IN_PLAY' && (
-    <span className="text-[10px] sm:text-xs text-green-600 font-medium animate-pulse mb-0.5">
-      {match.minute}'
-    </span>
-  )}
-  {match.status === 'HALFTIME' && (
-    <span className="text-[10px] sm:text-xs text-indigo-600 font-medium mb-0.5">
-      HT
-    </span>
-  )}
-  {match.status === 'FINISHED' && (
-    <span className="text-[10px] sm:text-xs text-gray-500 mb-0.5">
-      FT
-    </span>
-  )}
-
-  {/* Score or Time */}
-  {match.status === 'SCHEDULED' || match.status === 'TIMED' ? (
-    <span className="text-xs sm:text-sm font-medium text-gray-600">
-      {format(new Date(match.localDate), 'HH:mm')}
-    </span>
-  ) : (
-    <div className="flex items-center justify-center space-x-1">
-      <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
-      <span className="text-xs sm:text-sm text-gray-400">-</span>
-      <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
-    </div>
-  )}
-
-  {/* Draw button */}
-  {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && (
-    <button
-      onClick={() => onVote(match.id, 'draw')}
-      className="mt-1 px-2 py-0.5 text-[10px] sm:text-xs bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-200"
-    >
-      Draw
-    </button>
-  )}
-</div>
-
+  
+        {/* Center Section - Score and Draw */}
+        <div className="flex flex-col items-center w-16 sm:w-20">
+          {/* Status display (minute, HT, or FT) */}
+          {match.status === 'IN_PLAY' && (
+            <span className="text-[10px] sm:text-xs text-green-600 font-medium animate-pulse mb-0.5">
+              {match.minute}'
+            </span>
+          )}
+          {match.status === 'HALFTIME' && (
+            <span className="text-[10px] sm:text-xs text-indigo-600 font-medium mb-0.5">
+              HT
+            </span>
+          )}
+          {match.status === 'FINISHED' && (
+            <span className="text-[10px] sm:text-xs text-gray-500 mb-0.5">
+              FT
+            </span>
+          )}
+  
+          {/* Score or Time */}
+          {match.status === 'SCHEDULED' || match.status === 'TIMED' ? (
+            <span className="text-xs sm:text-sm font-medium text-gray-600">
+              {format(new Date(match.localDate), 'HH:mm')}
+            </span>
+          ) : (
+            <div className="flex items-center justify-center space-x-1">
+              <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
+              <span className="text-xs sm:text-sm text-gray-400">-</span>
+              <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
+            </div>
+          )}
+  
+          {/* Draw button */}
+          {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && (
+            <button
+              onClick={() => onVote(match.id, 'draw')}
+              className="mt-1 px-2 py-0.5 text-[10px] sm:text-xs bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-200"
+            >
+              Draw
+            </button>
+          )}
+        </div>
+  
         {/* Right Section - Away Team */}
         <div className="flex flex-col items-center w-20 sm:w-28">
           {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
@@ -239,7 +254,7 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
           </span>
         </div>
       </div>
-
+  
       {/* Bottom Section - Predictions and Votes */}
       <div className="mt-1.5 sm:mt-2 space-y-1 flex flex-col items-center">
         {/* Predictions */}
@@ -253,7 +268,7 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
             </p>
           )}
         </div>
-
+  
         {/* Vote Split & User Vote */}
         {match.userVote && (
           <>
