@@ -76,8 +76,9 @@ const ShareStats = ({ stats, rankings, user }) => {
   const handleShare = async (platform) => {
     if (!imageUrl) {
       await generateImage();
+      return; // Return and let the user try again once image is generated
     }
-
+  
     // Function to convert base64 to blob
     const base64ToBlob = async (base64) => {
       const response = await fetch(base64);
@@ -85,70 +86,86 @@ const ShareStats = ({ stats, rankings, user }) => {
       return blob;
     };
 
-    switch (platform) {
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`, '_blank');
-        break;
-      case 'whatsapp':
-        try {
-          // Convert base64 to blob
-          const blob = await base64ToBlob(imageUrl);
-          
-          // Create a file from the blob
-          const file = new File([blob], 'stats.png', { type: 'image/png' });
-
-          // Check if Web Share API is supported
-          if (navigator.share) {
-            await navigator.share({
-              files: [file],
-              title: 'My Football Prediction Stats',
-              text: 'Check out my football prediction stats on We Know Better!'
-            });
-          } else {
-            // Fallback for desktop or unsupported browsers
-            const link = document.createElement('a');
-            link.href = imageUrl;
-            link.download = 'we-know-better-stats.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Open WhatsApp in new tab with text
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Check out my football prediction stats on We Know Better!')}`;
-            window.open(whatsappUrl, '_blank');
-          }
-        } catch (error) {
-          console.error('Error sharing to WhatsApp:', error);
-          // Fallback to just downloading the image
-          const link = document.createElement('a');
-          link.href = imageUrl;
-          link.download = 'we-know-better-stats.png';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-        break;
-      case 'instagram':
-        const link = document.createElement('a');
-        link.href = imageUrl;
-        link.download = 'we-know-better-stats.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        alert('Image downloaded! You can now share it on Instagram.');
-        break;
-      case 'download':
-        const downloadLink = document.createElement('a');
-        downloadLink.href = imageUrl;
-        downloadLink.download = 'we-know-better-stats.png';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        break;
-      default:
-        break;
-    }
+  // Helper function to download image
+  const downloadImage = () => {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = 'we-know-better-stats.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
+
+  switch (platform) {
+    case 'facebook':
+      try {
+        // Share image and link to webapp
+        const blob = await fetch(imageUrl).then(r => r.blob());
+        const file = new File([blob], 'stats.png', { type: 'image/png' });
+
+        if (navigator.share) {
+          await navigator.share({
+            files: [file],
+            url: window.location.href,
+            title: 'My Football Prediction Stats',
+            text: 'Check out my football prediction stats on We Know Better!'
+          });
+        } else {
+          // Fallback to Facebook dialog with link
+          window.open(
+            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
+            '_blank',
+            'width=600,height=400'
+          );
+          // Also download the image so they can post it
+          downloadImage();
+        }
+      } catch (error) {
+        console.error('Error sharing to Facebook:', error);
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
+          '_blank'
+        );
+      }
+      break;
+
+    case 'whatsapp':
+      try {
+        const blob = await fetch(imageUrl).then(r => r.blob());
+        const file = new File([blob], 'stats.png', { type: 'image/png' });
+
+        if (navigator.share) {
+          await navigator.share({
+            files: [file],
+            title: 'My Football Prediction Stats',
+            text: 'Check out my football prediction stats on We Know Better!'
+          });
+        } else {
+          // For desktop, download image and open WhatsApp
+          downloadImage();
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Check out my football prediction stats on We Know Better!')}`;
+          window.open(whatsappUrl, '_blank');
+        }
+      } catch (error) {
+        console.error('Error sharing to WhatsApp:', error);
+        downloadImage();
+      }
+      break;
+
+    case 'instagram':
+      // For Instagram, just download the image
+      downloadImage();
+      break;
+
+    case 'download':
+      // Simple download
+      downloadImage();
+      break;
+
+    default:
+      break;
+  }
+};
 
   const accuracy = stats?.finishedVotes > 0 
     ? ((stats.correctVotes / stats.finishedVotes) * 100).toFixed(1)
