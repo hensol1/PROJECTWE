@@ -22,6 +22,7 @@ import ContactUs from './components/ContactUs';
 import Footer from './components/Footer';
 import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
+import AdLayout from './components/AdLayout';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -117,24 +118,27 @@ function App() {
             </div>
           </header>
 
-          <main className="flex-grow container mx-auto p-4 relative">
-            <Routes>
-              <Route path="/" element={<Matches user={user} />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/" />} />
-              <Route path="/stats" element={user ? <UserStats user={user} /> : <Navigate to="/" />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              {user && user.isAdmin && (<Route path="/admin" element={<AdminPage />} />)}
-              <Route path="*" element={<Navigate to="/" />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/about" element={<AboutUs />} />
-              <Route path="/contact" element={<ContactUs />} />
-              <Route 
-                path="/admin/contacts" 
-                element={user?.isAdmin ? <ContactAdmin /> : <Navigate to="/" />} 
-              />
-            </Routes>
-          </main>
+          <main className="flex-grow container mx-auto relative">
+  <AdLayout>
+    <Routes>
+      <Route path="/" element={<Matches user={user} />} />
+      <Route path="/leaderboard" element={<Leaderboard />} />
+      <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/" />} />
+      <Route path="/stats" element={user ? <UserStats user={user} /> : <Navigate to="/" />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      {user && user.isAdmin && (<Route path="/admin" element={<AdminPage />} />)}
+      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/about" element={<AboutUs />} />
+      <Route path="/contact" element={<ContactUs />} />
+      <Route 
+        path="/admin/contacts" 
+        element={user?.isAdmin ? <ContactAdmin /> : <Navigate to="/" />} 
+      />
+    </Routes>
+  </AdLayout>
+</main>
+
           <CookieConsent />
           <Footer />
         </div>

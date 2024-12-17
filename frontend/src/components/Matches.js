@@ -46,7 +46,7 @@ const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
 const Matches = ({ user }) => {
   // State declarations
   const [matches, setMatches] = useState({});
-  const [allLiveMatches, setAllLiveMatches] = useState({});
+  const [allLiveMatches, setAllLiveMatches] = useState({}); 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [selectedContinent, setSelectedContinent] = useState('All');
@@ -63,13 +63,115 @@ const Matches = ({ user }) => {
   const [isAutoVoting, setIsAutoVoting] = useState(false);
   const [isVotingBoxVisible, setIsVotingBoxVisible] = useState(false);
 
+  // Add this helper function
+  const processMatchesResponse = (matchesData, userTimeZone, user) => {
+    const liveMatches = {};
+    const regularMatches = {};
+    const processedMatchIds = new Set(); // Keep track of processed matches
+  
+    matchesData.forEach(match => {
+      // Skip if we've already processed this match
+      if (processedMatchIds.has(match.id)) {
+        return;
+      }
+  
+      const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+      const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
+      const leagueKey = `${match.competition.name}_${match.competition.id}`;
+      
+      const guestVote = !user ? GuestVotesManager.getVote(match.id) : null;
+      
+      // Calculate total votes and fan prediction
+      const voteCounts = match.voteCounts || match.votes || { home: 0, away: 0, draw: 0 };
+      const totalVotes = voteCounts.home + voteCounts.draw + voteCounts.away;
+      let fanPrediction = null;
+      
+      if (totalVotes > 0) {
+        const maxVotes = Math.max(voteCounts.home, voteCounts.draw, voteCounts.away);
+        if (voteCounts.home === maxVotes) {
+          fanPrediction = 'HOME_TEAM';
+        } else if (voteCounts.away === maxVotes) {
+          fanPrediction = 'AWAY_TEAM';
+        } else {
+          fanPrediction = 'DRAW';
+        }
+      }
+      
+      const updatedMatch = {
+        ...match,
+        localDate: matchLocalDate,
+        userVote: guestVote || match.userVote,
+        voteCounts: guestVote ? {
+          ...voteCounts,
+          [guestVote]: (voteCounts[guestVote] || 0)
+        } : voteCounts,
+        fanPrediction,
+        score: match.score || {
+          fullTime: { home: 0, away: 0 },
+          halfTime: { home: 0, away: 0 }
+        }
+      };
+  
+      // Add to appropriate collection and mark as processed
+      if (['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status)) {
+        if (!liveMatches[leagueKey]) {
+          liveMatches[leagueKey] = [];
+        }
+        liveMatches[leagueKey].push(updatedMatch);
+      } else {
+        if (!regularMatches[dateKey]) {
+          regularMatches[dateKey] = {};
+        }
+        if (!regularMatches[dateKey][leagueKey]) {
+          regularMatches[dateKey][leagueKey] = [];
+        }
+        regularMatches[dateKey][leagueKey].push(updatedMatch);
+      }
+      
+      processedMatchIds.add(match.id);
+    });
+  
+    // Sort matches within each league by date
+    Object.values(liveMatches).forEach(matches => {
+      matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+    });
+  
+    Object.values(regularMatches).forEach(dateMatches => {
+      Object.values(dateMatches).forEach(matches => {
+        matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+      });
+    });
+  
+    return { liveMatches, regularMatches };
+  };
+  
   // Derived state
   const currentDateKey = format(currentDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
   const allMatchesForCurrentDate = matches[currentDateKey] || {};
-  const hasAnyLiveMatches = Object.keys(allLiveMatches).length > 0;
 
-  // Utility functions
+  const filterMatchesByStatus = (matches, statuses) => {
+    return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
+      const filteredMatches = leagueMatches.filter(match => {
+        const statusMatches = statuses.includes(match.status);
+        
+        if (statusMatches && match.status === 'TIMED') {
+          const matchDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
+          const startOfToday = startOfDay(currentDate);
+          const endOfToday = endOfDay(currentDate);
+          return matchDate >= startOfToday && matchDate <= endOfToday;
+        }
+        
+        return statusMatches;
+      });
+
+      if (filteredMatches.length > 0) {
+        acc[leagueKey] = filteredMatches;
+      }
+      return acc;
+    }, {});
+  };
+
   const getLeagueContinent = (leagueId) => {
     for (const [continent, leagues] of Object.entries(continentalLeagues)) {
       if (leagues.includes(leagueId)) {
@@ -78,6 +180,25 @@ const Matches = ({ user }) => {
     }
     return 'Other';
   };
+
+
+    // Filter matches based on continent
+    const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
+      const [, leagueId] = leagueKey.split('_');
+      const continent = getLeagueContinent(parseInt(leagueId));
+      if (selectedContinent === 'All' || continent === selectedContinent) {
+        acc[leagueKey] = leagueMatches;
+      }
+      return acc;
+    }, {});
+  
+    const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
+    const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED']);
+    const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED']);
+  
+  const hasAnyLiveMatches = Object.keys(liveMatches).length > 0 || Object.keys(allLiveMatches).length > 0;
+
+  // Utility functions
 
   const toggleLeague = useCallback((leagueKey) => {
     setCollapsedLeagues(prev => ({
@@ -176,28 +297,6 @@ const Matches = ({ user }) => {
     }
   }, []);
 
-  const filterMatchesByStatus = (matches, statuses) => {
-    return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
-      const filteredMatches = leagueMatches.filter(match => {
-        const statusMatches = statuses.includes(match.status);
-        
-        if (statusMatches && match.status === 'TIMED') {
-          const matchDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
-          const startOfToday = startOfDay(currentDate);
-          const endOfToday = endOfDay(currentDate);
-          return matchDate >= startOfToday && matchDate <= endOfToday;
-        }
-        
-        return statusMatches;
-      });
-
-      if (filteredMatches.length > 0) {
-        acc[leagueKey] = filteredMatches;
-      }
-      return acc;
-    }, {});
-  };
-
   const findDateWithLiveMatches = useCallback(() => {
     return Object.keys(allLiveMatches).length > 0;
   }, [allLiveMatches]);
@@ -238,66 +337,83 @@ const Matches = ({ user }) => {
     
     const newNotifications = [];
     
-    const processMatches = (matchesObj) => {
-      // First ensure we're dealing with an object that has league matches
-      if (!matchesObj || typeof matchesObj !== 'object') return;
-
-      // For each league in the matches object
-      Object.entries(matchesObj).forEach(([_, leagueMatches]) => {
-        // Ensure leagueMatches is an array before using forEach
-        if (Array.isArray(leagueMatches)) {
-          leagueMatches.forEach(newMatch => {
-            let prevMatch;
-            
-            // Look for the previous match state in both regular matches and allLiveMatches
-            Object.values(prevMatches).forEach(prevLeagueMatches => {
-              if (Array.isArray(prevLeagueMatches)) {
-                const found = prevLeagueMatches.find(m => m.id === newMatch.id);
-                if (found) prevMatch = found;
-              }
+    // Function to check score changes
+    const compareMatchScores = (newMatch, prevMatch) => {
+      if (!newMatch.score?.fullTime || !prevMatch.score?.fullTime) return;
+      
+      const newScore = newMatch.score.fullTime;
+      const prevScore = prevMatch.score.fullTime;
+      const scoreKey = `${newMatch.id}-${newScore.home}-${newScore.away}`;
+      
+      // Only process if scores are different
+      if (newScore.home !== prevScore.home || newScore.away !== prevScore.away) {
+        if (!processedScoreUpdates.has(scoreKey)) {
+          processedScoreUpdates.add(scoreKey);
+          
+          // Check for home team goal
+          if (newScore.home > prevScore.home) {
+            newNotifications.push({
+              id: `${scoreKey}-home`,
+              match: newMatch,
+              scoringTeam: 'home',
+              prevScore,
+              newScore
             });
-            
-            if (prevMatch) {
-              const newScore = newMatch.score.fullTime;
-              const prevScore = prevMatch.score.fullTime;
-              const scoreKey = `${newMatch.id}-${newScore.home}-${newScore.away}`;
-              
-              if (processedScoreUpdates.has(scoreKey)) return;
-              if (newScore.home === 0 && newScore.away === 0) return;
-              
-              if (newScore.home !== prevScore.home || newScore.away !== prevScore.away) {
-                processedScoreUpdates.add(scoreKey);
-                
-                if (newScore.home > prevScore.home) {
-                  newNotifications.push({
-                    id: scoreKey + '-home',
-                    match: newMatch,
-                    scoringTeam: 'home'
-                  });
-                }
-                if (newScore.away > prevScore.away) {
-                  newNotifications.push({
-                    id: scoreKey + '-away',
-                    match: newMatch,
-                    scoringTeam: 'away'
-                  });
-                }
-              }
+          }
+          
+          // Check for away team goal
+          if (newScore.away > prevScore.away) {
+            newNotifications.push({
+              id: `${scoreKey}-away`,
+              match: newMatch,
+              scoringTeam: 'away',
+              prevScore,
+              newScore
+            });
+          }
+        }
+      }
+    };
+  
+    // Check live matches
+    Object.values(newMatches.live || {}).forEach(leagueMatches => {
+      leagueMatches.forEach(newMatch => {
+        let prevMatch;
+        
+        // Look for the match in previous live matches
+        if (prevMatches.live) {
+          Object.values(prevMatches.live).forEach(prevLeagueMatches => {
+            const found = prevLeagueMatches.find(m => m.id === newMatch.id);
+            if (found) prevMatch = found;
+          });
+        }
+        
+        // If not found in live, check regular matches
+        if (!prevMatch) {
+          Object.entries(prevMatches).forEach(([key, value]) => {
+            if (key !== 'live' && typeof value === 'object') {
+              Object.values(value).forEach(leagueMatches => {
+                const found = leagueMatches.find(m => m.id === newMatch.id);
+                if (found) prevMatch = found;
+              });
             }
           });
         }
+        
+        if (prevMatch) {
+          compareMatchScores(newMatch, prevMatch);
+        }
       });
-    };
-
-    // Process both regular matches and live matches
-    processMatches(newMatches);
-    processMatches(allLiveMatches);
-
+    });
+  
+    // Update notifications if any were found
     if (newNotifications.length > 0) {
+      console.log('New goal notifications:', newNotifications);
       setGoalNotifications(prev => [...prev, ...newNotifications]);
     }
-  }, [processedScoreUpdates, allLiveMatches]);
-
+  }, [processedScoreUpdates]);
+      
+  
   const fetchLiveMatches = useCallback(async () => {
     try {
       const response = await api.fetchLiveMatches();
@@ -459,25 +575,59 @@ const Matches = ({ user }) => {
     }
 }, [userTimeZone, checkForGoals, preloadImages, user, allLiveMatches]); // Add allLiveMatches to dependencies
   
-  const softUpdateMatches = useCallback(async () => {
-    if (!userTimeZone) return;
-    
-    setIsRefreshing(true);
-    try {
-      // Fetch live matches first
-      await fetchLiveMatches();
-      
-      // Then fetch current date matches if not in live tab
-      if (activeTab !== 'live') {
-        await fetchMatches(currentDate);
-      }
-    } catch (error) {
-      console.error('Error in soft update:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [userTimeZone, fetchLiveMatches, fetchMatches, currentDate, activeTab]);
+const softUpdateMatches = useCallback(async () => {
+  if (!userTimeZone) return;
   
+  setIsRefreshing(true);
+  try {
+    // Store previous state for goal checking
+    const prevState = {
+      ...matches,
+      live: allLiveMatches
+    };
+
+    // Fetch live matches first
+    const liveResponse = await api.fetchLiveMatches();
+    
+    // Then fetch current date matches, but only if we're not in live tab
+    const formattedDate = format(zonedTimeToUtc(currentDate, userTimeZone), 'yyyy-MM-dd');
+    const matchesResponse = activeTab !== 'live' 
+      ? await api.fetchMatches(formattedDate)
+      : { data: { matches: [] } };
+    
+    // Combine and process all matches, removing duplicates
+    const { liveMatches, regularMatches } = processMatchesResponse(
+      [
+        ...(liveResponse.data.matches || []),
+        // Only include regular matches if not in live tab
+        ...(activeTab !== 'live' ? (matchesResponse.data.matches || []) : [])
+      ],
+      userTimeZone,
+      user
+    );
+
+    // Check for goals before updating states
+    checkForGoals({
+      ...regularMatches,
+      live: liveMatches
+    }, prevState);
+
+    // Update states
+    setAllLiveMatches(liveMatches);
+    if (activeTab !== 'live') {
+      setMatches(prevMatches => ({
+        ...prevMatches,
+        [formattedDate]: regularMatches[formattedDate] || {}
+      }));
+    }
+
+  } catch (error) {
+    console.error('Error in soft update:', error);
+  } finally {
+    setIsRefreshing(false);
+  }
+}, [userTimeZone, currentDate, matches, allLiveMatches, user, checkForGoals, activeTab]);
+
   // Event handlers
   const handleTabChange = useCallback((newTab) => {
     setIsManualTabSelect(true);
@@ -611,18 +761,6 @@ const Matches = ({ user }) => {
     }
   };
 
-  // Filter matches based on continent
-  const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
-    const [, leagueId] = leagueKey.split('_');
-    const continent = getLeagueContinent(parseInt(leagueId));
-    if (selectedContinent === 'All' || continent === selectedContinent) {
-      acc[leagueKey] = leagueMatches;
-    }
-    return acc;
-  }, {});
-
-  const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED']);
-  const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED']);
 
   // Render functions
   const renderMatches = (matches) => {

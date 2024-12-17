@@ -59,6 +59,13 @@
   }
 }
 
+@layer components {
+  .adsbygoogle {
+    @apply w-full h-full bg-transparent;
+  }
+}
+
+
 /* Background pattern */
 .bg-grid-pattern {
   background-image: linear-gradient(to right, rgb(243 244 246 / 0.1) 1px, transparent 1px),

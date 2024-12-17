@@ -5,6 +5,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        'xl': '1280px',
+        '2xl': '1536px',
+      },  
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
