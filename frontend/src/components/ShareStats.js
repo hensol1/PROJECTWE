@@ -47,34 +47,24 @@ const ShareStats = ({ stats, rankings, user }) => {
     const element = document.getElementById('stats-card');
     try {
       if (element) {
-        // Create a wrapper div with white background
-        const wrapper = document.createElement('div');
-        wrapper.style.backgroundColor = '#FFFFFF';
-        wrapper.style.padding = '0';
-        wrapper.style.margin = '0';
-        
-        // Clone the element
-        const clone = element.cloneNode(true);
-        wrapper.appendChild(clone);
-        
-        const canvas = await html2canvas(wrapper, {
+        const canvas = await html2canvas(element, {
           scale: 2,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#FFFFFF', // Set white background
           logging: false,
           allowTaint: false,
           useCORS: true,
-          removeContainer: false,
+          removeContainer: false, // Ensure container is included
           onclone: (clonedDoc) => {
-            const clonedElement = clonedDoc.querySelector('#stats-card');
+            const clonedElement = clonedDoc.getElementById('stats-card');
             if (clonedElement) {
+              // Ensure the cloned element has a white background
               clonedElement.style.backgroundColor = '#FFFFFF';
               clonedElement.style.borderRadius = '8px';
               clonedElement.style.padding = '24px';
             }
           }
         });
-        
-        const url = canvas.toDataURL('image/png', 1.0);
+        const url = canvas.toDataURL('image/png');
         setImageUrl(url);
       }
     } catch (error) {
@@ -88,38 +78,27 @@ const ShareStats = ({ stats, rankings, user }) => {
       await generateImage();
     }
 
-    // Function to convert base64 to Blob with proper type
+    // Function to convert base64 to blob
     const base64ToBlob = async (base64) => {
-      // Remove data URL prefix
-      const base64Data = base64.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteArrays = [];
-
-      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-        const slice = byteCharacters.slice(offset, offset + 512);
-        const byteNumbers = new Array(slice.length);
-        
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
-        }
-        
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
-      }
-
-      return new Blob(byteArrays, { type: 'image/png' });
+      const response = await fetch(base64);
+      const blob = await response.blob();
+      return blob;
     };
 
     switch (platform) {
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`, '_blank');
+        break;
       case 'whatsapp':
         try {
+          // Convert base64 to blob
           const blob = await base64ToBlob(imageUrl);
-          const file = new File([blob], 'stats.png', { 
-            type: 'image/png',
-            lastModified: new Date().getTime()
-          });
+          
+          // Create a file from the blob
+          const file = new File([blob], 'stats.png', { type: 'image/png' });
 
-          if (navigator.share && navigator.canShare({ files: [file] })) {
+          // Check if Web Share API is supported
+          if (navigator.share) {
             await navigator.share({
               files: [file],
               title: 'My Football Prediction Stats',
@@ -127,30 +106,20 @@ const ShareStats = ({ stats, rankings, user }) => {
             });
           } else {
             // Fallback for desktop or unsupported browsers
-            const filesArray = [file];
-            const shareData = {
-              files: filesArray,
-            };
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = 'we-know-better-stats.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             
-            try {
-              await navigator.share(shareData);
-            } catch (err) {
-              // If Web Share API fails, fallback to traditional method
-              const link = document.createElement('a');
-              link.href = imageUrl;
-              link.download = 'we-know-better-stats.png';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              
-              // Open WhatsApp in new tab
-              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Check out my football prediction stats on We Know Better!')}`;
-              window.open(whatsappUrl, '_blank');
-            }
+            // Open WhatsApp in new tab with text
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent('Check out my football prediction stats on We Know Better!')}`;
+            window.open(whatsappUrl, '_blank');
           }
         } catch (error) {
           console.error('Error sharing to WhatsApp:', error);
-          // Fallback to downloading
+          // Fallback to just downloading the image
           const link = document.createElement('a');
           link.href = imageUrl;
           link.download = 'we-know-better-stats.png';
@@ -159,7 +128,7 @@ const ShareStats = ({ stats, rankings, user }) => {
           document.body.removeChild(link);
         }
         break;
-              case 'instagram':
+      case 'instagram':
         const link = document.createElement('a');
         link.href = imageUrl;
         link.download = 'we-know-better-stats.png';
