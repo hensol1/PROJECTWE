@@ -49,10 +49,20 @@ const ShareStats = ({ stats, rankings, user }) => {
       if (element) {
         const canvas = await html2canvas(element, {
           scale: 2,
-          backgroundColor: null,
+          backgroundColor: '#FFFFFF', // Set white background
           logging: false,
           allowTaint: false,
-          useCORS: true
+          useCORS: true,
+          removeContainer: false, // Ensure container is included
+          onclone: (clonedDoc) => {
+            const clonedElement = clonedDoc.getElementById('stats-card');
+            if (clonedElement) {
+              // Ensure the cloned element has a white background
+              clonedElement.style.backgroundColor = '#FFFFFF';
+              clonedElement.style.borderRadius = '8px';
+              clonedElement.style.padding = '24px';
+            }
+          }
         });
         const url = canvas.toDataURL('image/png');
         setImageUrl(url);
@@ -172,8 +182,8 @@ const ShareStats = ({ stats, rankings, user }) => {
             </Button>
           </div>
           
-          <div id="stats-card" className="p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div id="stats-card" className="bg-white p-6 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
               <div className="w-12">
                 <HeaderLogo />
               </div>
