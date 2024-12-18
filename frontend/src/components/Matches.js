@@ -302,23 +302,29 @@ const Matches = ({ user }) => {
   }, [allLiveMatches]);
 
   const determineActiveTab = useCallback(() => {
-    // First check for live matches in allLiveMatches
-    if (Object.keys(allLiveMatches).length > 0) return 'live';
+    // First check for live matches
+    const hasLiveMatches = Object.values(allLiveMatches).some(leagueMatches =>
+      leagueMatches.some(match => 
+        ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status)
+      )
+    );
+    if (hasLiveMatches) return 'live';
 
-    // Then check current date matches for scheduled and finished
-    const currentDateMatches = matches[currentDateKey];
-    if (!currentDateMatches) return 'scheduled';
-
-    const hasScheduledMatches = Object.values(currentDateMatches).some(leagueMatches => 
-      leagueMatches.some(match => ['TIMED', 'SCHEDULED'].includes(match.status))
+    // Then check for scheduled matches
+    const hasScheduledMatches = Object.values(matches[currentDateKey] || {}).some(leagueMatches =>
+      leagueMatches.some(match => 
+        ['TIMED', 'SCHEDULED'].includes(match.status)
+      )
     );
     if (hasScheduledMatches) return 'scheduled';
 
-    const hasFinishedMatches = Object.values(currentDateMatches).some(leagueMatches => 
+    // Finally check for finished matches
+    const hasFinishedMatches = Object.values(matches[currentDateKey] || {}).some(leagueMatches =>
       leagueMatches.some(match => match.status === 'FINISHED')
     );
     if (hasFinishedMatches) return 'finished';
 
+    // Default to scheduled if no matches are found
     return 'scheduled';
   }, [allLiveMatches, matches, currentDateKey]);
 
@@ -579,7 +585,7 @@ const softUpdateMatches = useCallback(async () => {
   if (!userTimeZone) return;
   
   setIsRefreshing(true);
-  try {
+try {
     // Store previous state for goal checking
     const prevState = {
       ...matches,
@@ -621,12 +627,19 @@ const softUpdateMatches = useCallback(async () => {
       }));
     }
 
-  } catch (error) {
-    console.error('Error in soft update:', error);
-  } finally {
-    setIsRefreshing(false);
-  }
-}, [userTimeZone, currentDate, matches, allLiveMatches, user, checkForGoals, activeTab]);
+      // After updating the matches, check if we need to change the active tab
+      if (!isManualTabSelect) {
+        const appropriateTab = determineActiveTab();
+        if (activeTab !== appropriateTab) {
+          setActiveTab(appropriateTab);
+        }
+      }
+    } catch (error) {
+      console.error('Error in soft update:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [userTimeZone, currentDate, matches, allLiveMatches, user, checkForGoals, activeTab, isManualTabSelect, determineActiveTab]);
 
   // Event handlers
   const handleTabChange = useCallback((newTab) => {
@@ -643,17 +656,14 @@ const softUpdateMatches = useCallback(async () => {
     setIsManualTabSelect(true);
     const newDate = days > 0 ? addDays(currentDate, days) : subDays(currentDate, Math.abs(days));
     
-    fetchMatches(newDate);
+    fetchMatches(newDate).then(() => {
+      // Determine the appropriate tab after new data is loaded
+      setActiveTab(determineActiveTab());
+    });
+    
     setCurrentDate(newDate);
-    // Only change to scheduled tab if we're not in live tab
-    if (activeTab === 'live' && hasAnyLiveMatches) {
-      // Stay in live tab if there are live matches
-      setActiveTab('live');
-    } else {
-      setActiveTab('scheduled');
-    }
     setSelectedContinent('All');
-  }, [currentDate, fetchMatches, activeTab, hasAnyLiveMatches]);
+  }, [currentDate, fetchMatches, determineActiveTab]);
 
   const handleNotificationDismiss = useCallback((notification) => {
     if (notification === 'all') {
@@ -867,16 +877,17 @@ const softUpdateMatches = useCallback(async () => {
 
   useEffect(() => {
     if (userTimeZone && isInitialLoad) {
-      // Add fetchLiveMatches() to initial load
       Promise.all([
         fetchLiveMatches(),
         fetchMatches(currentDate),
         fetchAccuracyData()
       ]).then(() => {
+        // Set the initial active tab after data is loaded
+        setActiveTab(determineActiveTab());
         setIsInitialLoad(false);
       });
     }
-  }, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData, isInitialLoad, fetchLiveMatches]);
+  }, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData, isInitialLoad, fetchLiveMatches, determineActiveTab]);
   
   useEffect(() => {
     const pollInterval = setInterval(() => {
