@@ -62,9 +62,18 @@ const AuthLoadingOverlay = () => (
 );
 
 
-const AuthComponent = ({ setUser, user }) => {
+const AuthComponent = ({ 
+  setUser, 
+  user, 
+  externalModalOpen, 
+  setExternalModalOpen 
+}) => {
+  const [internalModalOpen, setInternalModalOpen] = useState(false);
+  
+  // Use either external or internal modal state
+  const isModalOpen = externalModalOpen ?? internalModalOpen;
+  const setIsModalOpen = setExternalModalOpen ?? setInternalModalOpen;
   const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -443,7 +452,7 @@ const AuthComponent = ({ setUser, user }) => {
   );
   
   return (
-    <div className="flex items-center gap-2">  {/* Added container with flex and gap */}
+    <div className="flex items-center gap-2">
       {user && (
         <Link
           to="/profile"

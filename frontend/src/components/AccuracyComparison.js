@@ -113,14 +113,27 @@ const ScoreDisplay = ({
   username = null, 
   onIconClick,
   statsType,
+  onSignInClick, // Add this prop
   children 
 }) => {
   const iconRef = useRef(null);
 
   const handleClick = () => {
-    if (iconRef.current) {
-      const rect = iconRef.current.getBoundingClientRect();
-      onIconClick(rect);
+    if (!isUser) {
+      // If it's not the user score, handle stats click
+      if (iconRef.current) {
+        const rect = iconRef.current.getBoundingClientRect();
+        onIconClick(rect);
+      }
+    } else if (!username) {
+      // If it's the user score but no user is logged in, trigger sign in
+      onSignInClick?.();
+    } else {
+      // If user is logged in, show stats
+      if (iconRef.current) {
+        const rect = iconRef.current.getBoundingClientRect();
+        onIconClick(rect);
+      }
     }
   };
 
@@ -169,7 +182,7 @@ const ScoreDisplay = ({
   );
 };
 
-export default function ModernAccuracyComparison({ user }) {
+export default function ModernAccuracyComparison({ user, onSignInClick }) { // Add onSignInClick prop
   const [selectedStats, setSelectedStats] = useState(null);
   const [tooltipAnchor, setTooltipAnchor] = useState(null);
   const [accuracyData, setAccuracyData] = useState({
@@ -346,6 +359,7 @@ useEffect(() => {
                 {...score}
                 position={position}
                 onIconClick={(rect) => handleIconClick(score.statsType, rect)}
+                onSignInClick={onSignInClick} // Add this prop
                 statsType={score.statsType}
               >
                 {selectedStats === score.statsType && (

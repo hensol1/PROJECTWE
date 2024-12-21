@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { PiRankingFill } from "react-icons/pi";
 import api from '../api';
 
 const StandingsModal = ({ 
@@ -176,28 +177,10 @@ const StandingsButton = ({ leagueId, season, homeTeam, awayTeam, leagueName, lea
     <>
       <button
         onClick={handleClick}
-        className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors duration-200"
         title="View League Standings"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-gray-600"
-        >
-          <line x1="8" y1="6" x2="21" y2="6" />
-          <line x1="8" y1="12" x2="21" y2="12" />
-          <line x1="8" y1="18" x2="21" y2="18" />
-          <line x1="3" y1="6" x2="3.01" y2="6" />
-          <line x1="3" y1="12" x2="3.01" y2="12" />
-          <line x1="3" y1="18" x2="3.01" y2="18" />
-        </svg>
+        <PiRankingFill className="w-5 h-5 text-indigo-600" />
       </button>
 
       <StandingsModal

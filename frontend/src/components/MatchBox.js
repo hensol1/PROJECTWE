@@ -58,18 +58,19 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
     }
   };
 
-    const TeamColumn = ({ team, side, onVoteClick, prediction }) => (
+  const TeamColumn = ({ team, side, onVoteClick, prediction }) => (
     <div className="flex flex-col items-center w-20 sm:w-28">
       <div className="flex flex-col items-center">
         {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
           <button
             onClick={() => onVoteClick(match.id, side)}
-            className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
           >
+            <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
             <img 
               src={team.crest} 
               alt={team.name} 
-              className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+              className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
             />
           </button>
         ) : (
@@ -92,7 +93,7 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
       )}
     </div>
   );
-
+  
 
   const isPredictionCorrect = (prediction) => {
     if (match.status !== 'FINISHED') return false;
@@ -107,12 +108,13 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
       {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
         <button
           onClick={() => onVoteClick(match.id, side)}
-          className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
         >
+          <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
           <img 
             src={team.crest} 
             alt={team.name} 
-            className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+            className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
           />
         </button>
       ) : (
@@ -129,7 +131,7 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
       </span>
     </div>
   );
-
+  
   const getVotePercentages = () => {
     const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
     if (totalVotes === 0) return { home: 0, draw: 0, away: 0 };
@@ -157,32 +159,33 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
       )}
   
       <div className="flex items-center justify-center gap-2 sm:gap-4">
-        {/* Left Section - Home Team */}
-        <div className="flex flex-col items-center w-20 sm:w-28">
-          {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-            <button
-              onClick={() => onVote(match.id, 'home')}
-              className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <img 
-                src={match.homeTeam.crest} 
-                alt={match.homeTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-              />
-            </button>
-          ) : (
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
-              <img 
-                src={match.homeTeam.crest} 
-                alt={match.homeTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-              />
-            </div>
-          )}
-          <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
-            {match.homeTeam.name}
-          </span>
-        </div>
+{/* Left Section - Home Team */}
+<div className="flex flex-col items-center w-20 sm:w-28">
+  {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
+    <button
+      onClick={() => onVote(match.id, 'home')}
+      className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
+    >
+      <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
+      <img 
+        src={match.homeTeam.crest} 
+        alt={match.homeTeam.name} 
+        className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
+      />
+    </button>
+  ) : (
+    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
+      <img 
+        src={match.homeTeam.crest} 
+        alt={match.homeTeam.name} 
+        className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+      />
+    </div>
+  )}
+  <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
+    {match.homeTeam.name}
+  </span>
+</div>
   
         {/* Center Section - Score and Draw */}
         <div className="flex flex-col items-center w-16 sm:w-20">
@@ -229,30 +232,31 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
   
         {/* Right Section - Away Team */}
         <div className="flex flex-col items-center w-20 sm:w-28">
-          {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-            <button
-              onClick={() => onVote(match.id, 'away')}
-              className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <img 
-                src={match.awayTeam.crest} 
-                alt={match.awayTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-              />
-            </button>
-          ) : (
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
-              <img 
-                src={match.awayTeam.crest} 
-                alt={match.awayTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-              />
-            </div>
-          )}
-          <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
-            {match.awayTeam.name}
-          </span>
-        </div>
+  {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
+    <button
+      onClick={() => onVote(match.id, 'away')}
+      className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
+    >
+      <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
+      <img 
+        src={match.awayTeam.crest} 
+        alt={match.awayTeam.name} 
+        className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
+      />
+    </button>
+  ) : (
+    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
+      <img 
+        src={match.awayTeam.crest} 
+        alt={match.awayTeam.name} 
+        className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+      />
+    </div>
+  )}
+  <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
+    {match.awayTeam.name}
+  </span>
+</div>
       </div>
   
       {/* Bottom Section - Predictions and Votes */}
@@ -264,7 +268,7 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
           </p>
           {match.aiPrediction && (
             <p className={`rounded px-1 max-w-[45%] ${match.status === 'FINISHED' ? (isPredictionCorrect(match.aiPrediction) ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-              AI: {getTeamPrediction(match.aiPrediction)}
+              Our Experts: {getTeamPrediction(match.aiPrediction)}
             </p>
           )}
         </div>

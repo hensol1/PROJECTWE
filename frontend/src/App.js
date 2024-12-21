@@ -26,6 +26,7 @@ import AdLayout from './components/AdLayout';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false); 
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
 
@@ -100,51 +101,63 @@ function App() {
                     </div>
                   </Link>
                 </div>
-
+  
                 {/* Icons section */}
                 <div className="flex justify-center">
                   <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
                     <IconMenu user={user} />
                   </div>
                 </div>
-
+  
                 {/* Auth section */}
                 <div className="flex justify-end">
                   <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
-                    <AuthComponent setUser={setUser} user={user} />
+                    <AuthComponent 
+                      setUser={setUser} 
+                      user={user} 
+                      externalModalOpen={authModalOpen}
+                      setExternalModalOpen={setAuthModalOpen}
+                    />
                   </div>
                 </div>
               </div>
             </div>
           </header>
-
+  
           <main className="flex-grow container mx-auto relative">
-  <AdLayout>
-    <Routes>
-      <Route path="/" element={<Matches user={user} />} />
-      <Route path="/leaderboard" element={<Leaderboard />} />
-      <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/" />} />
-      <Route path="/stats" element={user ? <UserStats user={user} /> : <Navigate to="/" />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      {user && user.isAdmin && (<Route path="/admin" element={<AdminPage />} />)}
-      <Route path="*" element={<Navigate to="/" />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/about" element={<AboutUs />} />
-      <Route path="/contact" element={<ContactUs />} />
-      <Route 
-        path="/admin/contacts" 
-        element={user?.isAdmin ? <ContactAdmin /> : <Navigate to="/" />} 
-      />
-    </Routes>
-  </AdLayout>
-</main>
-
+            <AdLayout>
+              <Routes>
+                <Route 
+                  path="/" 
+                  element={
+                    <Matches 
+                      user={user} 
+                      onOpenAuthModal={() => setAuthModalOpen(true)}
+                    />
+                  } 
+                />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/profile" element={user ? <UserProfile user={user} /> : <Navigate to="/" />} />
+                <Route path="/stats" element={user ? <UserStats user={user} /> : <Navigate to="/" />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                {user && user.isAdmin && (<Route path="/admin" element={<AdminPage />} />)}
+                <Route path="*" element={<Navigate to="/" />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/about" element={<AboutUs />} />
+                <Route path="/contact" element={<ContactUs />} />
+                <Route 
+                  path="/admin/contacts" 
+                  element={user?.isAdmin ? <ContactAdmin /> : <Navigate to="/" />} 
+                />
+              </Routes>
+            </AdLayout>
+          </main>
+  
           <CookieConsent />
           <Footer />
         </div>
       </Router>
     </GoogleOAuthProvider>
-  );
-}
+  );}
 
 export default App;

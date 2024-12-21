@@ -43,7 +43,7 @@ const continentalLeagues = {
 const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
 
 // Component Definition
-const Matches = ({ user }) => {
+const Matches = ({ user, onOpenAuthModal }) => {
   // State declarations
   const [matches, setMatches] = useState({});
   const [allLiveMatches, setAllLiveMatches] = useState({}); 
@@ -907,7 +907,10 @@ try {
         onDismiss={handleNotificationDismiss}
       />
       
-      <ModernAccuracyComparison user={user} />
+      <ModernAccuracyComparison 
+        user={user} 
+        onSignInClick={onOpenAuthModal}  // Add this prop
+      />
       
       {/* Only show NextMatchCountdown if there are no live matches */}
       {!hasAnyLiveMatches && (
