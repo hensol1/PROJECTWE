@@ -37,7 +37,7 @@ const continentalLeagues = {
   International: [4, 5, 6, 10, 34],
   Americas: [11, 13, 71, 128, 253],
   Asia: [17, 30, 169, 188, 307],
-  Africa: [12, 20, 29, 36, 233]
+  Africa: [12, 20, 29, 36, 233, 567]
 };
 
 const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
