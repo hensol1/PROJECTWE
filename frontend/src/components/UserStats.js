@@ -302,65 +302,67 @@ const UserStats = () => {
   );
 
   const renderVoteHistory = () => (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={toggleSortOrder}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm"
-          >
-            Sort ↓
-          </button>
-          
-          <select
-            value={selectedCompetition}
-            onChange={(e) => {
-              setSelectedCompetition(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="border rounded px-3 py-2 text-sm"
-          >
-            <option key="all" value="all">All Leagues</option>
-            {getUniqueLeagues().map(league => (
-              <option key={league.id} value={league.id}>
-                {league.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="text-sm">
+    <div className="px-4">
+      <div className="flex flex-col gap-2 mb-4">
+        <button 
+          onClick={toggleSortOrder}
+          className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded text-sm w-full"
+        >
+          Sort ↓
+        </button>
+        
+        <select
+          value={selectedCompetition}
+          onChange={(e) => {
+            setSelectedCompetition(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="border rounded py-2 text-sm w-full bg-white"
+        >
+          <option key="all" value="all">All Leagues</option>
+          {getUniqueLeagues().map(league => (
+            <option key={league.id} value={league.id}>
+              {league.name}
+            </option>
+          ))}
+        </select>
+  
+        <div className="text-sm text-center text-gray-600">
           Page {currentPage} of {Math.ceil(filteredAndSortedVoteHistory.length / itemsPerPage)}
         </div>
       </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+  
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
             <tr>
-              <th className="py-2 text-left">Date</th>
-              <th className="py-2 text-left">Competition</th>
-              <th className="py-2 text-left">Match</th>
-              <th className="py-2 text-center">Vote</th>
-              <th className="py-2 text-center">Result</th>
+              <th className="px-2 py-2 text-left">Date</th>
+              <th className="px-2 py-2 text-left">League</th>
+              <th className="px-2 py-2 text-left">Match</th>
+              <th className="px-2 py-2 text-center">Vote</th>
+              <th className="px-2 py-2 text-center">Result</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-200">
             {currentItems.map((vote, index) => (
               <tr key={index} className={`${
                 vote.isCorrect === true ? 'bg-green-50' : 
                 vote.isCorrect === false ? 'bg-red-50' : ''
               }`}>
-                <td className="py-2">{format(parseISO(vote.date), 'dd MMM')}</td>
-                <td className="py-2">
-                  <div className="flex items-center">
-                    <img src={vote.competition.emblem} alt="" className="w-4 h-4 mr-2" />
-                    {vote.competition.name}
+                <td className="px-2 py-2 text-xs">{format(parseISO(vote.date), 'dd MMM')}</td>
+                <td className="px-2 py-2 text-xs">
+                  <div className="flex items-center space-x-1">
+                    <img src={vote.competition.emblem} alt="" className="w-4 h-4" />
+                    <span className="truncate w-16">{vote.competition.name}</span>
                   </div>
                 </td>
-                <td className="py-2">{vote.homeTeam} vs {vote.awayTeam}</td>
-                <td className="py-2 text-center capitalize">{vote.vote}</td>
-                <td className="py-2 text-center">
+                <td className="px-2 py-2 text-xs">
+                  <div className="truncate w-24">
+                    {vote.homeTeam} vs {vote.awayTeam}
+                  </div>
+                </td>
+                <td className="px-2 py-2 text-xs text-center capitalize">{vote.vote}</td>
+                <td className="px-2 py-2 text-xs text-center">
                   {vote.status === 'FINISHED' ? 
                     `${vote.score.home}-${vote.score.away}` : 
                     vote.status}
@@ -370,7 +372,7 @@ const UserStats = () => {
           </tbody>
         </table>
       </div>
-
+  
       {filteredAndSortedVoteHistory.length > itemsPerPage && 
         renderPagination(
           filteredAndSortedVoteHistory.length,
@@ -381,7 +383,7 @@ const UserStats = () => {
       }
     </div>
   );
-
+    
   console.log('ShareStats received props:', {
     stats,
     rankings,

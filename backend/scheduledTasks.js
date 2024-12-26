@@ -1,20 +1,161 @@
 const cron = require('node-cron');
-const { startOfDay, endOfDay } = require('date-fns');
+const { startOfDay, endOfDay, parseISO, differenceInMinutes } = require('date-fns');
 const Match = require('./models/Match');
 const User = require('./models/User');
-const { recalculateUserStats } = require('./utils/userStats');
-const { processMatchesForDate } = require('./fetchMatches');
+const { processMatchesForDate, hasActiveMatches, getNextScheduledMatch, ACTIVE_STATUSES } = require('./fetchMatches');
 const FanPredictionStat = require('./models/FanPredictionStat');
 const AIPredictionStat = require('./models/AIPredictionStat');
 const AccuracyStats = require('./models/AccuracyStats');
 const { recalculateAllStats } = require('./utils/statsProcessor');
+const { fetchAndStoreEvents } = require('./fetchEvents');
+const { fetchAndStoreAllLiveEvents } = require('./fetchEvents');
+const { processStandings } = require('./fetchStandings');
+const { subHours, addHours } = require('date-fns');
 
+
+let matchFetchingJob = null;
 
 const cleanup = async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     await UserStatsCache.deleteMany({ lastUpdated: { $lt: thirtyDaysAgo } });
 };
 
+async function scheduleNextMatchCheck() {
+    try {
+        console.log('Starting scheduleNextMatchCheck...');
+        
+        if (typeof hasActiveMatches !== 'function') {
+            console.error('hasActiveMatches is not properly imported');
+            return;
+        }
+
+        // First check if there are any active matches
+        const isActive = await hasActiveMatches();
+        console.log('Active matches check result:', isActive);
+        
+        if (isActive) {
+            console.log('Active matches found, continuing minute-by-minute updates');
+            if (!matchFetchingJob) {
+                startMinutePolling();
+            }
+            return;
+        }
+
+        // If no active matches, find the next scheduled match
+        const nextMatch = await getNextScheduledMatch();
+        if (!nextMatch) {
+            console.log('No upcoming matches found');
+            stopPolling();
+            return;
+        }
+
+        const nextMatchTime = parseISO(nextMatch.utcDate);
+        const minutesUntilMatch = differenceInMinutes(nextMatchTime, new Date());
+
+        console.log(`Next match (${nextMatch.homeTeam.name} vs ${nextMatch.awayTeam.name}) starts in ${minutesUntilMatch} minutes`);
+
+        // If match should have started or starts very soon, start polling
+        if (minutesUntilMatch <= 5) {
+            console.log('Match starting soon or should have started, beginning frequent updates');
+            startMinutePolling();
+        } else {
+            // Schedule a one-time check 5 minutes before the match
+            console.log(`Scheduling next check in ${minutesUntilMatch - 5} minutes`);
+            stopPolling();
+            
+            // Set both a timeout and a backup cron job
+            setTimeout(() => {
+                console.log('Timeout triggered for match check');
+                startMinutePolling();
+            }, (minutesUntilMatch - 5) * 60 * 1000);
+            
+            // Backup check every 5 minutes in case we miss the timeout
+            if (matchFetchingJob) {
+                matchFetchingJob.stop();
+            }
+            matchFetchingJob = cron.schedule('*/5 * * * *', async () => {
+                const stillActive = await hasActiveMatches();
+                if (stillActive) {
+                    console.log('Found active match during backup check, switching to minute polling');
+                    startMinutePolling();
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error in scheduleNextMatchCheck:', error);
+        // If there's an error, set a short retry
+        setTimeout(scheduleNextMatchCheck, 60000);
+    }
+}
+
+function startMinutePolling() {
+    if (matchFetchingJob) {
+        matchFetchingJob.stop();
+    }
+
+    console.log('Starting minute-by-minute match polling');
+    matchFetchingJob = cron.schedule('* * * * *', async () => {
+        await handleMatchFetching();
+        await scheduleNextMatchCheck(); // Check after each update if we should continue polling
+    }, {
+        scheduled: true,
+        timezone: "UTC"
+    });
+}
+
+function stopPolling() {
+    if (matchFetchingJob) {
+        console.log('Stopping match polling');
+        matchFetchingJob.stop();
+        matchFetchingJob = null;
+    }
+}
+
+async function handleMatchFetching() {
+    console.log(`Starting match fetch at ${new Date().toISOString()}`);
+    try {
+        const currentDate = new Date();
+        
+        // Get any active matches first
+        const activeMatches = await Match.find({
+            status: { $in: ['IN_PLAY', 'PAUSED', 'HALFTIME'] }
+        });
+
+        // Calculate time window for new matches
+        const start = subHours(currentDate, 3);  // Look back 3 hours
+        const end = addHours(currentDate, 3);    // Look ahead 3 hours
+
+        // If there are active matches, extend the time window to include their start times
+        if (activeMatches.length > 0) {
+            const matchStartTimes = activeMatches.map(match => new Date(match.utcDate));
+            const earliestMatchStart = Math.min(...matchStartTimes);
+            if (earliestMatchStart < start) {
+                console.log('Extending fetch window to include active matches from earlier');
+                start = new Date(earliestMatchStart);
+            }
+        }
+
+        const results = await processMatchesForDate(currentDate, start, end);
+        
+        // If there are active matches, fetch all their events with a single API call
+        if (activeMatches.length > 0) {
+            await fetchAndStoreAllLiveEvents();  // Single API call for all live match events
+            console.log(`Fetched events for ${activeMatches.length} active matches with one API call`);
+        }
+        
+        console.log('Match fetching completed:', {
+            timestamp: new Date().toISOString(),
+            results,
+            activeMatches: activeMatches.length,
+            fetchRange: { 
+                start: start.toISOString(), 
+                end: end.toISOString() 
+            }
+        });
+    } catch (error) {
+        console.error('Error in match fetching:', error);
+    }
+}
 async function updateDailyPredictionStats() {
     try {
         const today = startOfDay(new Date());
@@ -220,64 +361,25 @@ async function updateUserStats() {
     }
 }
 
-// Main match fetching function
-// Main match fetching function
-async function handleMatchFetching() {
-    console.log(`Starting scheduled match fetch at ${new Date().toISOString()}`);
-    try {
-        const currentDate = new Date();
-        const results = await processMatchesForDate(currentDate);
-        
-        // Also fetch previous day's matches to catch any ongoing games
-        const yesterday = new Date(currentDate);
-        yesterday.setDate(yesterday.getDate() - 1);
-        await processMatchesForDate(yesterday);
-        
-        // Fetch next day's matches during late hours
-        if (currentDate.getHours() >= 22) {
-            const tomorrow = new Date(currentDate);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            await processMatchesForDate(tomorrow);
-        }
-
-        console.log('Match fetching completed:', {
-            timestamp: new Date().toISOString(),
-            results
-        });
-    } catch (error) {
-        console.error('Error in match fetching:', error);
-    }
-}
-
-// Schedule match fetching every 1 minute, running 24/7
-const matchFetchingJob = cron.schedule('* * * * *', async () => {
-    console.log('Scheduled task triggered: fetchMatches');
-    await handleMatchFetching().catch(error => {
-        console.error('Error in fetchMatches:', error);
-    });
-}, {
-    scheduled: true,
-    timezone: "UTC"
-});
-
-// Check for finished matches and update stats every 2 minutes
 const statsUpdateJob = cron.schedule('*/2 * * * *', async () => {
     try {
-        console.log('Starting scheduled task: Check finished matches');
-        const stats = await updateDailyPredictionStats();
-        console.log('Daily stats update completed:', stats);
-        
-        await updateUserStats();
-        console.log('User stats update completed');
-    } catch (error) {
-        console.error('Error in scheduled task:', {
-            message: error.message,
-            stack: error.stack
+        const activeMatches = await Match.find({
+            status: { $in: ACTIVE_STATUSES }
         });
+
+        if (activeMatches.length > 0) {
+            console.log('Starting scheduled task: Check finished matches');
+            const stats = await updateDailyPredictionStats();
+            console.log('Daily stats update completed:', stats);
+            
+            await updateUserStats();
+            console.log('User stats update completed');
+        }
+    } catch (error) {
+        console.error('Error in scheduled task:', error);
     }
 });
 
-// Reset daily stats at midnight
 const dailyResetJob = cron.schedule('0 0 * * *', async () => {
     try {
         console.log('Starting daily stats reset...');
@@ -312,13 +414,15 @@ const dailyResetJob = cron.schedule('0 0 * * *', async () => {
             )
         ]);
         
+        // After midnight reset, check for any active matches or schedule next check
+        await scheduleNextMatchCheck();
+        
         console.log('Daily stats reset completed');
     } catch (error) {
         console.error('Error in daily stats reset:', error);
     }
 });
 
-// Accuracy stats recalculation
 const accuracyStatsJob = cron.schedule('*/10 * * * *', async () => {
     try {
         const lastAccuracyStats = await AccuracyStats.findOne().sort({ lastUpdated: -1 });
@@ -334,22 +438,56 @@ const accuracyStatsJob = cron.schedule('*/10 * * * *', async () => {
     }
 });
 
+// New cron job for events (every 5 minutes)
+const eventsUpdateJob = cron.schedule('*/5 * * * *', async () => {
+    try {
+        console.log('Starting scheduled events update');
+        await fetchAndStoreAllLiveEvents();
+    } catch (error) {
+        console.error('Error in events update job:', error);
+    }
+});
+
+// New cron job for standings (every hour)
+const standingsUpdateJob = cron.schedule('0 * * * *', async () => {
+    try {
+        console.log('Starting scheduled standings update');
+        const activeLeagues = await Match.distinct('competition.id', {
+            utcDate: {
+                $gte: startOfDay(new Date()),
+                $lte: endOfDay(new Date())
+            }
+        });
+        
+        for (const leagueId of activeLeagues) {
+            await processStandings(leagueId, new Date().getFullYear());
+        }
+        console.log(`Updated standings for ${activeLeagues.length} leagues`);
+    } catch (error) {
+        console.error('Error in standings update job:', error);
+    }
+});
+
 // Error handling for the cron jobs
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    // Attempt to restart the jobs
-    matchFetchingJob.start();
+    scheduleNextMatchCheck();
     statsUpdateJob.start();
     dailyResetJob.start();
     accuracyStatsJob.start();
 });
 
+// Initialize the scheduling system
+scheduleNextMatchCheck();
+
 module.exports = {
-    matchFetchingJob,
+    scheduleNextMatchCheck,
     statsUpdateJob,
     dailyResetJob,
     accuracyStatsJob,
     updateUserStats,
     updateDailyPredictionStats,
-    handleMatchFetching
+    handleMatchFetching,
+    eventsUpdateJob,
+    standingsUpdateJob
 };

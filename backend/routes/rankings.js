@@ -1,97 +1,183 @@
+// rankings.js
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
+const Match = require('../models/Match');
 
-// This endpoint will get user's rankings
-router.get('/rankings', auth, async (req, res) => {
+
+// Helper function to get Monday and Sunday of current week
+const getWeekBounds = () => {
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - now.getDay() + 1);
+    monday.setHours(0, 0, 0, 0);
+  
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - now.getDay() + 7);
+    sunday.setHours(23, 59, 59, 999);
+  
+    return { monday, sunday };
+  };
+  
+  router.get('/leaderboard/weekly', async (req, res) => {
     try {
-        const userId = req.user.id;
-        const user = await User.findById(userId);
-        
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+      const { monday, sunday } = getWeekBounds();
+      const mondayDate = new Date(monday).toISOString();
+      const sundayDate = new Date(sunday).toISOString();
+  
+      console.log('Searching matches between:', {
+        mondayDate,
+        sundayDate
+      });
+  
+      const weekMatches = await Match.find({
+        utcDate: {
+          $gte: mondayDate,
+          $lte: sundayDate
         }
-
-        // Log the full user object (excluding sensitive data) for debugging
-        console.log('Current user data:', {
-            id: user._id,
-            country: user.country,
-            city: user.city,
-            totalVotes: user.totalVotes,
-            finishedVotes: user.finishedVotes,
-            correctVotes: user.correctVotes,
-            wilsonScore: user.wilsonScore
-        });
-
-        // Get all users with stats
-        const allUsers = await User.find({
+      }).distinct('id'); // Changed from _id to id
+  
+      console.log('Found matches:', weekMatches);
+  
+      const weeklyStats = await User.aggregate([
+        {
+          $project: {
+            username: 1,
+            country: 1,
+            city: 1,
+            weeklyVotes: {
+              $filter: {
+                input: "$votes",
+                as: "vote",
+                cond: { 
+                  $in: ["$$vote.matchId", weekMatches]
+                }
+              }
+            }
+          }
+        },
+          {
+          $project: {
+            username: 1,
+            country: 1,
+            city: 1,
+            finishedVotes: {
+              $size: {
+                $filter: {
+                  input: "$weeklyVotes",
+                  as: "vote",
+                  cond: { $ne: ["$$vote.isCorrect", null] }
+                }
+              }
+            },
+            correctVotes: {
+              $size: {
+                $filter: {
+                  input: "$weeklyVotes",
+                  as: "vote",
+                  cond: { $eq: ["$$vote.isCorrect", true] }
+                }
+              }
+            }
+          }
+        },
+          {
+          $match: {
             finishedVotes: { $gt: 0 }
-        }).select('_id country city totalVotes finishedVotes correctVotes wilsonScore');
-
-        console.log('Found users:', allUsers.length);
-
-        // Sort users by wilsonScore
-        const sortedUsers = allUsers.sort((a, b) => b.wilsonScore - a.wilsonScore);
-
-        // Calculate global rank
-        const globalRank = sortedUsers.findIndex(u => u._id.toString() === userId) + 1;
-
-        // Get country users
-        let countryRank = null;
-        if (user.country) {
-            const countryUsers = sortedUsers.filter(u => 
-                u.country && u.country.toLowerCase() === user.country.toLowerCase()
-            );
-            countryRank = countryUsers.findIndex(u => u._id.toString() === userId) + 1;
-            
-            console.log('Country stats:', {
-                country: user.country,
-                usersFound: countryUsers.length,
-                users: countryUsers.map(u => ({
-                    id: u._id,
-                    country: u.country,
-                    wilsonScore: u.wilsonScore,
-                    correctVotes: u.correctVotes,
-                    finishedVotes: u.finishedVotes
-                }))
-            });
-        }
-
-        // Get city users
-        let cityRank = null;
-        if (user.city) {
-            const cityUsers = sortedUsers.filter(u => 
-                u.city && u.city.toLowerCase() === user.city.toLowerCase()
-            );
-            cityRank = cityUsers.findIndex(u => u._id.toString() === userId) + 1;
-
-            console.log('City stats:', {
-                city: user.city,
-                usersFound: cityUsers.length,
-                users: cityUsers.map(u => ({
-                    id: u._id,
-                    city: u.city,
-                    wilsonScore: u.wilsonScore,
-                    correctVotes: u.correctVotes,
-                    finishedVotes: u.finishedVotes
-                }))
-            });
-        }
-
-        const rankings = {
-            global: globalRank > 0 ? globalRank : null,
-            country: countryRank > 0 ? countryRank : null,
-            city: cityRank > 0 ? cityRank : null
-        };
-
-        console.log('Final rankings:', rankings);
-        res.json(rankings);
-
+          }
+        },
+        {
+          $addFields: {
+            accuracy: {
+              $round: [
+                {
+                  $multiply: [
+                    { $divide: ["$correctVotes", "$finishedVotes"] },
+                    100
+                  ]
+                },
+                2
+              ]
+            }
+          }
+        },
+        {
+          $addFields: {
+            score: {
+              $round: [
+                {
+                  $multiply: [
+                    {
+                      $divide: [
+                        {
+                          $add: [
+                            { $divide: ["$correctVotes", "$finishedVotes"] },
+                            {
+                              $divide: [
+                                1.96,
+                                { $multiply: [2, { $sqrt: "$finishedVotes" }] }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          $add: [
+                            1,
+                            { $divide: [3.84, "$finishedVotes"] }
+                          ]
+                        }
+                      ]
+                    },
+                    100
+                  ]
+                },
+                2
+              ]
+            }
+          }
+        },
+        { $sort: { score: -1 } }
+      ]);
+   
+      console.log('Stats per user:', weeklyStats.map(user => ({
+        username: user.username,
+        weeklyFinished: user.finishedVotes,
+        accuracy: user.accuracy,
+        score: user.score
+      })));
+   
+      res.json(weeklyStats);
     } catch (error) {
-        console.error('Rankings error:', error);
-        res.status(500).json({ message: 'Error getting rankings' });
+      console.error('Weekly leaderboard error:', error);
+      res.status(500).json({ message: 'Error getting weekly leaderboard' });
     }
+  });
+    
+// Get all-time leaderboard (existing endpoint)
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const users = await User.find({ finishedVotes: { $gt: 0 } })
+      .select('username country city totalVotes finishedVotes correctVotes')
+      .sort({ wilsonScore: -1 });
+
+    const leaderboard = users.map(user => ({
+      _id: user._id,
+      username: user.username,
+      country: user.country,
+      city: user.city,
+      totalVotes: user.totalVotes,
+      finishedVotes: user.finishedVotes,
+      correctVotes: user.correctVotes,
+      accuracy: ((user.correctVotes / user.finishedVotes) * 100).toFixed(1),
+      score: user.wilsonScore.toFixed(1)
+    }));
+
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Leaderboard error:', error);
+    res.status(500).json({ message: 'Error getting leaderboard' });
+  }
 });
 
 module.exports = router;

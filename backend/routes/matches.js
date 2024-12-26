@@ -9,6 +9,8 @@ const { recalculateUserStats } = require('../utils/userStats');
 const optionalAuth = require('../middleware/optionalAuth');
 const auth = require('../middleware/auth');
 const UserStatsCache = require('../models/UserStatsCache');
+const { fetchAndStoreEvents } = require('../fetchEvents');
+const Event = require('../models/Event');
 
 // Add these helper functions at the top of the file
 const checkPredictionCorrect = (prediction, match) => {
@@ -654,9 +656,65 @@ router.get('/live', async (req, res) => {
   }
 });
 
+router.get('/fixtures/events', async (req, res) => {
+  try {
+    const { fixture } = req.query;
+    
+    if (!fixture) {
+      return res.status(400).json({ error: 'Fixture ID is required' });
+    }
 
+    console.log(`Fetching events for fixture: ${fixture}`);
 
+    // Use the same configuration from fetchMatches.js
+    const response = await axios.get(`${BASE_URL}/fixtures/events`, {
+      headers: {
+        "x-rapidapi-key": API_KEY,
+        "x-rapidapi-host": "v3.football.api-sports.io"
+      },
+      params: { fixture }
+    });
 
+    if (!response.data || response.data.results === 0) {
+      console.log('No events found for fixture');
+      return res.json([]);
+    }
+
+    // Sort events by time
+    const events = response.data.response.sort((a, b) => {
+      if (a.time.elapsed === b.time.elapsed) {
+        return (b.time.extra || 0) - (a.time.extra || 0);
+      }
+      return a.time.elapsed - b.time.elapsed;
+    });
+
+    console.log(`Found ${events.length} events for fixture ${fixture}`);
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching match events:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch match events' });
+  }
+});
+
+router.get('/:matchId/events', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    
+    // First try to get events from database
+    let events = await Event.find({ matchId });
+    
+    // If it's a live match, fetch fresh events
+    const match = await Match.findOne({ id: matchId });
+    if (match && ['IN_PLAY', 'PAUSED', 'HALFTIME'].includes(match.status)) {
+      events = await fetchAndStoreEvents(matchId);
+    }
+    
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching match events:', error);
+    res.status(500).json({ error: 'Failed to fetch match events' });
+  }
+});
 
 
 module.exports = router;

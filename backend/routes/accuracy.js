@@ -144,4 +144,162 @@ router.post('/reset-all', async (req, res) => {
   }
 });
 
+// Update in accuracy.js
+router.get('/latest-success', async (req, res) => {
+  try {
+    console.log('Fetching latest successful prediction from database...');
+    
+    // Find the AIPredictionStat document
+    const aiStats = await AIPredictionStat.findOne();
+    
+    console.log('Found AI stats:', !!aiStats);
+    
+    if (!aiStats || !aiStats.predictions || aiStats.predictions.length === 0) {
+      console.log('No predictions found in database');
+      return res.status(404).json({ message: 'No predictions found' });
+    }
+
+    // Find the most recent correct prediction without date restriction
+    const latestSuccess = aiStats.predictions
+      .filter(pred => {
+        console.log('Checking prediction:', {
+          date: pred.date,
+          isCorrect: pred.isCorrect,
+          teams: `${pred.homeTeam} vs ${pred.awayTeam}`
+        });
+        return pred.isCorrect === true;
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+    console.log('Latest successful prediction found:', latestSuccess);
+
+    if (!latestSuccess) {
+      console.log('No successful predictions found');
+      return res.status(404).json({ message: 'No successful predictions found' });
+    }
+
+    const response = {
+      homeTeam: latestSuccess.homeTeam,
+      awayTeam: latestSuccess.awayTeam,
+      predictedResult: latestSuccess.predictedResult,
+      actualResult: latestSuccess.actualResult,
+      date: latestSuccess.date
+    };
+
+    console.log('Sending response:', response);
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching latest successful prediction:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/last-two-days', async (req, res) => {
+  try {
+    const [aiStats, fanStats] = await Promise.all([
+      AIPredictionStat.findOne(),
+      FanPredictionStat.findOne()
+    ]);
+
+    // Get the last two days' dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Format for comparison
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // Get stats for both days
+    const stats = {
+      today: {
+        date: todayStr,
+        ai: { total: 0, correct: 0 },
+        fans: { total: 0, correct: 0 }
+      },
+      yesterday: {
+        date: yesterdayStr,
+        ai: { total: 0, correct: 0 },
+        fans: { total: 0, correct: 0 }
+      }
+    };
+
+    // Find AI stats
+    if (aiStats && aiStats.dailyStats) {
+      aiStats.dailyStats.forEach(stat => {
+        const statDate = new Date(stat.date);
+        statDate.setHours(0, 0, 0, 0);
+        const dateStr = statDate.toISOString().split('T')[0];
+
+        if (dateStr === todayStr) {
+          stats.today.ai = {
+            total: stat.totalPredictions,
+            correct: stat.correctPredictions
+          };
+        } else if (dateStr === yesterdayStr) {
+          stats.yesterday.ai = {
+            total: stat.totalPredictions,
+            correct: stat.correctPredictions
+          };
+        }
+      });
+    }
+
+    // Find Fan stats
+    if (fanStats && fanStats.dailyStats) {
+      fanStats.dailyStats.forEach(stat => {
+        const statDate = new Date(stat.date);
+        statDate.setHours(0, 0, 0, 0);
+        const dateStr = statDate.toISOString().split('T')[0];
+
+        if (dateStr === todayStr) {
+          stats.today.fans = {
+            total: stat.totalPredictions,
+            correct: stat.correctPredictions
+          };
+        } else if (dateStr === yesterdayStr) {
+          stats.yesterday.fans = {
+            total: stat.totalPredictions,
+            correct: stat.correctPredictions
+          };
+        }
+      });
+    }
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching last two days stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/top-users', async (req, res) => {
+  try {
+    const users = await User.find({
+      'stats.finishedVotes': { $gt: 0 } // Only users who have made predictions
+    }).select('username country stats.finishedVotes stats.correctVotes');
+
+    // Calculate accuracy for each user
+    const usersWithAccuracy = users.map(user => ({
+      username: user.username,
+      country: user.country,
+      accuracy: (user.stats.correctVotes / user.stats.finishedVotes) * 100,
+      total: user.stats.finishedVotes,
+      correct: user.stats.correctVotes
+    }));
+
+    // Sort by accuracy and get top 3
+    const topUsers = usersWithAccuracy
+      .sort((a, b) => b.accuracy - a.accuracy)
+      .slice(0, 3);
+
+    res.json(topUsers);
+  } catch (error) {
+    console.error('Error fetching top users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 module.exports = router;

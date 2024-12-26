@@ -89,6 +89,50 @@ api.fetchAccuracy = async () => {
   }
 };
 
+// Ticker last seccessful prediction
+api.fetchLatestSuccessfulPrediction = async () => {
+  try {
+    console.log('Calling latest-success endpoint...');
+    const response = await api.get('/api/accuracy/latest-success');
+    console.log('Latest prediction response:', response);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching latest successful prediction:', error.response || error);
+    return null;
+  }
+};
+
+// Ticker
+api.fetchLastTwoDaysStats = async () => {
+  try {
+    const response = await api.get('/api/accuracy/last-two-days');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching last two days stats:', error);
+    return null;
+  }
+};
+
+api.fetchTopUsers = async () => {
+  try {
+    const response = await api.get('/api/accuracy/top-users');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching top users:', error);
+    return [];
+  }
+};
+
+//Events
+api.fetchMatchEvents = (matchId) => {
+  return api.get(`/api/matches/${matchId}/events`);
+};
+
+//Weekly leaderboard
+api.getWeeklyLeaderboard = () => {
+  return api.get('/api/user/leaderboard/weekly');
+};
+
 // New endpoint for user's daily stats
 api.fetchUserDailyAccuracy = async () => {
   try {

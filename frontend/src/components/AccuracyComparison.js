@@ -6,6 +6,7 @@ import { FaBrain } from "react-icons/fa";
 import api from '../api';
 import { Country } from 'country-state-city';
 import { createPortal } from 'react-dom';
+import PredictionTicker from './PredictionTicker';
 
 const formatCountryCode = (countryName) => {
   if (!countryName) return '';
@@ -378,6 +379,7 @@ useEffect(() => {
           })}
         </div>
       </div>
+      <PredictionTicker />
     </div>
   );
 }
