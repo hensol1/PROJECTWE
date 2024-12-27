@@ -259,15 +259,21 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
         </div>
       </div>
 
-      <div className="mt-2 flex justify-center">
-        <button
-          onClick={() => setShowEvents(true)}
-          className="flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full transition-colors"
-        >
-          <Clock className="w-4 h-4" />
-          Events
-        </button>
-      </div>
+{/* Events Button - only show for live or finished matches */}
+{(match.status === 'IN_PLAY' || 
+  match.status === 'PAUSED' || 
+  match.status === 'HALFTIME' || 
+  match.status === 'FINISHED') && (
+  <div className="mt-2 flex justify-center">
+    <button
+      onClick={() => setShowEvents(true)}
+      className="flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full transition-colors"
+    >
+      <Clock className="w-4 h-4" />
+      Events
+    </button>
+  </div>
+)}
 
       {/* Bottom Section - Predictions and Votes */}
       <div className="mt-1.5 sm:mt-2 space-y-1 flex flex-col items-center">
