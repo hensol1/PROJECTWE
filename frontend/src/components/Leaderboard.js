@@ -189,7 +189,8 @@ const Leaderboard = () => {
   return (
     <div className="max-w-full mx-auto mt-4 space-y-6">
       <div className="p-1 sm:p-6 bg-white rounded-lg shadow-md overflow-x-auto">
-        <div className="flex justify-between items-center mb-2 sm:mb-4">
+        {/* Header */}
+        <div className="mb-4">
           <div className="flex items-center">
             <h1 className="text-xl sm:text-2xl font-bold">Leaderboard</h1>
             <div className="ml-1 sm:ml-2 cursor-pointer relative" onClick={() => setShowTooltip(!showTooltip)}>
@@ -219,11 +220,15 @@ const Leaderboard = () => {
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+        </div>
+
+        {/* Tabs Row */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex space-x-2">
             <div className="bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('weekly')}
-                className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                className={`px-4 py-1 rounded-md text-sm transition-colors ${
                   activeTab === 'weekly' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
                 }`}
               >
@@ -231,23 +236,25 @@ const Leaderboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('allTime')}
-                className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                className={`px-4 py-1 rounded-md text-sm transition-colors ${
                   activeTab === 'allTime' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
                 }`}
               >
                 All Time
               </button>
             </div>
-            <button
-              onClick={() => setShowLocationRankings(!showLocationRankings)}
-              className="flex items-center px-3 py-1 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-600 text-sm"
-            >
-              <MapPinIcon className="mr-1 h-4 w-4" />
-              {showLocationRankings ? 'Show Global' : 'Show Locations'}
-            </button>
           </div>
+          <button
+            onClick={() => setShowLocationRankings(!showLocationRankings)}
+            className="flex items-center px-3 py-1 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-600 text-sm"
+          >
+            <MapPinIcon className="mr-1 h-4 w-4" />
+            <span className="whitespace-nowrap">
+              {showLocationRankings ? 'Show Global' : 'Show Locations'}
+            </span>
+          </button>
         </div>
-  
+
         {!showLocationRankings && (
           <>
             {((activeTab === 'weekly' && weeklyUserRank !== null) || 
@@ -310,7 +317,7 @@ const Leaderboard = () => {
                   ))}
               </tbody>
             </table>
-  
+
             <div className="mt-2 sm:mt-4 flex justify-center">
               {Array.from({ 
                 length: Math.ceil(
@@ -329,11 +336,10 @@ const Leaderboard = () => {
             </div>
           </>
         )}
-  
+
         {showLocationRankings && locationRankings && <LocationRankings />}
       </div>
     </div>
-  );
-};
+  );};
 
 export default Leaderboard;
