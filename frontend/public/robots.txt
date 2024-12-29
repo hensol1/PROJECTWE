@@ -1,4 +1,4 @@
-# www.weknowbetter.app robots.txt
+# weknowbetter.app robots.txt
 User-agent: *
 Allow: /logo.png
 Allow: /logo.svg
@@ -15,4 +15,4 @@ Disallow: /api/
 Disallow: /dashboard
 
 # Add your sitemap location
-Sitemap: https://www.weknowbetter.app/sitemap.xml
+Sitemap: https://weknowbetter.app/sitemap.xml

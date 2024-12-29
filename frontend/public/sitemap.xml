@@ -3,15 +3,23 @@
   <!-- Homepage -->
   <url>
     <loc>https://weknowbetter.app</loc>
-    <lastmod>2024-12-22</lastmod>
+    <lastmod>2024-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+  </url>
+
+  <!-- Logo -->
+  <url>
+    <loc>https://weknowbetter.app/logo.png</loc>
+    <lastmod>2024-12-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 
   <!-- Matches Page -->
   <url>
     <loc>https://weknowbetter.app/matches</loc>
-    <lastmod>2024-12-22</lastmod>
+    <lastmod>2024-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -19,7 +27,7 @@
   <!-- Leaderboard -->
   <url>
     <loc>https://weknowbetter.app/leaderboard</loc>
-    <lastmod>2024-12-22</lastmod>
+    <lastmod>2024-12-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -27,7 +35,7 @@
   <!-- About Page -->
   <url>
     <loc>https://weknowbetter.app/about</loc>
-    <lastmod>2024-12-22</lastmod>
+    <lastmod>2024-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -35,7 +43,7 @@
   <!-- Contact Page -->
   <url>
     <loc>https://weknowbetter.app/contact</loc>
-    <lastmod>2024-12-22</lastmod>
+    <lastmod>2024-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

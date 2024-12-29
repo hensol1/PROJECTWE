@@ -326,8 +326,8 @@ const MatchBox = ({ match, onVote, isLiveTab }) => {
   onClose={() => setShowEvents(false)}
   homeTeam={match.homeTeam}
   awayTeam={match.awayTeam}
-  status={match.status}  // Add this line
-  match={match}  // Add this line
+  match={match}
+  competition={match.competition} // Add this line
 />
     </div>
   );

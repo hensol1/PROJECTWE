@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 const matchesRoutes = require('./routes/matches');
 const adminRoutes = require('./routes/admin');
@@ -17,6 +18,18 @@ require('./scheduledTasks');
 // Add this line before mongoose.connect
 mongoose.set('strictQuery', false);
 
+// Serve static files with proper MIME types
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    }
+    if (path.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    }
+  }
+}));
+
 const app = express();
 
 // CORS configuration
@@ -25,7 +38,7 @@ app.use(cors({
     'https://projectwe-tau.vercel.app', 
     'http://localhost:3000',
     'https://weknowbetter.app',
-    'https://www.weknowbetter.app'  // Include www subdomain just in case
+    'https://www.weknowbetter.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-timezone'],

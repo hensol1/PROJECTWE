@@ -13,7 +13,6 @@
 
     <meta charset="utf-8" />
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/logo.png">
-    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/logo.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     
@@ -28,14 +27,14 @@
     <meta property="og:url" content="https://weknowbetter.app/" />
     <meta property="og:title" content="We Know Better - Football Match Predictions & Analysis" />
     <meta property="og:description" content="Join We Know Better to make football predictions, compare with AI accuracy, and compete with fans worldwide. Get real-time match insights and track your prediction success." />
-    <meta property="og:image" content="%PUBLIC_URL%/og-image.jpg" />
+    <meta property="og:image" content="https://weknowbetter.app/og-image.jpg" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://weknowbetter.app/" />
     <meta property="twitter:title" content="We Know Better - Football Match Predictions & Analysis" />
     <meta property="twitter:description" content="Join We Know Better to make football predictions, compare with AI accuracy, and compete with fans worldwide. Get real-time match insights and track your prediction success." />
-    <meta property="twitter:image" content="%PUBLIC_URL%/og-image.jpg" />
+    <meta property="twitter:image" content="https://weknowbetter.app/og-image.jpg" />
 
     <!-- Additional SEO Meta Tags -->
     <meta name="robots" content="index,follow,max-image-preview:large">
@@ -46,54 +45,28 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1574148506339871" 
     crossorigin="anonymous"></script>
 
-    <!-- Updated Schema.org JSON-LD -->
+    <!-- Basic Schema -->
     <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "Organization",
-            "@id": "https://weknowbetter.app/#organization",
-            "name": "We Know Better",
-            "url": "https://weknowbetter.app",
-            "logo": {
-              "@type": "ImageObject",
-              "@id": "https://weknowbetter.app/#logo",
-              "url": "https://weknowbetter.app/logo.png",
-              "contentUrl": "https://weknowbetter.app/logo.png",
-              "width": 512,
-              "height": 512,
-              "caption": "We Know Better Logo",
-              "representativeOfPage": true
-            },
-            "image": {
-              "@id": "https://weknowbetter.app/#logo"
-            },
-            "description": "Join We Know Better to make football predictions, compare with AI accuracy, and compete with fans worldwide. Get real-time match insights and track your prediction success.",
-            "sameAs": [
-              "https://twitter.com/weknowbetter",
-              "https://facebook.com/weknowbetter"
-            ]
-          },
-          {
-            "@type": "WebSite",
-            "@id": "https://weknowbetter.app/#website",
-            "url": "https://weknowbetter.app",
-            "name": "We Know Better",
-            "description": "Football Match Predictions & Analysis",
-            "publisher": {
-              "@id": "https://weknowbetter.app/#organization"
-            },
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://weknowbetter.app/search?q={search_term_string}",
-              "query-input": "required name=search_term_string"
-            },
-            "inLanguage": "en"
-          }
-        ]
-      }</script>
-      
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "url": "https://weknowbetter.app",
+      "logo": "https://weknowbetter.app/logo.png",
+      "name": "We Know Better",
+      "description": "Football Match Predictions & Analysis using AI and machine learning"
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "url": "https://weknowbetter.app",
+      "name": "We Know Better - Football Match Predictions & Analysis",
+      "description": "Join We Know Better to make football predictions, compare with AI accuracy, and compete with fans worldwide."
+    }
+    </script>
+
     <style>
       #initial-loading {
         position: fixed;
@@ -130,7 +103,10 @@
     </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <h1>We Know Better - Football Match Predictions & Analysis</h1>
+      <p>Join We Know Better to make football predictions, compare with AI accuracy, and compete with fans worldwide. Get real-time match insights and track your prediction success.</p>
+    </noscript>
     <div id="initial-loading">
       <div class="loading-spinner"></div>
     </div>
