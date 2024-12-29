@@ -8,18 +8,23 @@ const Match = require('../models/Match');
 
 // Helper function to get Monday and Sunday of current week
 const getWeekBounds = () => {
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - now.getDay() + 1);
-    monday.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const day = now.getDay();
   
-    const sunday = new Date(now);
-    sunday.setDate(now.getDate() - now.getDay() + 7);
-    sunday.setHours(23, 59, 59, 999);
+  // Adjust for Sunday being 0 in JavaScript
+  const daysFromMonday = day === 0 ? 6 : day - 1;
   
-    return { monday, sunday };
-  };
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - daysFromMonday);
+  monday.setHours(0, 0, 0, 0);
   
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  
+  return { monday, sunday };
+};
+
   router.get('/leaderboard/weekly', async (req, res) => {
     try {
       const { monday, sunday } = getWeekBounds();
