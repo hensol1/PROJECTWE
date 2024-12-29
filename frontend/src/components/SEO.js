@@ -1,4 +1,3 @@
-// src/components/SEO.js
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
@@ -10,6 +9,30 @@ const SEO = ({
 }) => {
   const siteUrl = 'https://weknowbetter.app';
   const fullUrl = `${siteUrl}${path}`;
+  const logoUrl = `${siteUrl}/logo.svg`; // Make sure your logo exists at this path
+  
+  // Organization schema for Google Search
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': siteUrl,
+    name: 'We Know Better',
+    url: siteUrl,
+    logo: {
+      '@type': 'ImageObject',
+      url: logoUrl,
+      width: '512',
+      height: '512'
+    },
+    description: description
+  };
+
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'We Know Better',
+    url: siteUrl
+  };
   
   return (
     <Helmet>
@@ -34,6 +57,14 @@ const SEO = ({
       
       {/* Canonical URL */}
       <link rel="canonical" href={fullUrl} />
+
+      {/* Schema.org JSON-LD */}
+      <script type="application/ld+json">
+        {JSON.stringify(organizationSchema)}
+      </script>
+      <script type="application/ld+json">
+        {JSON.stringify(websiteSchema)}
+      </script>
     </Helmet>
   );
 };
