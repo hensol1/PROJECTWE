@@ -1,6 +1,7 @@
 # www.weknowbetter.app robots.txt
 User-agent: *
-Allow: /
+Allow: /logo.png
+Allow: /logo.svg
 
 # Common crawl paths
 Allow: /matches
