@@ -25,7 +25,8 @@ import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
 import AdLayout from './components/AdLayout';
 import SEO from './components/SEO';
-import { BookOpen } from 'lucide-react'; // Add this import at the top
+import { BookOpen } from 'lucide-react'; 
+import DailyStats from './components/DailyStats';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -143,7 +144,8 @@ function App() {
                           description="Make and compare football predictions with AI. Join We Know Better to track your prediction accuracy and compete with fans worldwide."
                           path="/"
                         />
-                        <Matches 
+                        
+                          <Matches 
                           user={user} 
                           onOpenAuthModal={() => setAuthModalOpen(true)}
                         />

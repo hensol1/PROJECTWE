@@ -7,6 +7,7 @@ import api from '../api';
 import { Country } from 'country-state-city';
 import { createPortal } from 'react-dom';
 import PredictionTicker from './PredictionTicker';
+import DailyStats from './DailyStats';
 
 const formatCountryCode = (countryName) => {
   if (!countryName) return '';
@@ -380,6 +381,9 @@ useEffect(() => {
         </div>
       </div>
       <PredictionTicker />
+      <div className="mb-6">
+        <DailyStats />
+      </div>
     </div>
   );
 }

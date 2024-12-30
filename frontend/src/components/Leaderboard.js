@@ -256,87 +256,94 @@ const Leaderboard = () => {
         </div>
 
         {!showLocationRankings && (
-          <>
-            {((activeTab === 'weekly' && weeklyUserRank !== null) || 
-              (activeTab === 'allTime' && userRank !== null)) && (
-              <div className="mb-2 sm:mb-4 p-1 sm:p-2 bg-blue-100 rounded text-center text-sm">
-                Your rank: {activeTab === 'weekly' ? weeklyUserRank : userRank}
-              </div>
-            )}
-            <table className="w-full table-fixed text-center">
-              <thead>
-                <tr className="bg-gray-100 text-xs sm:text-base">
-                  <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[10%]">#</th>
-                  <th className="py-1 px-1 sm:py-2 sm:px-4 text-left w-[30%]">User</th>
-                  <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[20%]">
-                    <span className="hidden sm:inline">Matches</span>
-                    <span className="sm:hidden">Matches</span>
-                  </th>
-                  <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[15%]">Acc</th>
-                  <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[25%]">Score</th>
-                </tr>
-              </thead>
-              <tbody className="text-xs sm:text-base">
-                {(activeTab === 'weekly' ? weeklyLeaderboard : leaderboard)
-                  .slice(indexOfFirstItem, indexOfLastItem)
-                  .map((user, index) => (
-                    <tr 
-                      key={user._id} 
-                      className={`${index % 2 === 0 ? 'bg-gray-50' : ''} 
-                        ${user._id === localStorage.getItem('userId') ? 'bg-blue-50' : ''}`}
-                    >
-                      <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
-                        {indexOfFirstItem + index + 1}
-                      </td>
-                      <td className="py-1 px-1 sm:py-2 sm:px-4">
-                        <div className="flex items-center justify-start space-x-1">
-                          {user.country && (
-                            <img 
-                              src={`https://flagcdn.com/24x18/${formatCountryCode(user.country)}.png`}
-                              alt={`${user.country} flag`}
-                              className="w-4 h-3 sm:w-6 sm:h-4"
-                              onError={(e) => {
-                                console.log(`Failed to load flag for country: ${user.country}`);
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                          )}
-                          <span className="truncate">{user.username}</span>
-                        </div>
-                      </td>
-                      <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
-                        {user.finishedVotes}
-                      </td>
-                      <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
-                        {user.accuracy}%
-                      </td>
-                      <td className="py-1 px-1 sm:py-2 sm:px-4 text-center font-medium">
-                        {user.score}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+  <>
+    {((activeTab === 'weekly' && weeklyUserRank !== null) || 
+      (activeTab === 'allTime' && userRank !== null)) && (
+      <div className="mb-2 sm:mb-4 p-1 sm:p-2 bg-blue-100 rounded text-center text-sm">
+        Your rank: {activeTab === 'weekly' ? weeklyUserRank : userRank}
+      </div>
+    )}
 
-            <div className="mt-2 sm:mt-4 flex justify-center">
-              {Array.from({ 
-                length: Math.ceil(
-                  (activeTab === 'weekly' ? weeklyLeaderboard : leaderboard).length / itemsPerPage
-                )}, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => paginate(i + 1)}
-                  className={`mx-0.5 sm:mx-1 px-2 sm:px-3 py-0.5 sm:py-1 rounded text-xs sm:text-base ${
-                    currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+    {activeTab === 'weekly' && weeklyLeaderboard.length === 0 ? (
+      <div className="text-center py-8">
+        <p className="text-lg text-gray-600">It's Monday, new week, new leaderboard!</p>
+        <p className="text-sm text-gray-500 mt-2">Waiting for matches to be finished...</p>
+      </div>
+    ) : (
+      <table className="w-full table-fixed text-center">
+        <thead>
+          <tr className="bg-gray-100 text-xs sm:text-base">
+            <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[10%]">#</th>
+            <th className="py-1 px-1 sm:py-2 sm:px-4 text-left w-[30%]">User</th>
+            <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[20%]">
+              <span className="hidden sm:inline">Matches</span>
+              <span className="sm:hidden">Matches</span>
+            </th>
+            <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[15%]">Acc</th>
+            <th className="py-1 px-1 sm:py-2 sm:px-4 text-center w-[25%]">Score</th>
+          </tr>
+        </thead>
+        <tbody className="text-xs sm:text-base">
+          {(activeTab === 'weekly' ? weeklyLeaderboard : leaderboard)
+            .slice(indexOfFirstItem, indexOfLastItem)
+            .map((user, index) => (
+              <tr 
+                key={user._id} 
+                className={`${index % 2 === 0 ? 'bg-gray-50' : ''} 
+                  ${user._id === localStorage.getItem('userId') ? 'bg-blue-50' : ''}`}
+              >
+                <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
+                  {indexOfFirstItem + index + 1}
+                </td>
+                <td className="py-1 px-1 sm:py-2 sm:px-4">
+                  <div className="flex items-center justify-start space-x-1">
+                    {user.country && (
+                      <img 
+                        src={`https://flagcdn.com/24x18/${formatCountryCode(user.country)}.png`}
+                        alt={`${user.country} flag`}
+                        className="w-4 h-3 sm:w-6 sm:h-4"
+                        onError={(e) => {
+                          console.log(`Failed to load flag for country: ${user.country}`);
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <span className="truncate">{user.username}</span>
+                  </div>
+                </td>
+                <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
+                  {user.finishedVotes}
+                </td>
+                <td className="py-1 px-1 sm:py-2 sm:px-4 text-center">
+                  {user.accuracy}%
+                </td>
+                <td className="py-1 px-1 sm:py-2 sm:px-4 text-center font-medium">
+                  {user.score}
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+    )}
 
+    <div className="mt-2 sm:mt-4 flex justify-center">
+      {Array.from({ 
+        length: Math.ceil(
+          (activeTab === 'weekly' ? weeklyLeaderboard : leaderboard).length / itemsPerPage
+        )}, (_, i) => (
+        <button
+          key={i}
+          onClick={() => paginate(i + 1)}
+          className={`mx-0.5 sm:mx-1 px-2 sm:px-3 py-0.5 sm:py-1 rounded text-xs sm:text-base ${
+            currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'
+          }`}
+        >
+          {i + 1}
+        </button>
+      ))}
+    </div>
+  </>
+)}
         {showLocationRankings && locationRankings && <LocationRankings />}
       </div>
     </div>

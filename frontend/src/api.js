@@ -202,7 +202,7 @@ api.makeAIPrediction = (matchId, prediction) => {
   return api.post(`/api/admin/${matchId}/predict`, { prediction });
 };
 // Auto Votes
-api.autoVote = () => api.post('/api/matches/auto-vote');
+api.autoVote = (date) => api.post('/api/matches/auto-vote', { date });
 
 // Admin routes
 api.triggerFetchMatches = (date) => {
@@ -219,6 +219,8 @@ api.resetAllStats = () => api.post('/api/accuracy/reset-all');
 api.resetAIStats = () => api.post('/api/accuracy/reset-ai');
 api.resetFanStats = () => api.post('/api/accuracy/reset-fans');
 api.getUserRankings = () => api.get('/api/user/rankings');
+api.getDailyPredictions = () => api.get('/api/stats/daily-predictions');
+
 // Contact submission
 api.submitContactForm = (formData) => {
   console.log('Submitting contact form:', formData); // Add this log

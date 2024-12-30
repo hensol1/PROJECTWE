@@ -100,25 +100,34 @@ const determineAutoVote = async (match) => {
 // Auto-vote route
 router.post('/auto-vote', auth, async (req, res) => {
   try {
+    const { date } = req.body;
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get the user's current date
+    // Get the user's timezone and create date bounds
     const userTimeZone = req.headers['x-timezone'] || 'UTC';
-    const userDate = new Date();
-    const startOfDay = new Date(userDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(userDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const targetDate = date ? new Date(date) : new Date();
+    const startOfTargetDay = new Date(targetDate);
+    startOfTargetDay.setHours(0, 0, 0, 0);
+    const endOfTargetDay = new Date(targetDate);
+    endOfTargetDay.setHours(23, 59, 59, 999);
 
-    // Get only matches for the current date
+    console.log('Auto-vote request:', {
+      requestedDate: date,
+      targetDate: targetDate.toISOString(),
+      startOfDay: startOfTargetDay.toISOString(),
+      endOfDay: endOfTargetDay.toISOString(),
+      timezone: userTimeZone
+    });
+
+    // Get matches for the specified date
     const matches = await Match.find({
       status: { $in: ['TIMED', 'SCHEDULED'] },
       utcDate: {
-        $gte: startOfDay.toISOString(),
-        $lte: endOfDay.toISOString()
+        $gte: startOfTargetDay.toISOString(),
+        $lte: endOfTargetDay.toISOString()
       }
     });
 
@@ -132,7 +141,7 @@ router.post('/auto-vote', auth, async (req, res) => {
 
     if (unvotedMatches.length === 0) {
       return res.json({ 
-        message: 'No matches available for auto-voting today',
+        message: 'No matches available for auto-voting on the selected date',
         votedMatches: [] 
       });
     }
@@ -142,6 +151,9 @@ router.post('/auto-vote', auth, async (req, res) => {
     for (const match of unvotedMatches) {
       try {
         const autoVote = await determineAutoVote(match);
+        
+        // Initialize votes object if it doesn't exist
+        match.votes = match.votes || { home: 0, away: 0, draw: 0 };
         
         // Record the vote
         match.votes[autoVote]++;

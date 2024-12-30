@@ -25,8 +25,12 @@ const getWeekBounds = () => {
   return { monday, sunday };
 };
 
-  router.get('/leaderboard/weekly', async (req, res) => {
-    try {
+router.get('/leaderboard/weekly', async (req, res) => {
+  try {
+    // Check if it's Monday and there's no data yet
+    const now = new Date();
+    const isMonday = now.getDay() === 1;
+
       const { monday, sunday } = getWeekBounds();
       const mondayDate = new Date(monday).toISOString();
       const sundayDate = new Date(sunday).toISOString();
@@ -44,7 +48,12 @@ const getWeekBounds = () => {
       }).distinct('id'); // Changed from _id to id
   
       console.log('Found matches:', weekMatches);
-  
+
+      // If it's Monday and no matches are found, return empty array
+      if (isMonday && weekMatches.length === 0) {
+        return res.json([]);
+      }
+        
       const weeklyStats = await User.aggregate([
         {
           $project: {

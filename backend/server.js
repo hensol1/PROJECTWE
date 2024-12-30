@@ -58,6 +58,7 @@ app.use('/api/accuracy', accuracyRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/user', rankingsRoutes); // We're adding it to /api/user since it's user-related
 app.use('/api/standings', standingsRoutes);
+app.use('/api/stats', require('./routes/stats'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
