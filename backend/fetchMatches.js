@@ -2,15 +2,18 @@ const axios = require('axios');
 const { MongoClient } = require('mongodb');
 const { format, subDays, addDays } = require('date-fns');
 
-// API-Football Configuration
-const API_KEY = "5f3eb3a125615327d83d13e16a1a7f77";
-const BASE_URL = "https://v3.football.api-sports.io";
-const HEADERS = { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" };
+// Configuration from environment variables
+const API_KEY = process.env.FOOTBALL_API_KEY;
+const BASE_URL = process.env.FOOTBALL_API_BASE_URL || "https://v3.football.api-sports.io";
+const HEADERS = { 
+    "x-rapidapi-key": API_KEY, 
+    "x-rapidapi-host": "v3.football.api-sports.io" 
+};
 
 // MongoDB Configuration
-const MONGO_URI = "mongodb+srv://weknowbetteradmin:dMMZV14rCKTYLJXG@cluster0.sbr1j.mongodb.net/";
-const DB_NAME = "test";
-const COLLECTION_NAME = "matches";
+const MONGO_URI = process.env.MONGODB_URI;
+const DB_NAME = process.env.MONGODB_DATABASE || "test";
+const COLLECTION_NAME = process.env.MONGODB_COLLECTION || "matches";
 
 // List of league IDs to filter
 const ALLOWED_LEAGUE_IDS = [253, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 17, 20, 29, 30, 34, 36, 39, 40, 45, 48, 61, 62, 71, 78, 79, 81, 88, 90, 94, 96, 103, 106, 113, 119, 128, 135, 137, 140, 143, 144, 169, 172, 179, 188, 197, 199, 203, 207, 210, 218, 233, 235, 253, 271, 283, 286, 307, 318, 327, 333, 345, 373, 383, 384, 385, 848];
