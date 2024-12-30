@@ -25,12 +25,14 @@ import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
 import AdLayout from './components/AdLayout';
 import SEO from './components/SEO';
+import { BookOpen } from 'lucide-react'; // Add this import at the top
 
 function App() {
   const [user, setUser] = useState(null);
-  const [authModalOpen, setAuthModalOpen] = useState(false); 
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [welcomeSlidesOpen, setWelcomeSlidesOpen] = useState(false); // Add this state
 
   useEffect(() => {
     const initialLoadingElement = document.getElementById('initial-loading');
@@ -71,7 +73,7 @@ function App() {
       <GoogleOAuthProvider clientId={config.googleClientId}>
         <Router>
           <SEO />
-          <WelcomeSlides />
+          <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
           <div className="bg-gray-100 min-h-screen flex flex-col">
             <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
               <div className="container mx-auto">
@@ -102,10 +104,17 @@ function App() {
                     </Link>
                   </div>
 
-                  <div className="flex justify-center">
+                  <div className="flex justify-center items-center space-x-4">
                     <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
                       <IconMenu user={user} />
                     </div>
+                    <button
+  onClick={() => setWelcomeSlidesOpen(true)}
+  className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
+>
+  <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
+  <span className="hidden md:inline font-medium">How To Play</span>
+</button>
                   </div>
 
                   <div className="flex justify-end">

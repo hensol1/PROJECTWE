@@ -5,23 +5,16 @@ import { Checkbox } from './ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeaderLogo from './HeaderLogo';
 
-const WelcomeSlides = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const WelcomeSlides = ({ isOpen, setIsOpen }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-
-  useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-    if (!hasSeenWelcome) {
-      setIsOpen(true);
-    }
-  }, []);
 
   const handleClose = () => {
     if (dontShowAgain) {
       localStorage.setItem('hasSeenWelcome', 'true');
     }
     setIsOpen(false);
+    setCurrentSlide(0); // Reset to first slide when closing
   };
 
   const slides = [
@@ -255,17 +248,6 @@ const WelcomeSlides = () => {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <Checkbox
-            id="dontShow"
-            checked={dontShowAgain}
-            onCheckedChange={setDontShowAgain}
-            className="border-green-200 text-green-600"
-          />
-          <label htmlFor="dontShow" className="text-sm text-gray-500">
-            Don't show this again
-          </label>
-        </div>
       </DialogContent>
     </Dialog>
   );
