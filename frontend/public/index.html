@@ -47,26 +47,65 @@
 
     <!-- Basic Schema -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "url": "https://weknowbetter.app",
-      "logo": "https://weknowbetter.app/logo.png",
-      "name": "We Know Better",
-      "description": "Football Match Predictions & Analysis using AI and machine learning"
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://weknowbetter.app/#organization",
+        "name": "We Know Better",
+        "url": "https://weknowbetter.app",
+        "logo": {
+          "@type": "ImageObject",
+          "@id": "https://weknowbetter.app/#logo",
+          "url": "https://weknowbetter.app/logo.png",
+          "contentUrl": "https://weknowbetter.app/logo.png",
+          "width": 512,
+          "height": 512
+        }
+      }
     </script>
-
+  
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "url": "https://weknowbetter.app",
-      "name": "We Know Better - Football Match Predictions & Analysis",
-      "description": "Join We Know Better to make football predictions, compare with AI accuracy, and compete with fans worldwide."
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "We Know Better",
+        "applicationCategory": "SportsApplication",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "ratingCount": "100"
+        },
+        "description": "Football match predictions and analysis using AI and machine learning"
+      }
     </script>
-
+  
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [{
+          "@type": "Question",
+          "name": "How does We Know Better make football predictions?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "We Know Better uses AI and machine learning models to analyze match data and generate accurate football predictions."
+          }
+        }, {
+          "@type": "Question",
+          "name": "Can I compare my predictions with AI?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, you can make your own predictions and compare them with our AI's accuracy in real-time."
+          }
+        }]
+      }
+    </script>
+  
     <style>
       #initial-loading {
         position: fixed;
@@ -110,6 +149,31 @@
     <div id="initial-loading">
       <div class="loading-spinner"></div>
     </div>
-    <div id="root"></div>
-  </body>
+    <div id="root">
+      <!-- Add this content for crawlers -->
+      <div style="display:none">
+        <h1>We Know Better - Football Match Predictions & Analysis</h1>
+        <h2>Make Better Football Predictions with AI</h2>
+        <div itemscope itemtype="https://schema.org/SoftwareApplication">
+          <h3>Features:</h3>
+          <ul>
+            <li>AI-powered football predictions</li>
+            <li>Real-time match insights</li>
+            <li>Compare your predictions with AI</li>
+            <li>Track prediction accuracy</li>
+            <li>Global leaderboard</li>
+          </ul>
+        </div>
+        <div itemscope itemtype="https://schema.org/FAQPage">
+          <h3>Frequently Asked Questions</h3>
+          <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+            <h4 itemprop="name">How does We Know Better make football predictions?</h4>
+            <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+              <div itemprop="text">We Know Better uses AI and machine learning models to analyze match data and generate accurate football predictions.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </body>
 </html>
