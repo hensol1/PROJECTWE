@@ -23,10 +23,10 @@ import ContactUs from './components/ContactUs';
 import Footer from './components/Footer';
 import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
-import AdLayout from './components/AdLayout';
 import SEO from './components/SEO';
 import { BookOpen } from 'lucide-react'; 
 import DailyStats from './components/DailyStats';
+import SideAds from './components/SideAds';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -75,7 +75,8 @@ function App() {
         <Router>
           <SEO />
           <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
-          <div className="bg-gray-100 min-h-screen flex flex-col">
+          <div className="bg-gray-100 min-h-screen flex flex-col relative">
+  <SideAds />
             <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
               <div className="container mx-auto">
                 <div className="grid grid-cols-3 items-center gap-2">
@@ -133,7 +134,6 @@ function App() {
             </header>
 
             <main className="flex-grow container mx-auto relative">
-              <AdLayout>
                 <Routes>
                   <Route 
                     path="/" 
@@ -279,7 +279,6 @@ function App() {
                   />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
-              </AdLayout>
             </main>
 
             <CookieConsent />
