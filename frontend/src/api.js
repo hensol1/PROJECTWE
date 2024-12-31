@@ -78,6 +78,8 @@ api.fetchLiveMatches = () => {
 };
 
 
+
+
 api.fetchAccuracy = async () => {
   try {
     const response = await api.get('/api/accuracy');
@@ -126,6 +128,11 @@ api.fetchTopUsers = async () => {
 //Events
 api.fetchMatchEvents = (matchId) => {
   return api.get(`/api/matches/${matchId}/events`);
+};
+
+//Lineups
+api.fetchMatchLineups = (matchId) => {
+  return api.get(`/api/lineups/${matchId}`);
 };
 
 //Weekly leaderboard

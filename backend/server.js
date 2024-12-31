@@ -10,6 +10,7 @@ const accuracyRoutes = require('./routes/accuracy');
 const contactRoutes = require('./routes/contact');
 const rankingsRoutes = require('./routes/rankings');
 const standingsRoutes = require('./routes/standings');
+const lineupsRoutes = require('./routes/lineups');
 
 dotenv.config();
 require('./scheduledTasks');
@@ -59,6 +60,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/user', rankingsRoutes); // We're adding it to /api/user since it's user-related
 app.use('/api/standings', standingsRoutes);
 app.use('/api/stats', require('./routes/stats'));
+app.use('/api/lineups', lineupsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
