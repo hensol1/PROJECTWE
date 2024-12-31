@@ -18,10 +18,15 @@ const MatchLineups = ({ matchId, isOpen, onClose, homeTeam, awayTeam, match, com
         setError(null);
         
         const response = await api.fetchMatchLineups(matchId);
-        setLineups(response.data);
+        if (response.data && Array.isArray(response.data)) {
+          setLineups(response.data);
+        } else {
+          setLineups([]);
+        }
       } catch (err) {
         console.error('Error fetching lineups:', err);
         setError('Failed to load match lineups');
+        setLineups([]);
       } finally {
         setLoading(false);
       }
@@ -30,46 +35,50 @@ const MatchLineups = ({ matchId, isOpen, onClose, homeTeam, awayTeam, match, com
     fetchLineups();
   }, [matchId, isOpen, isTab]);
 
-  const LineupSection = ({ teamLineup, isHome }) => (
-    <div className={cn(
-      "flex-1 px-3",
-      isHome ? "border-r border-gray-200" : ""
-    )}>
-      {/* Formation & Coach */}
-      <div className="text-center mb-3">
-        <div className="text-sm font-semibold">{teamLineup.formation}</div>
-        <div className="text-xs text-gray-600">{teamLineup.coach?.name}</div>
-      </div>
+  const LineupSection = ({ teamLineup, isHome }) => {
+    if (!teamLineup || !teamLineup.team) return null;
 
-      {/* Starting XI */}
-      <div className="mb-4">
-        <div className="text-xs font-medium text-gray-500 mb-2">Starting XI</div>
-        <div className="space-y-1">
-          {teamLineup.startXI.map((player) => (
-            <div key={player.id} className="flex items-center text-xs">
-              <span className="w-6 text-gray-500">{player.number}</span>
-              <span>{player.name}</span>
-              <span className="ml-auto text-gray-500">{player.pos}</span>
-            </div>
-          ))}
+    return (
+      <div className={cn(
+        "flex-1 px-3",
+        isHome ? "border-r border-gray-200" : ""
+      )}>
+        {/* Formation & Coach */}
+        <div className="text-center mb-3">
+          <div className="text-sm font-semibold">{teamLineup.formation}</div>
+          <div className="text-xs text-gray-600">{teamLineup.coach?.name}</div>
+        </div>
+
+        {/* Starting XI */}
+        <div className="mb-4">
+          <div className="text-xs font-medium text-gray-500 mb-2">Starting XI</div>
+          <div className="space-y-1">
+            {teamLineup.startXI?.map((player) => (
+              <div key={player.id || `player-${player.name}`} className="flex items-center text-xs">
+                <span className="w-6 text-gray-500">{player.number}</span>
+                <span>{player.name}</span>
+                <span className="ml-auto text-gray-500">{player.pos}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Substitutes */}
+        <div>
+          <div className="text-xs font-medium text-gray-500 mb-2">Substitutes</div>
+          <div className="space-y-1">
+            {teamLineup.substitutes?.map((player) => (
+              <div key={player.id || `sub-${player.name}`} className="flex items-center text-xs">
+                <span className="w-6 text-gray-500">{player.number}</span>
+                <span>{player.name}</span>
+                <span className="ml-auto text-gray-500">{player.pos}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Substitutes */}
-      <div>
-        <div className="text-xs font-medium text-gray-500 mb-2">Substitutes</div>
-        <div className="space-y-1">
-          {teamLineup.substitutes.map((player) => (
-            <div key={player.id} className="flex items-center text-xs">
-              <span className="w-6 text-gray-500">{player.number}</span>
-              <span>{player.name}</span>
-              <span className="ml-auto text-gray-500">{player.pos}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const LineupsContent = () => (
     <>
@@ -80,14 +89,15 @@ const MatchLineups = ({ matchId, isOpen, onClose, homeTeam, awayTeam, match, com
       ) : error ? (
         <div className="text-center text-red-600 p-4">{error}</div>
       ) : lineups.length === 0 ? (
-        <div className="text-center text-gray-500 p-4">
-          No lineups available for this match
+        <div className="text-center p-4">
+          <p className="text-gray-600 font-medium mb-1">No lineups available</p>
+          <p className="text-sm text-gray-500">Team lineups are typically announced around 1 hour before kickoff</p>
         </div>
       ) : (
         <div className="flex divide-x">
           {lineups.map((teamLineup, index) => (
             <LineupSection 
-              key={teamLineup.team.id} 
+              key={teamLineup.team?.id || `team-${index}`}
               teamLineup={teamLineup}
               isHome={index === 0}
             />

@@ -26,7 +26,6 @@ import WelcomeSlides from './components/WelcomeSlides';
 import SEO from './components/SEO';
 import { BookOpen } from 'lucide-react'; 
 import DailyStats from './components/DailyStats';
-import SideAds from './components/SideAds';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -76,7 +75,6 @@ function App() {
           <SEO />
           <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
           <div className="bg-gray-100 min-h-screen flex flex-col relative">
-  <SideAds />
             <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
               <div className="container mx-auto">
                 <div className="grid grid-cols-3 items-center gap-2">

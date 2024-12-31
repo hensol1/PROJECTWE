@@ -1,4 +1,3 @@
-// models/Standing.js
 const mongoose = require('mongoose');
 
 const StandingSchema = new mongoose.Schema({
@@ -12,7 +11,9 @@ const StandingSchema = new mongoose.Schema({
     },
     leagueName: {
         type: String,
-        required: true
+        required: function() {
+            return !this.noStandingsAvailable;
+        }
     },
     standings: [{
         rank: Number,
@@ -34,6 +35,10 @@ const StandingSchema = new mongoose.Schema({
             }
         }
     }],
+    noStandingsAvailable: {
+        type: Boolean,
+        default: false
+    },
     lastUpdated: {
         type: Date,
         default: Date.now

@@ -1,37 +1,42 @@
-// routes/standings.js
 const express = require('express');
 const router = express.Router();
 const Standing = require('../models/Standing');
-const { processStandings } = require('../fetchStandings');
 
 router.get('/:leagueId/:season', async (req, res) => {
     const { leagueId, season } = req.params;
 
     try {
-        // Try to get standings from MongoDB
-        let standings = await Standing.findOne({ 
-            leagueId: parseInt(leagueId),
-            season: parseInt(season)
+        // Parse the requested league and season
+        const parsedLeagueId = parseInt(leagueId);
+        const requestedSeason = parseInt(season);
+        
+        // For future dates (2025), fallback to current season (2024)
+        const currentSeason = 2024; // Current season
+        const adjustedSeason = requestedSeason > currentSeason ? currentSeason : requestedSeason;
+
+        console.log(`Looking for standings - League: ${parsedLeagueId}, Requested Season: ${requestedSeason}, Adjusted Season: ${adjustedSeason}`);
+
+        const standings = await Standing.findOne({ 
+            leagueId: parsedLeagueId,
+            season: adjustedSeason
         });
 
-        // If no standings found or data is older than 1 hour, fetch new data
-        if (!standings || 
-            (new Date() - new Date(standings.lastUpdated)) > 3600000) {
-            await processStandings(parseInt(leagueId), parseInt(season));
-            standings = await Standing.findOne({ 
-                leagueId: parseInt(leagueId),
-                season: parseInt(season)
+        if (!standings) {
+            console.log(`No standings found for league ${parsedLeagueId} season ${adjustedSeason}`);
+            return res.status(404).json({ 
+                message: 'Standings not found for this league and season' 
             });
         }
 
-        if (!standings) {
-            return res.status(404).json({ message: 'No standings data available' });
-        }
-
+        console.log(`Returning standings for league ${parsedLeagueId} season ${adjustedSeason}, last updated: ${standings.lastUpdated}`);
+        
         res.json(standings);
     } catch (error) {
-        console.error('Error fetching standings:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error('Error retrieving standings:', error);
+        res.status(500).json({ 
+            message: 'Error retrieving standings',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

@@ -448,21 +448,38 @@ const eventsUpdateJob = cron.schedule('*/5 * * * *', async () => {
     }
 });
 
-// New cron job for standings (every hour)
-const standingsUpdateJob = cron.schedule('0 * * * *', async () => {
+// Standings update job - runs every day at 23:00 (11 PM)
+const standingsUpdateJob = cron.schedule('0 23 * * *', async () => {
     try {
-        console.log('Starting scheduled standings update');
+        console.log('Starting daily standings update at', new Date().toISOString());
+        
+        // Get all unique league IDs from matches in the current season
+        const currentYear = new Date().getFullYear();
         const activeLeagues = await Match.distinct('competition.id', {
             utcDate: {
-                $gte: startOfDay(new Date()),
-                $lte: endOfDay(new Date())
+                $gte: new Date(currentYear, 0, 1), // January 1st of current year
+                $lte: new Date(currentYear, 11, 31) // December 31st of current year
             }
         });
         
+        console.log(`Found ${activeLeagues.length} active leagues to update`);
+        
+        // Process each league with a delay between calls to respect API rate limits
         for (const leagueId of activeLeagues) {
-            await processStandings(leagueId, new Date().getFullYear());
+            try {
+                console.log(`Updating standings for league ${leagueId} season ${currentYear}`);
+                await processStandings(leagueId, currentYear);
+                
+                // Wait 5 seconds between updates to respect API rate limits
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            } catch (error) {
+                console.error(`Error updating standings for league ${leagueId}:`, error);
+                // Continue with other leagues even if one fails
+                continue;
+            }
         }
-        console.log(`Updated standings for ${activeLeagues.length} leagues`);
+        
+        console.log('Daily standings update completed at', new Date().toISOString());
     } catch (error) {
         console.error('Error in standings update job:', error);
     }
