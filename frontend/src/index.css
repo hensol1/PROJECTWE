@@ -147,3 +147,16 @@
   }
 }
 
+@media (max-width: 1365px) {
+  #zone-8728062, #zone-8728063 {
+    display: none;
+  }
+}
+
+.main-content {
+  @media (min-width: 1366px) {
+    margin: 0 170px;
+  }
+}
+
+

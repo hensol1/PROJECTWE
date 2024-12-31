@@ -9,37 +9,23 @@ const SideAds = () => {
       setShowAds(window.innerWidth >= 1366);
     };
 
-    // Initial check
     handleResize();
-
-    // Add listener for window resize
     window.addEventListener('resize', handleResize);
 
-    // PropellerAds initialization
-    const initAds = () => {
-      // Your PropellerAds initialization code here
-      (function() {
-        // Left side ad
-        const zoneConfigLeft = {
-          width: 160,
-          height: 600,
-          zoneId: '8728062', // Replace with your actual zone ID
-        };
-        
-        // Right side ad
-        const zoneConfigRight = {
-          width: 160,
-          height: 600,
-          zoneId: '8728062', // Replace with your actual zone ID
-        };
-      })();
-    };
-
-    // Initialize ads
-    initAds();
+    // Add the second zone
+    const secondZoneScript = document.createElement('script');
+    secondZoneScript.src = "//woazohetour.net/tag.min.js";
+    secondZoneScript.setAttribute('data-zone', '8728063');
+    secondZoneScript.setAttribute('data-cfasync', 'false');
+    secondZoneScript.async = true;
+    document.body.appendChild(secondZoneScript);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      // Cleanup if needed
+      if (secondZoneScript.parentNode) {
+        secondZoneScript.parentNode.removeChild(secondZoneScript);
+      }
     };
   }, []);
 
@@ -47,11 +33,11 @@ const SideAds = () => {
 
   return (
     <>
-      <div className="ad-container ad-container-left">
-        <div id="propellerads-left" />
+      <div className="fixed left-0 top-1/2 transform -translate-y-1/2 z-40 w-[160px] h-[600px]">
+        <div id="zone-8728062" />
       </div>
-      <div className="ad-container ad-container-right">
-        <div id="propellerads-right" />
+      <div className="fixed right-0 top-1/2 transform -translate-y-1/2 z-40 w-[160px] h-[600px]">
+        <div id="zone-8728063" />
       </div>
     </>
   );
