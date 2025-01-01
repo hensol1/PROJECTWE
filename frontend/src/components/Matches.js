@@ -681,11 +681,13 @@ try {
       alert('Please log in to use auto-vote feature');
       return;
     }
-
+  
     try {
       setIsAutoVoting(true);
-      const response = await api.autoVote();
-      
+      const formattedDate = format(zonedTimeToUtc(currentDate, userTimeZone), 'yyyy-MM-dd');
+      const response = await api.autoVote(formattedDate);
+  
+        
       setMatches(prevMatches => {
         const newMatches = { ...prevMatches };
         response.data.votedMatches.forEach(({ matchId, vote, votes }) => {
