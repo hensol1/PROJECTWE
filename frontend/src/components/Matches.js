@@ -14,23 +14,6 @@ import LeagueHeader from './LeagueHeader';
 import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
 
-// Utility managers
-const GuestVotesManager = {
-  getKey: (matchId) => `guest_vote_${matchId}`,
-  
-  saveVote: (matchId, vote) => {
-    localStorage.setItem(GuestVotesManager.getKey(matchId), vote);
-  },
-  
-  getVote: (matchId) => {
-    return localStorage.getItem(GuestVotesManager.getKey(matchId));
-  },
-  
-  hasVote: (matchId) => {
-    return !!localStorage.getItem(GuestVotesManager.getKey(matchId));
-  }
-};
-
 // Constants
 const continentalLeagues = {
   Europe: [2, 3, 39, 40, 45, 48, 61, 62, 78, 79, 81, 88, 90, 94, 96, 103, 106, 113, 119, 135, 137, 140, 143, 144, 172, 179, 197, 199, 203, 207, 210, 218, 235, 271, 283, 286, 318, 327, 333, 345, 373, 383, 384, 385, 848],
@@ -67,10 +50,9 @@ const Matches = ({ user, onOpenAuthModal }) => {
   const processMatchesResponse = (matchesData, userTimeZone, user) => {
     const liveMatches = {};
     const regularMatches = {};
-    const processedMatchIds = new Set(); // Keep track of processed matches
+    const processedMatchIds = new Set();
   
     matchesData.forEach(match => {
-      // Skip if we've already processed this match
       if (processedMatchIds.has(match.id)) {
         return;
       }
@@ -78,8 +60,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
       const leagueKey = `${match.competition.name}_${match.competition.id}`;
-      
-      const guestVote = !user ? GuestVotesManager.getVote(match.id) : null;
       
       // Calculate total votes and fan prediction
       const voteCounts = match.voteCounts || match.votes || { home: 0, away: 0, draw: 0 };
@@ -100,11 +80,8 @@ const Matches = ({ user, onOpenAuthModal }) => {
       const updatedMatch = {
         ...match,
         localDate: matchLocalDate,
-        userVote: guestVote || match.userVote,
-        voteCounts: guestVote ? {
-          ...voteCounts,
-          [guestVote]: (voteCounts[guestVote] || 0)
-        } : voteCounts,
+        userVote: match.userVote,
+        voteCounts: voteCounts,
         fanPrediction,
         score: match.score || {
           fullTime: { home: 0, away: 0 },
@@ -112,7 +89,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
         }
       };
   
-      // Add to appropriate collection and mark as processed
       if (['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'].includes(match.status)) {
         if (!liveMatches[leagueKey]) {
           liveMatches[leagueKey] = [];
@@ -129,17 +105,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
       }
       
       processedMatchIds.add(match.id);
-    });
-  
-    // Sort matches within each league by date
-    Object.values(liveMatches).forEach(matches => {
-      matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-    });
-  
-    Object.values(regularMatches).forEach(dateMatches => {
-      Object.values(dateMatches).forEach(matches => {
-        matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-      });
     });
   
     return { liveMatches, regularMatches };
@@ -450,7 +415,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
         try {
           const leagueKey = `${match.competition.name}_${match.competition.id}`;
           const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
-          const guestVote = !user ? GuestVotesManager.getVote(match.id) : null;
           
           // Add validation for score/votes structure
           const voteCounts = match.voteCounts || match.votes || { home: 0, away: 0, draw: 0 };
@@ -482,20 +446,17 @@ const Matches = ({ user, onOpenAuthModal }) => {
           }
           
           const updatedMatch = {
-                      ...match,
+            ...match,
             localDate: matchLocalDate,
-            userVote: guestVote || match.userVote,
-            voteCounts: guestVote ? {
-              ...voteCounts,
-              [guestVote]: (voteCounts[guestVote] || 0)
-            } : voteCounts,
+            userVote: match.userVote,
+            voteCounts: voteCounts,
             fanPrediction, // Add the calculated fan prediction
             score: match.score || { 
               fullTime: { home: 0, away: 0 },
               halfTime: { home: 0, away: 0 }
             }
           };
-    
+
           if (!liveMatches[leagueKey]) {
             liveMatches[leagueKey] = [];
           }
@@ -526,9 +487,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
         const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
         const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
         const leagueKey = `${match.competition.name}_${match.competition.id}`;
-        
-        const guestVote = !user ? GuestVotesManager.getVote(match.id) : null;
-        
+                
         // Check if this match exists in allLiveMatches and use its vote data
         let existingLiveMatch;
         Object.values(allLiveMatches).forEach(leagueMatches => {
@@ -536,14 +495,13 @@ const Matches = ({ user, onOpenAuthModal }) => {
           if (found) existingLiveMatch = found;
         });
 
-        const updatedMatch = {
-          ...match,
-          localDate: matchLocalDate,
-          userVote: guestVote || match.userVote,
-          voteCounts: existingLiveMatch?.voteCounts || match.voteCounts || { home: 0, draw: 0, away: 0 },
-          fanPrediction: existingLiveMatch?.fanPrediction || match.fanPrediction
-        };
-
+const updatedMatch = {
+  ...match,
+  localDate: matchLocalDate,
+  userVote: match.userVote,
+  voteCounts: existingLiveMatch?.voteCounts || match.voteCounts || { home: 0, draw: 0, away: 0 },
+  fanPrediction: existingLiveMatch?.fanPrediction || match.fanPrediction
+};
         const selectedStartOfDay = startOfDay(date);
         const selectedEndOfDay = endOfDay(date);
         
@@ -678,16 +636,15 @@ try {
 
   const handleAutoVote = async () => {
     if (!user) {
-      alert('Please log in to use auto-vote feature');
+      onOpenAuthModal('Please sign in or register to show us you know better!');
       return;
     }
-  
+
     try {
       setIsAutoVoting(true);
       const formattedDate = format(zonedTimeToUtc(currentDate, userTimeZone), 'yyyy-MM-dd');
       const response = await api.autoVote(formattedDate);
   
-        
       setMatches(prevMatches => {
         const newMatches = { ...prevMatches };
         response.data.votedMatches.forEach(({ matchId, vote, votes }) => {
@@ -720,31 +677,13 @@ try {
 
   const handleVote = async (matchId, vote) => {
     try {
-      // If user is not logged in, save vote to localStorage
+      // If user is not logged in, show auth modal
       if (!user) {
-        GuestVotesManager.saveVote(matchId, vote);
-        // Update the UI immediately for guest users
-        setMatches(prevMatches => {
-          const updatedMatches = { ...prevMatches };
-          for (let date in updatedMatches) {
-            for (let league in updatedMatches[date]) {
-              updatedMatches[date][league] = updatedMatches[date][league].map(match => 
-                match.id === matchId ? { 
-                  ...match,
-                  userVote: vote,
-                  voteCounts: {
-                    ...match.voteCounts,
-                    [vote]: (match.voteCounts[vote] || 0) + 1
-                  }
-                } : match
-              );
-            }
-          }
-          return updatedMatches;
-        });
+        // Show authentication modal with custom message
+        onOpenAuthModal('Please sign in or register to show us you know better!');
         return;
       }
-  
+
       // Regular flow for logged-in users
       const response = await api.voteForMatch(matchId, vote);
       setMatches(prevMatches => {

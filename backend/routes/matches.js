@@ -459,14 +459,13 @@ router.get('/all', async (req, res) => {
 });
 
 // Updated route for voting with improved error handling
-router.post('/:matchId/vote', optionalAuth, async (req, res) => {
+router.post('/:matchId/vote', auth, async (req, res) => {
   try {
     const { matchId } = req.params;
     const { vote } = req.body;
-    const userId = req.user ? req.user.id : null;
-    const userIP = req.ip;
+    const userId = req.user.id;
 
-    console.log('Vote attempt:', { matchId, vote, userId, userIP });
+    console.log('Vote attempt:', { matchId, vote, userId });
 
     if (!['home', 'draw', 'away'].includes(vote)) {
       return res.status(400).json({ message: 'Invalid vote' });
@@ -479,8 +478,6 @@ router.post('/:matchId/vote', optionalAuth, async (req, res) => {
     }
 
     console.log(`Match status: ${match.status}`);
-    console.log(`Match voters:`, match.voters);
-    console.log(`Match voterIPs:`, match.voterIPs);
 
     if (match.status !== 'TIMED' && match.status !== 'SCHEDULED') {
       return res.status(400).json({ 
@@ -492,37 +489,37 @@ router.post('/:matchId/vote', optionalAuth, async (req, res) => {
     match.votes[vote]++;
     await match.save();
 
-    // Handle user vote recording if user is authenticated
-    if (userId) {
-      try {
-        await Promise.all([
-          User.findOneAndUpdate(
-            { _id: userId },
-            { 
-              $push: { 
-                votes: { 
-                  matchId, 
-                  vote,
-                  date: new Date() 
-                } 
-              },
-              $inc: { totalVotes: 1 }
+    // Handle user vote recording
+    try {
+      await Promise.all([
+        User.findOneAndUpdate(
+          { _id: userId },
+          { 
+            $push: { 
+              votes: { 
+                matchId, 
+                vote,
+                date: new Date() 
+              } 
             },
-            { runValidators: false }
-          ),
-          UserStatsCache.findOneAndUpdate(
-            { userId },
-            { $set: { lastUpdated: new Date(0) } }, // Force cache refresh
-            { upsert: true }
-          )
-        ]);
+            $inc: { totalVotes: 1 }
+          },
+          { runValidators: false }
+        ),
+        UserStatsCache.findOneAndUpdate(
+          { userId },
+          { $set: { lastUpdated: new Date(0) } }, // Force cache refresh
+          { upsert: true }
+        )
+      ]);
 
-        console.log(`Vote recorded successfully for user ${userId} on match ${matchId}`);
-      } catch (userUpdateError) {
-        console.error('Error updating user vote:', userUpdateError);
-        // Even if user update fails, we don't want to roll back the match vote
-        // Just log the error and continue
-      }
+      console.log(`Vote recorded successfully for user ${userId} on match ${matchId}`);
+    } catch (userUpdateError) {
+      console.error('Error updating user vote:', userUpdateError);
+      return res.status(500).json({ 
+        message: 'Error recording vote', 
+        error: userUpdateError.message 
+      });
     }
 
     res.json({
