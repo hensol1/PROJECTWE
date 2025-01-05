@@ -28,19 +28,12 @@ const DailyStats = () => {
     <div className="w-full bg-gray-900 mt-2 border-t border-b border-gray-700">
       <div className="relative h-10">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex items-center px-4 whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-[#40c456]" />
-              <strong className="text-[#40c456] text-sm">
+          <div className="flex items-center gap-1.5">
+            <Users className="w-4 h-4 text-[#40c456] shrink-0" />
+            <span className="text-white text-sm whitespace-nowrap">
+              <strong className="text-[#40c456]">
                 {stats.totalVotes.toLocaleString()}
-              </strong>
-            </div>
-            
-            {/* Dot separator */}
-            <span className="mx-3 text-gray-600">•</span>
-            
-            <span className="text-white text-sm">
-              Predictions Made Today!
+              </strong> Predictions Made Today!
             </span>
           </div>
         </div>
