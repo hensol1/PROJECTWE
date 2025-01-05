@@ -27,19 +27,24 @@ const DailyStats = () => {
   return (
     <div className="w-full bg-gray-900 mt-2 border-t border-b border-gray-700">
       <div className="relative h-10">
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <div className="flex items-center gap-3 min-w-0"> {/* Increased gap and added min-w-0 */}
-            <div className="flex items-center gap-2 flex-shrink-0"> {/* Make icon and number non-shrinkable */}
-              <Users className="w-4 h-4 text-[#40c456] shrink-0" />
-              <strong className="text-[#40c456] text-sm">
-                {stats.totalVotes.toLocaleString()}
-              </strong>
+        <div className="absolute inset-0">
+          <div className="h-full flex items-center justify-center px-4">
+            <div className="flex items-center space-x-2 max-w-full overflow-hidden">
+              {/* Icon and number container with fixed width */}
+              <div className="flex items-center space-x-1.5 flex-shrink-0">
+                <Users className="w-4 h-4 text-[#40c456]" />
+                <strong className="text-[#40c456] text-sm">
+                  {stats.totalVotes.toLocaleString()}
+                </strong>
+              </div>
+              
+              {/* Text container that can shrink if needed */}
+              <div className="flex items-center min-w-0 flex-shrink text-sm">
+                <span className="text-white inline-block whitespace-nowrap overflow-hidden text-ellipsis">
+                  Predictions Made Today!
+                </span>
+              </div>
             </div>
-            
-            {/* Separate container for the text to control overflow */}
-            <span className="text-white text-sm truncate">
-              Predictions Made Today!
-            </span>
           </div>
         </div>
       </div>
