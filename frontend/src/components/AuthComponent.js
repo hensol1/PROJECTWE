@@ -504,7 +504,7 @@ const AuthComponent = ({
     ) : (
     
       <div className="relative z-[10000] w-full max-w-md mx-auto px-4">
-      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl overflow-hidden p-8">
         {isLoggingOut ? (
           // Logout confirmation dialog
           <div className="p-6">
@@ -612,27 +612,41 @@ const AuthComponent = ({
         ) : (
           // Regular auth form content
           <div className="p-6">
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setMessage({ text: '', type: '' });
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-500 focus:outline-none z-10"
-            >
-              <span className="sr-only">Close</span>
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+<button
+  onClick={() => {
+    setIsModalOpen(false);
+    setMessage({ text: '', type: '' });
+  }}
+  className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-all duration-200 focus:outline-none z-10"
+>
+  <span className="sr-only">Close</span>
+  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+</button>
 
             <div className="text-center mb-6">
       <div className="flex justify-center mb-4">
         <WKBLogo className="h-16" />
       </div>
-      <h2 className="text-2xl font-bold">
-        {isFirstTimeGoogleUser ? 'Complete Your Profile' : (isLogin ? 'Sign In' : 'Register')}
-      </h2>
-    </div>
+      <h2 className="text-2xl font-bold tracking-wide"> {/* Added letter spacing */}
+    <span className="relative">
+      {isFirstTimeGoogleUser 
+        ? 'Complete Your Profile' 
+        : (isLogin 
+          ? <div className="flex flex-col gap-2">
+              <span className="text-3xl uppercase font-extrabold bg-gradient-to-r from-green-500 to-blue-500 text-transparent bg-clip-text">
+                SIGN IN 
+              </span>
+              <span className="text-lg font-medium text-gray-600">
+                TO PROVE YOU KNOW BETTER!
+              </span>
+            </div>
+          : 'Register'
+        )}
+    </span>
+  </h2>
+</div>
 
             {renderAuthForm()}
           </div>
