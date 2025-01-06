@@ -3,6 +3,8 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 const Match = require('../models/Match');
+const AIPredictionStat = require('../models/AIPredictionStat');
+const FanPredictionStat = require('../models/FanPredictionStat');
 const { processMatchesForDate } = require('../fetchMatches');
 const { recalculateAllStats } = require('../utils/statsProcessor');
 
@@ -131,18 +133,117 @@ router.post('/fetch-matches', [auth, admin], async (req, res) => {
   }
 });
 
-
-// Update finished matches route
-router.post('/update-finished', [auth, admin], async (req, res) => {
+// Reset AI stats route
+router.post('/reset-ai', [auth, admin], async (req, res) => {
   try {
-    console.log('Manual update finished matches triggered');
-    await updateFinishedMatches();
-    res.json({ message: 'Finished matches updated successfully' });
+    console.log('Resetting AI stats');
+    
+    // Reset the AI prediction stats document
+    await AIPredictionStat.findOneAndUpdate(
+      {},
+      {
+        $set: {
+          totalPredictions: 0,
+          correctPredictions: 0,
+          lastReset: new Date(),
+          dailyStats: [],
+          predictions: []
+        }
+      },
+      { upsert: true }
+    );
+    
+    res.json({
+      success: true,
+      message: 'AI stats reset successfully'
+    });
   } catch (error) {
-    console.error('Error in manual update finished matches:', error);
-    res.status(500).json({ 
-      error: 'Error updating finished matches',
-      message: error.message 
+    console.error('Error resetting AI stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error resetting AI stats',
+      message: error.message
+    });
+  }
+});
+
+// Reset fan stats route
+router.post('/reset-fans', [auth, admin], async (req, res) => {
+  try {
+    console.log('Resetting fan stats');
+    
+    // Reset the fan prediction stats document
+    await FanPredictionStat.findOneAndUpdate(
+      {},
+      {
+        $set: {
+          totalPredictions: 0,
+          correctPredictions: 0,
+          lastReset: new Date(),
+          dailyStats: []
+        }
+      },
+      { upsert: true }
+    );
+    
+    res.json({
+      success: true,
+      message: 'Fan stats reset successfully'
+    });
+  } catch (error) {
+    console.error('Error resetting fan stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error resetting fan stats',
+      message: error.message
+    });
+  }
+});
+
+// Reset all stats route
+router.post('/reset-all', [auth, admin], async (req, res) => {
+  try {
+    console.log('Resetting all stats');
+    
+    // Reset both AI and Fan stats
+    await Promise.all([
+      AIPredictionStat.findOneAndUpdate(
+        {},
+        {
+          $set: {
+            totalPredictions: 0,
+            correctPredictions: 0,
+            lastReset: new Date(),
+            dailyStats: [],
+            predictions: []
+          }
+        },
+        { upsert: true }
+      ),
+      FanPredictionStat.findOneAndUpdate(
+        {},
+        {
+          $set: {
+            totalPredictions: 0,
+            correctPredictions: 0,
+            lastReset: new Date(),
+            dailyStats: []
+          }
+        },
+        { upsert: true }
+      )
+    ]);
+    
+    res.json({
+      success: true,
+      message: 'All stats reset successfully'
+    });
+  } catch (error) {
+    console.error('Error resetting all stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error resetting all stats',
+      message: error.message
     });
   }
 });

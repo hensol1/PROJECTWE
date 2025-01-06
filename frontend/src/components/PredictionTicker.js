@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Calendar, Medal, Trophy, Award } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import api from '../api';
 
 const StatItem = ({ isToday, aiStats, fanStats }) => {
@@ -42,51 +42,9 @@ const StatItem = ({ isToday, aiStats, fanStats }) => {
   );
 };
 
-const TopUsersItem = ({ users, isDaily }) => {
-  const medals = [
-    { icon: Trophy, color: 'text-yellow-400' },
-    { icon: Medal, color: 'text-gray-300' },
-    { icon: Award, color: 'text-amber-600' }
-  ];
-
-  return (
-    <div className="flex items-center h-10 bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700">
-      <div className="flex items-center gap-6 px-6">
-        <div className="inline-flex items-center gap-2 bg-gray-700 rounded px-3 py-1 whitespace-nowrap">
-          <Trophy className="w-4 h-4 text-yellow-400 shrink-0" />
-          <span className="font-bold text-yellow-400 uppercase tracking-wider text-sm">
-            TOP PLAYERS {isDaily ? 'TODAY' : 'WEEKLY'}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          {users.map((user, index) => (
-            <React.Fragment key={index}>
-              {index > 0 && <span className="text-gray-600">•</span>}
-              <div className="flex items-center gap-2">
-                {React.createElement(medals[index].icon, {
-                  className: `w-4 h-4 ${medals[index].color} shrink-0`
-                })}
-                <span className="text-white shrink-0 font-medium">
-                  {user.username}
-                </span>
-                <span className="text-gray-400 text-sm shrink-0">
-                  ({user.accuracy}%)
-                </span>
-              </div>
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const PredictionTicker = () => {
   const [stats, setStats] = useState(null);
-  const [topUsers, setTopUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDaily, setIsDaily] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -146,20 +104,8 @@ const PredictionTicker = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsData, dailyTopUsers, weeklyLeaderboard] = await Promise.all([
-          api.fetchLastTwoDaysStats(),
-          api.fetchTopUsers(),
-          api.getWeeklyLeaderboard()
-        ]);
-        
+        const statsData = await api.fetchLastTwoDaysStats();
         setStats(statsData);
-        if (dailyTopUsers?.length > 0) {
-          setTopUsers(dailyTopUsers);
-          setIsDaily(true);
-        } else {
-          setTopUsers(weeklyLeaderboard?.data?.slice(0, 3) || []);
-          setIsDaily(false);
-        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -201,12 +147,6 @@ const PredictionTicker = () => {
       isToday: false,
       aiStats: stats.yesterday.ai,
       fanStats: stats.yesterday.fans
-    },
-    {
-      type: 'users',
-      key: 'top-users',
-      users: topUsers,
-      isDaily: isDaily
     }
   ];
 
@@ -226,20 +166,12 @@ const PredictionTicker = () => {
         <div className="absolute inset-0 flex items-center">
           <div className="flex">
             {[...items, ...items, ...items].map((item, index) => (
-              item.type === 'stats' ? (
-                <StatItem
-                  key={`${item.key}-${index}`}
-                  isToday={item.isToday}
-                  aiStats={item.aiStats}
-                  fanStats={item.fanStats}
-                />
-              ) : (
-                <TopUsersItem
-                  key={`${item.key}-${index}`}
-                  users={item.users}
-                  isDaily={item.isDaily}
-                />
-              )
+              <StatItem
+                key={`${item.key}-${index}`}
+                isToday={item.isToday}
+                aiStats={item.aiStats}
+                fanStats={item.fanStats}
+              />
             ))}
           </div>
         </div>
@@ -273,7 +205,6 @@ const styles = `
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
 `;
 
 const styleSheet = document.createElement("style");
