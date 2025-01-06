@@ -6,6 +6,7 @@ const Match = require('../models/Match');
 const { recalculateUserStats, safelyUpdateUser } = require('../utils/userStats');
 const UserStatsCache = require('../models/UserStatsCache');
 const { updateUserStatsCache } = require('../utils/statsCache');
+const Vote = require('../models/Vote');
 
 
 async function updateAllUsersStats() {
@@ -420,31 +421,55 @@ router.get('/stats', auth, async (req, res) => {
   try {
     console.log('Starting /stats route for user:', req.user.id);
     
-    // Try to get cached stats first
-    let statsCache = await UserStatsCache.findOne({ userId: req.user.id });
-    console.log('Found stats cache:', statsCache ? 'yes' : 'no');
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get all votes for this user
+    const votes = await Vote.find({ userId: req.user.id }).sort({ createdAt: -1 });
     
-    // If cache doesn't exist or is older than 15 minutes, update it
-    if (!statsCache || Date.now() - statsCache.lastUpdated > 15 * 60 * 1000) {
-      console.log('Cache needs update, fetching new data...');
-      await updateUserStatsCache(req.user.id);
-      statsCache = await UserStatsCache.findOne({ userId: req.user.id });
-      console.log('Updated cache:', statsCache ? 'success' : 'failed');
-    }
+    // Get all relevant matches
+    const matchIds = votes.map(vote => vote.matchId);
+    const matches = await Match.find({ id: { $in: matchIds } });
+    const matchesMap = matches.reduce((acc, match) => {
+      acc[match.id] = match;
+      return acc;
+    }, {});
 
-    if (!statsCache) {
-      console.log('No stats cache found after update attempt');
-      return res.status(404).json({ message: 'User stats not found' });
-    }
+    // Format vote history
+    const voteHistory = votes.map(vote => {
+      const match = matchesMap[vote.matchId];
+      if (!match) return null;
 
+      return {
+        date: vote.createdAt,
+        vote: vote.vote,
+        isCorrect: vote.isCorrect,
+        status: match.status,
+        competition: {
+          id: match.competition.id,
+          name: match.competition.name,
+          emblem: match.competition.emblem
+        },
+        homeTeam: match.homeTeam.name,
+        awayTeam: match.awayTeam.name,
+        score: {
+          home: match.score?.fullTime?.home,
+          away: match.score?.fullTime?.away
+        }
+      };
+    }).filter(vote => vote !== null);
+
+    // Prepare response
     const response = {
-      totalVotes: statsCache.totalVotes,
-      finishedVotes: statsCache.finishedVotes,
-      correctVotes: statsCache.correctVotes,
-      leagueStats: statsCache.leagueStats,
-      voteHistory: statsCache.voteHistory
+      totalVotes: user.totalVotes,
+      finishedVotes: user.finishedVotes,
+      correctVotes: user.correctVotes,
+      leagueStats: user.leagueStats,
+      voteHistory: voteHistory
     };
-    
+
     console.log('Sending response with stats');
     res.json(response);
   } catch (error) {

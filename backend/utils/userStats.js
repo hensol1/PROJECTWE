@@ -1,79 +1,8 @@
 // backend/utils/userStats.js
 const User = require('../models/User');
 const Match = require('../models/Match');
+const Vote = require('../models/Vote');
 const calculateWilsonScore = require('./wilsonScore');
-
-// Define the function before exporting it
-async function processUserVoteForMatch(userId, matchId) {
-  const user = await User.findById(userId);
-  const match = await Match.findOne({ id: matchId });
-  
-  if (!user || !match) {
-    return null;
-  }
-
-  const vote = user.votes.find(v => v.matchId === matchId);
-  if (!vote) {
-    return null;
-  }
-
-  // Only process if match is finished
-  if (match.status === 'FINISHED') {
-    const actualResult = match.score.winner || 
-      (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-       match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-    
-    vote.isCorrect = (
-      (vote.vote === 'home' && actualResult === 'HOME_TEAM') ||
-      (vote.vote === 'away' && actualResult === 'AWAY_TEAM') ||
-      (vote.vote === 'draw' && actualResult === 'DRAW')
-    );
-
-    // Update user's total stats
-    const finishedVotes = user.votes.filter(v => v.isCorrect !== null).length;
-    const correctVotes = user.votes.filter(v => v.isCorrect === true).length;
-    const accuracy = finishedVotes > 0 ? (correctVotes / finishedVotes) * 100 : 0;
-    const wilsonScore = calculateWilsonScore(correctVotes, finishedVotes);
-
-    await User.findByIdAndUpdate(userId, {
-      $set: {
-        finishedVotes,
-        correctVotes,
-        accuracy,
-        wilsonScore,
-        'votes.$[vote]': vote
-      }
-    }, {
-      arrayFilters: [{ 'vote.matchId': matchId }],
-      new: true
-    });
-
-    return { finishedVotes, correctVotes, accuracy, wilsonScore };
-  }
-
-  return null;
-}
-
-async function updateStatsForFinishedMatch(matchId) {
-  const match = await Match.findOne({ 
-    id: matchId, 
-    status: 'FINISHED',
-    processed: false 
-  });
-
-  if (!match) return;
-
-  // Get all users who voted on this match
-  const users = await User.find({ 'votes.matchId': matchId });
-  
-  // Process each user's vote
-  const updatePromises = users.map(user => processUserVoteForMatch(user._id, matchId));
-  await Promise.all(updatePromises);
-
-  // Mark match as processed
-  match.processed = true;
-  await match.save();
-}
 
 async function recalculateUserStats(userId) {
   const user = await User.findById(userId);
@@ -81,8 +10,11 @@ async function recalculateUserStats(userId) {
     throw new Error('User not found');
   }
 
+  // Get all votes for this user
+  const votes = await Vote.find({ userId });
+  const matchIds = votes.map(v => v.matchId);
+
   // Get all finished matches that this user voted on
-  const matchIds = user.votes.map(v => v.matchId);
   const matches = await Match.find({
     id: { $in: matchIds },
     status: 'FINISHED'
@@ -100,7 +32,7 @@ async function recalculateUserStats(userId) {
   const leagueStats = {};
 
   // Process each vote
-  for (const vote of user.votes) {
+  for (const vote of votes) {
     const match = matchesMap[vote.matchId];
     if (match && match.status === 'FINISHED') {
       finishedVotes++;
@@ -115,6 +47,7 @@ async function recalculateUserStats(userId) {
         vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
 
       vote.isCorrect = userPrediction === actualResult;
+      await vote.save();
       
       if (vote.isCorrect) {
         correctVotes++;
@@ -145,7 +78,6 @@ async function recalculateUserStats(userId) {
     userId,
     {
       $set: {
-        votes: user.votes,
         finishedVotes,
         correctVotes,
         wilsonScore,
@@ -158,9 +90,46 @@ async function recalculateUserStats(userId) {
   return updatedUser;
 }
 
-// Export all functions after they're defined
+async function processUserVoteForMatch(userId, matchId) {
+  const [user, match, vote] = await Promise.all([
+    User.findById(userId),
+    Match.findOne({ id: matchId }),
+    Vote.findOne({ userId, matchId })
+  ]);
+  
+  if (!user || !match || !vote) {
+    return null;
+  }
+
+  // Only process if match is finished
+  if (match.status === 'FINISHED') {
+    const actualResult = match.score.winner || 
+      (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+       match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+    
+    const userPrediction = 
+      vote.vote === 'home' ? 'HOME_TEAM' :
+      vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
+
+    vote.isCorrect = userPrediction === actualResult;
+    await vote.save();
+
+    // Recalculate user stats
+    await recalculateUserStats(userId);
+
+    const updatedUser = await User.findById(userId);
+    return {
+      finishedVotes: updatedUser.finishedVotes,
+      correctVotes: updatedUser.correctVotes,
+      accuracy: updatedUser.accuracy,
+      wilsonScore: updatedUser.wilsonScore
+    };
+  }
+
+  return null;
+}
+
 module.exports = {
   processUserVoteForMatch,
-  updateStatsForFinishedMatch,
   recalculateUserStats
 };

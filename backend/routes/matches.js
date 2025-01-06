@@ -11,6 +11,7 @@ const auth = require('../middleware/auth');
 const UserStatsCache = require('../models/UserStatsCache');
 const { fetchAndStoreEvents } = require('../fetchEvents');
 const Event = require('../models/Event');
+const Vote = require('../models/Vote');
 
 // Add these helper functions at the top of the file
 const checkPredictionCorrect = (prediction, match) => {
@@ -101,28 +102,19 @@ const determineAutoVote = async (match) => {
 router.post('/auto-vote', auth, async (req, res) => {
   try {
     const { date } = req.body;
-    const user = await User.findById(req.user.id);
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get the user's timezone and create date bounds
-    const userTimeZone = req.headers['x-timezone'] || 'UTC';
-    const targetDate = date ? new Date(date) : new Date();
-    const startOfTargetDay = new Date(targetDate);
+    // Get matches for the specified date
+    const startOfTargetDay = new Date(date || new Date());
     startOfTargetDay.setHours(0, 0, 0, 0);
-    const endOfTargetDay = new Date(targetDate);
+    const endOfTargetDay = new Date(startOfTargetDay);
     endOfTargetDay.setHours(23, 59, 59, 999);
 
-    console.log('Auto-vote request:', {
-      requestedDate: date,
-      targetDate: targetDate.toISOString(),
-      startOfDay: startOfTargetDay.toISOString(),
-      endOfDay: endOfTargetDay.toISOString(),
-      timezone: userTimeZone
-    });
-
-    // Get matches for the specified date
     const matches = await Match.find({
       status: { $in: ['TIMED', 'SCHEDULED'] },
       utcDate: {
@@ -132,11 +124,15 @@ router.post('/auto-vote', auth, async (req, res) => {
     });
 
     // Get user's existing votes
-    const userVotedMatchIds = user.votes.map(vote => vote.matchId);
+    const existingVotes = await Vote.find({ 
+      userId,
+      matchId: { $in: matches.map(m => m.id) }
+    });
+    const votedMatchIds = existingVotes.map(v => v.matchId);
 
     // Filter out matches that user has already voted on
     const unvotedMatches = matches.filter(match => 
-      !userVotedMatchIds.includes(match.id)
+      !votedMatchIds.includes(match.id)
     );
 
     if (unvotedMatches.length === 0) {
@@ -146,26 +142,25 @@ router.post('/auto-vote', auth, async (req, res) => {
       });
     }
 
-    // Process each unvoted match
     const votedMatches = [];
     for (const match of unvotedMatches) {
       try {
         const autoVote = await determineAutoVote(match);
         
-        // Initialize votes object if it doesn't exist
-        match.votes = match.votes || { home: 0, away: 0, draw: 0 };
-        
-        // Record the vote
-        match.votes[autoVote]++;
-        await match.save();
-
-        // Update user's votes
-        user.votes.push({
+        // Create vote in Vote collection
+        await Vote.create({
+          userId,
           matchId: match.id,
           vote: autoVote,
-          date: new Date()
+          competition: {
+            id: match.competition.id,
+            name: match.competition.name
+          }
         });
-        user.totalVotes++;
+
+        // Update match vote counts
+        match.votes[autoVote]++;
+        await match.save();
 
         votedMatches.push({
           matchId: match.id,
@@ -177,12 +172,15 @@ router.post('/auto-vote', auth, async (req, res) => {
       }
     }
 
-    // Save user's votes
-    await user.save();
+    // Update user's total votes
+    await User.findByIdAndUpdate(
+      userId,
+      { $inc: { totalVotes: votedMatches.length } }
+    );
 
-    // Clear user stats cache to force refresh
+    // Clear user stats cache
     await UserStatsCache.findOneAndUpdate(
-      { userId: user._id },
+      { userId },
       { $set: { lastUpdated: new Date(0) } },
       { upsert: true }
     );
@@ -337,8 +335,7 @@ router.get('/', optionalAuth, async (req, res) => {
     console.log('Match request received:', {
       requestDate: date,
       userTimezone: timeZone,
-      userId: userId,
-      serverTime: new Date().toISOString()
+      userId: userId
     });
 
     if (!date) {
@@ -364,52 +361,55 @@ router.get('/', optionalAuth, async (req, res) => {
       endTime: end.toISOString()
     });
 
-    // Modified query to include live matches regardless of date
     const matches = await Match.find({
       $or: [
-        // Regular date-based matches within the selected timeframe
         { 
           utcDate: { 
             $gte: start.toISOString(), 
             $lte: end.toISOString() 
           }
         },
-        // Include live matches from previous day that might still be ongoing
         {
           status: { 
             $in: ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'] 
           },
           utcDate: { 
-            $gte: subHours(start, 24).toISOString(), // Look back up to 24 hours for live matches
+            $gte: subHours(start, 24).toISOString(),
             $lt: start.toISOString() 
           }
         }
       ]
     }).sort({ utcDate: 1 });
 
-    console.log('Found matches:', {
-      count: matches.length,
-      matchDates: matches.map(m => ({
-        id: m.id,
-        utcDate: m.utcDate,
-        status: m.status
-      }))
-    });
+    // Get user votes if authenticated
+    let userVotes = {};
+    if (userId) {
+      const votes = await Vote.find({
+        userId,
+        matchId: { $in: matches.map(m => m.id) }
+      });
+      userVotes = votes.reduce((acc, vote) => {
+        acc[vote.matchId] = vote.vote;
+        return acc;
+      }, {});
+    }
 
-    const [processedMatches, user] = await Promise.all([
-      Promise.all(matches.map(async match => {
-        const matchObj = match.toObject();
-        const matchDate = new Date(match.utcDate);
-        matchObj.localDate = addHours(matchDate, tzOffset);
-        matchObj.voteCounts = match.votes;
+    const processedMatches = matches.map(match => {
+      const matchObj = match.toObject();
+      const matchDate = new Date(match.utcDate);
+      matchObj.localDate = addHours(matchDate, tzOffset);
+      matchObj.voteCounts = match.votes;
 
-        // Add fan prediction
-        const totalVotes = matchObj.voteCounts.home + matchObj.voteCounts.draw + matchObj.voteCounts.away;
+      // Calculate fan prediction based on vote counts
+      if (match.votes) {
+        const { home = 0, away = 0, draw = 0 } = match.votes;
+        const totalVotes = home + away + draw;
+        
         if (totalVotes > 0) {
-          const maxVotes = Math.max(matchObj.voteCounts.home, matchObj.voteCounts.draw, matchObj.voteCounts.away);
-          if (matchObj.voteCounts.home === maxVotes) {
+          const maxVotes = Math.max(home, draw, away);
+          if (maxVotes === home) {
             matchObj.fanPrediction = 'HOME_TEAM';
-          } else if (matchObj.voteCounts.away === maxVotes) {
+          } else if (maxVotes === away) {
             matchObj.fanPrediction = 'AWAY_TEAM';
           } else {
             matchObj.fanPrediction = 'DRAW';
@@ -417,29 +417,22 @@ router.get('/', optionalAuth, async (req, res) => {
         } else {
           matchObj.fanPrediction = null;
         }
+      }
 
-        return matchObj;
-      })),
-      userId ? User.findById(userId, 'votes') : null
-    ]);
+      // Add user's vote if they have one
+      if (userId && userVotes[match.id]) {
+        matchObj.userVote = userVotes[match.id];
+      }
 
-    // Add user votes if user is logged in
-    if (user) {
-      processedMatches.forEach(match => {
-        const userVote = user.votes.find(v => v.matchId === match.id);
-        if (userVote) {
-          match.userVote = userVote.vote;
-        }
-      });
-    }
+      return matchObj;
+    });
 
     res.json({ matches: processedMatches });
   } catch (error) {
     console.error('Error in matches route:', error);
     res.status(500).json({ 
-      message: 'Error fetching matches', 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: 'Error fetching matches',
+      error: error.message
     });
   }
 });
@@ -477,50 +470,41 @@ router.post('/:matchId/vote', auth, async (req, res) => {
       return res.status(404).json({ message: 'Match not found' });
     }
 
-    console.log(`Match status: ${match.status}`);
-
     if (match.status !== 'TIMED' && match.status !== 'SCHEDULED') {
       return res.status(400).json({ 
         message: `Voting is not allowed for this match. Current status: ${match.status}` 
       });
     }
 
-    // Handle vote recording for the match
+    // Create or update vote in Vote collection
+    await Vote.findOneAndUpdate(
+      { userId, matchId },
+      { 
+        vote,
+        competition: {
+          id: match.competition.id,
+          name: match.competition.name
+        }
+      },
+      { upsert: true }
+    );
+
+    // Update match vote counts
     match.votes[vote]++;
     await match.save();
 
-    // Handle user vote recording
-    try {
-      await Promise.all([
-        User.findOneAndUpdate(
-          { _id: userId },
-          { 
-            $push: { 
-              votes: { 
-                matchId, 
-                vote,
-                date: new Date() 
-              } 
-            },
-            $inc: { totalVotes: 1 }
-          },
-          { runValidators: false }
-        ),
-        UserStatsCache.findOneAndUpdate(
-          { userId },
-          { $set: { lastUpdated: new Date(0) } }, // Force cache refresh
-          { upsert: true }
-        )
-      ]);
+    // Update user's total votes count
+    await User.findByIdAndUpdate(
+      userId,
+      { $inc: { totalVotes: 1 } }
+    );
 
-      console.log(`Vote recorded successfully for user ${userId} on match ${matchId}`);
-    } catch (userUpdateError) {
-      console.error('Error updating user vote:', userUpdateError);
-      return res.status(500).json({ 
-        message: 'Error recording vote', 
-        error: userUpdateError.message 
-      });
-    }
+    // Clear user stats cache
+    await UserStatsCache.findOneAndUpdate(
+      { userId },
+      { $set: { lastUpdated: new Date(0) } },
+      { upsert: true }
+    );
 
     res.json({
       message: 'Vote recorded successfully',
