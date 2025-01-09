@@ -1,19 +1,26 @@
-// backend/scripts/updateVoteResults.js
+// backend/scripts/updateProductionVotes.js
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Match = require('../models/Match');
 const Vote = require('../models/Vote');
 const User = require('../models/User');
 
+// Update the URI to explicitly specify the 'test' database
+const PRODUCTION_URI = 'mongodb+srv://weknowbetteradmin:dMMZV14rCKTYLJXG@cluster0.sbr1j.mongodb.net/test';
+
 async function updateVoteResults() {
     try {
+        console.log('Connecting to production database (test)...');
         mongoose.set('strictQuery', false);
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test');
-        console.log('Connected to MongoDB');
+        await mongoose.connect(PRODUCTION_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log('Connected to MongoDB database:', mongoose.connection.db.databaseName);
 
         // First, let's see what matches we have
         const allMatches = await Match.find({});
-        console.log('\nDatabase overview:');
+        console.log('\nProduction Database overview:');
         console.log(`Total matches in database: ${allMatches.length}`);
         
         const matchStatusCounts = allMatches.reduce((acc, match) => {
@@ -104,7 +111,11 @@ async function updateVoteResults() {
                 { new: true }
             );
 
-            console.log(`Updated stats for user ${user.username}: ${correctVotes}/${finishedVotes} correct`);
+            if (user) {
+                console.log(`Updated stats for user ${user.username}: ${correctVotes}/${finishedVotes} correct`);
+            } else {
+                console.log(`Warning: User ${userId} not found`);
+            }
         }
 
         console.log('\nSummary:');
@@ -112,9 +123,14 @@ async function updateVoteResults() {
         console.log(`Total votes updated: ${totalVotesUpdated}`);
         console.log(`Total users affected: ${totalUsersUpdated.size}`);
 
+        await mongoose.connection.close();
+        console.log('Database connection closed');
         process.exit(0);
     } catch (error) {
         console.error('Error updating vote results:', error);
+        if (mongoose.connection) {
+            await mongoose.connection.close();
+        }
         process.exit(1);
     }
 }
