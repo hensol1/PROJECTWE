@@ -6,7 +6,6 @@ const Vote = require('../models/Vote');
 const User = require('../models/User');
 
 // Update the URI to explicitly specify the 'test' database
-const PRODUCTION_URI = 'mongodb+srv://weknowbetteradmin:dMMZV14rCKTYLJXG@cluster0.sbr1j.mongodb.net/test';
 
 async function updateVoteResults() {
     try {
