@@ -709,5 +709,66 @@ router.get('/:matchId/events', async (req, res) => {
   }
 });
 
+router.post('/update-results', auth, async (req, res) => {
+  try {
+      // Get all finished matches that haven't been processed
+      const matches = await Match.find({
+          status: 'FINISHED',
+          processed: { $ne: true }
+      });
+
+      console.log(`Found ${matches.length} unprocessed finished matches`);
+
+      for (const match of matches) {
+          // Get all votes for this match
+          const votes = await Vote.find({ matchId: match.id });
+          
+          // Determine actual result
+          const actualResult = 
+              match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
+              match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW';
+
+          // Update each vote
+          for (const vote of votes) {
+              const votePrediction = 
+                  vote.vote === 'home' ? 'HOME_TEAM' :
+                  vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
+
+              vote.isCorrect = votePrediction === actualResult;
+              await vote.save();
+
+              // Update user stats
+              const userVotes = await Vote.find({ 
+                  userId: vote.userId,
+                  isCorrect: { $ne: null }
+              });
+
+              const correctVotes = userVotes.filter(v => v.isCorrect).length;
+              const finishedVotes = userVotes.length;
+
+              await User.findByIdAndUpdate(vote.userId, {
+                  $set: {
+                      correctVotes,
+                      finishedVotes,
+                      accuracy: finishedVotes > 0 ? (correctVotes / finishedVotes * 100) : 0
+                  }
+              });
+          }
+
+          // Mark match as processed
+          match.processed = true;
+          await match.save();
+      }
+
+      res.json({ 
+          message: 'Vote results updated successfully',
+          processedMatches: matches.length
+      });
+  } catch (error) {
+      console.error('Error updating results:', error);
+      res.status(500).json({ message: 'Error updating results' });
+  }
+});
+
 
 module.exports = router;

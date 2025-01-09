@@ -1,5 +1,6 @@
 // Part 1: Imports
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import TabsSection from './TabsSection';
 import ModernAccuracyComparison from './AccuracyComparison';
 import api from '../api';
 import { format, addDays, subDays, parseISO, startOfDay, endOfDay, isToday } from 'date-fns';
@@ -15,36 +16,66 @@ import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
 
 // Constants
-const continentalLeagues = {
-  Europe: [2, 3, 39, 40, 45, 48, 61, 62, 78, 79, 81, 88, 90, 94, 96, 103, 106, 113, 119, 135, 137, 140, 143, 144, 172, 179, 197, 199, 203, 207, 210, 218, 235, 271, 283, 286, 318, 327, 333, 345, 373, 383, 384, 385, 848],
-  International: [4, 5, 6, 10, 34],
-  Americas: [11, 13, 71, 128, 253],
-  Asia: [17, 30, 169, 188, 307],
-  Africa: [12, 20, 29, 36, 233]
-};
 
 const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
 
 // Component Definition
 const Matches = ({ user, onOpenAuthModal }) => {
-  // State declarations
-  const [matches, setMatches] = useState({});
-  const [allLiveMatches, setAllLiveMatches] = useState({}); 
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [collapsedLeagues, setCollapsedLeagues] = useState({});
-  const [selectedContinent, setSelectedContinent] = useState('All');
-  const [isLoading, setIsLoading] = useState(true);
-  const [userTimeZone, setUserTimeZone] = useState('');
-  const [activeTab, setActiveTab] = useState("live");
-  const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
-  const [isManualTabSelect, setIsManualTabSelect] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [goalNotifications, setGoalNotifications] = useState([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [processedScoreUpdates] = useState(new Set());
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [isAutoVoting, setIsAutoVoting] = useState(false);
-  const [isVotingBoxVisible, setIsVotingBoxVisible] = useState(false);
+// State declarations
+const [matches, setMatches] = useState({});
+const [allLiveMatches, setAllLiveMatches] = useState({});
+const [selectedDay, setSelectedDay] = useState('today');
+const [collapsedLeagues, setCollapsedLeagues] = useState({});
+const [isLoading, setIsLoading] = useState(true);
+const [userTimeZone, setUserTimeZone] = useState('');
+const [activeTab, setActiveTab] = useState("live");
+const [accuracyData, setAccuracyData] = useState({ fanAccuracy: 0, aiAccuracy: 0 });
+const [isManualTabSelect, setIsManualTabSelect] = useState(false);
+const [isInitialLoad, setIsInitialLoad] = useState(true);
+const [goalNotifications, setGoalNotifications] = useState([]);
+const [isRefreshing, setIsRefreshing] = useState(false);
+const [processedScoreUpdates] = useState(new Set());
+const [imagesLoaded, setImagesLoaded] = useState(false);
+const [isAutoVoting, setIsAutoVoting] = useState(false);
+const [isVotingBoxVisible, setIsVotingBoxVisible] = useState(false);
+const handleSetSelectedDay = useCallback((day) => {
+  setSelectedDay(day);
+}, []);
+
+const handleTabChange = useCallback((newTab) => {
+  setIsManualTabSelect(true);
+  setActiveTab(newTab);
+}, []);
+
+const memoizedGetDateForSelection = useCallback((selection) => {
+  const today = new Date();
+  switch(selection) {
+    case 'yesterday':
+      return subDays(today, 1);
+    case 'tomorrow':
+      return addDays(today, 1);
+    default: // 'today'
+      return today;
+  }
+}, []);
+
+const getDateForSelection = useCallback((selection) => {
+  const today = new Date();
+  switch(selection) {
+    case 'yesterday':
+      return subDays(today, 1);
+    case 'tomorrow':
+      return addDays(today, 1);
+    default: // 'today'
+      return today;
+  }
+}, []);
+
+// Derived state
+const selectedDate = getDateForSelection(selectedDay);
+const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
+const matchesForCurrentDate = matches[currentDateKey] || {};
+const allMatchesForCurrentDate = matches[currentDateKey] || {};
 
   // Add this helper function
   const processMatchesResponse = (matchesData, userTimeZone, user) => {
@@ -55,7 +86,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
     matchesData.forEach(match => {
       if (processedMatchIds.has(match.id)) {
         return;
-      }
+      }      
   
       const matchLocalDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
       const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
@@ -110,11 +141,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
     return { liveMatches, regularMatches };
   };
   
-  // Derived state
-  const currentDateKey = format(currentDate, 'yyyy-MM-dd');
-  const matchesForCurrentDate = matches[currentDateKey] || {};
-  const allMatchesForCurrentDate = matches[currentDateKey] || {};
-
   const filterMatchesByStatus = (matches, statuses) => {
     return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
       const filteredMatches = leagueMatches.filter(match => {
@@ -122,9 +148,9 @@ const Matches = ({ user, onOpenAuthModal }) => {
         
         if (statusMatches && match.status === 'TIMED') {
           const matchDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
-          const startOfToday = startOfDay(currentDate);
-          const endOfToday = endOfDay(currentDate);
-          return matchDate >= startOfToday && matchDate <= endOfToday;
+          const startOfToday = startOfDay(selectedDate);
+          const endOfToday = endOfDay(selectedDate);
+                    return matchDate >= startOfToday && matchDate <= endOfToday;
         }
         
         return statusMatches;
@@ -136,31 +162,15 @@ const Matches = ({ user, onOpenAuthModal }) => {
       return acc;
     }, {});
   };
-
-  const getLeagueContinent = (leagueId) => {
-    for (const [continent, leagues] of Object.entries(continentalLeagues)) {
-      if (leagues.includes(leagueId)) {
-        return continent;
-      }
-    }
-    return 'Other';
-  };
-
-
-    // Filter matches based on continent
-    const filteredMatches = Object.entries(matchesForCurrentDate).reduce((acc, [leagueKey, leagueMatches]) => {
-      const [, leagueId] = leagueKey.split('_');
-      const continent = getLeagueContinent(parseInt(leagueId));
-      if (selectedContinent === 'All' || continent === selectedContinent) {
-        acc[leagueKey] = leagueMatches;
-      }
-      return acc;
-    }, {});
   
+    // Filter matches based on continent
+    const filteredMatches = matchesForCurrentDate;
+
     const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']);
     const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED']);
     const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED']);
-  
+    
+      
   const hasAnyLiveMatches = Object.keys(liveMatches).length > 0 || Object.keys(allLiveMatches).length > 0;
 
   // Utility functions
@@ -281,7 +291,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
         ['TIMED', 'SCHEDULED'].includes(match.status)
       )
     );
-    if (hasScheduledMatches) return 'scheduled';
+        if (hasScheduledMatches) return 'scheduled';
 
     // Finally check for finished matches
     const hasFinishedMatches = Object.values(matches[currentDateKey] || {}).some(leagueMatches =>
@@ -291,7 +301,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
 
     // Default to scheduled if no matches are found
     return 'scheduled';
-  }, [allLiveMatches, matches, currentDateKey]);
+  }, [allLiveMatches, matches, currentDateKey]);  
 
   // Data fetching and updates
   const fetchAccuracyData = useCallback(async () => {
@@ -473,7 +483,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
     }
   }, [userTimeZone, user]);
     
-  const fetchMatches = useCallback(async (date) => {
+  const fetchMatches = async (date) => {
     setIsLoading(true);
     setImagesLoaded(false);
     
@@ -488,20 +498,20 @@ const Matches = ({ user, onOpenAuthModal }) => {
         const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
         const leagueKey = `${match.competition.name}_${match.competition.id}`;
                 
-        // Check if this match exists in allLiveMatches and use its vote data
         let existingLiveMatch;
         Object.values(allLiveMatches).forEach(leagueMatches => {
           const found = leagueMatches.find(m => m.id === match.id);
           if (found) existingLiveMatch = found;
         });
-
-const updatedMatch = {
-  ...match,
-  localDate: matchLocalDate,
-  userVote: match.userVote,
-  voteCounts: existingLiveMatch?.voteCounts || match.voteCounts || { home: 0, draw: 0, away: 0 },
-  fanPrediction: existingLiveMatch?.fanPrediction || match.fanPrediction
-};
+  
+        const updatedMatch = {
+          ...match,
+          localDate: matchLocalDate,
+          userVote: match.userVote,
+          voteCounts: existingLiveMatch?.voteCounts || match.voteCounts || { home: 0, draw: 0, away: 0 },
+          fanPrediction: existingLiveMatch?.fanPrediction || match.fanPrediction
+        };
+  
         const selectedStartOfDay = startOfDay(date);
         const selectedEndOfDay = endOfDay(date);
         
@@ -515,7 +525,7 @@ const updatedMatch = {
           groupedMatches[dateKey][leagueKey].push(updatedMatch);
         }
       });
-
+  
       await preloadImages(groupedMatches);
       
       setMatches(prevMatches => {
@@ -527,7 +537,7 @@ const updatedMatch = {
         checkForGoals(newState, prevMatches);
         return newState;
       });
-
+  
     } catch (error) {
       console.error('Error in component fetchMatches:', error);
       setMatches(prevMatches => ({
@@ -537,7 +547,10 @@ const updatedMatch = {
     } finally {
       setIsLoading(false);
     }
-}, [userTimeZone, checkForGoals, preloadImages, user, allLiveMatches]); // Add allLiveMatches to dependencies
+  };
+  
+  const memoizedFetchMatches = useCallback(fetchMatches, [userTimeZone, checkForGoals, preloadImages, user, allLiveMatches]);
+
   
 const softUpdateMatches = useCallback(async () => {
   if (!userTimeZone) return;
@@ -554,7 +567,7 @@ try {
     const liveResponse = await api.fetchLiveMatches();
     
     // Then fetch current date matches, but only if we're not in live tab
-    const formattedDate = format(zonedTimeToUtc(currentDate, userTimeZone), 'yyyy-MM-dd');
+    const formattedDate = format(zonedTimeToUtc(selectedDate, userTimeZone), 'yyyy-MM-dd');
     const matchesResponse = activeTab !== 'live' 
       ? await api.fetchMatches(formattedDate)
       : { data: { matches: [] } };
@@ -597,32 +610,8 @@ try {
     } finally {
       setIsRefreshing(false);
     }
-  }, [userTimeZone, currentDate, matches, allLiveMatches, user, checkForGoals, activeTab, isManualTabSelect, determineActiveTab]);
-
-  // Event handlers
-  const handleTabChange = useCallback((newTab) => {
-    setIsManualTabSelect(true);
-    if (newTab === 'live' && hasAnyLiveMatches) {
-      // For live tab, we don't need to change the date anymore
-      setActiveTab('live');
-    } else {
-      setActiveTab(newTab);
-    }
-  }, [hasAnyLiveMatches]);
-
-  const handleDateChange = useCallback((days) => {
-    setIsManualTabSelect(true);
-    const newDate = days > 0 ? addDays(currentDate, days) : subDays(currentDate, Math.abs(days));
-    
-    fetchMatches(newDate).then(() => {
-      // Determine the appropriate tab after new data is loaded
-      setActiveTab(determineActiveTab());
-    });
-    
-    setCurrentDate(newDate);
-    setSelectedContinent('All');
-  }, [currentDate, fetchMatches, determineActiveTab]);
-
+  }, [userTimeZone, selectedDate, matches, allLiveMatches, user, checkForGoals, activeTab, isManualTabSelect, determineActiveTab]);
+        
   const handleNotificationDismiss = useCallback((notification) => {
     if (notification === 'all') {
       setGoalNotifications([]);
@@ -642,7 +631,7 @@ try {
 
     try {
       setIsAutoVoting(true);
-      const formattedDate = format(zonedTimeToUtc(currentDate, userTimeZone), 'yyyy-MM-dd');
+const formattedDate = format(zonedTimeToUtc(selectedDate, userTimeZone), 'yyyy-MM-dd');
       const response = await api.autoVote(formattedDate);
   
       setMatches(prevMatches => {
@@ -742,7 +731,7 @@ try {
     }).map(([leagueKey, competitionMatches]) => {
       const [leagueName] = leagueKey.split('_');
       return (
-        <div key={leagueKey} className="mb-4 last:mb-0">
+        <div key={leagueKey} className="mb-4 last:mb-0 max-w-md mx-auto w-full">
           <button 
             className="w-full group relative overflow-hidden"
             onClick={() => toggleLeague(leagueKey)}
@@ -766,7 +755,7 @@ try {
               </div>
             </div>
           </button>
-          
+              
           {!collapsedLeagues[leagueKey] && (
             <div className="mt-1">
               <AnimatedList delay={200} className="!overflow-visible gap-1">
@@ -786,6 +775,67 @@ try {
     });
   };
 
+  const renderStatusTabs = () => {
+    if (selectedDay === 'yesterday') {
+      return (
+        <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
+          <button
+            className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm flex items-center justify-center"
+          >
+            <BiAlarmOff className="mr-1 sm:mr-2" />
+            Finished
+          </button>
+        </div>
+      );
+    }
+  
+    if (selectedDay === 'tomorrow') {
+      return (
+        <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
+          <button
+            className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm flex items-center justify-center"
+          >
+            <BiAlarm className="mr-1 sm:mr-2" />
+            Scheduled
+          </button>
+        </div>
+      );
+    }
+  
+    if (selectedDay === 'today') {
+      return (
+        <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
+          {['live', 'finished', 'scheduled'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className={`
+                px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
+                flex items-center justify-center
+                ${activeTab === tab
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-200'
+                }
+              `}
+            >
+              {tab === 'live' && (
+                <span 
+                  className={`
+                    inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
+                    ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
+                  `}
+                />
+              )}
+              {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
+              {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+      );
+    }
+  };
+    
   const renderTabContent = () => {
     switch (activeTab) {
       case 'live':
@@ -811,6 +861,10 @@ try {
     }
   };
 
+  const memoizedTabContent = useMemo(() => {
+    return renderTabContent();
+  }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches]);  
+
   // Effect Hooks
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -820,16 +874,15 @@ try {
     if (userTimeZone && isInitialLoad) {
       Promise.all([
         fetchLiveMatches(),
-        fetchMatches(currentDate),
+        memoizedFetchMatches(getDateForSelection('today')),  // Use it here
         fetchAccuracyData()
       ]).then(() => {
-        // Set the initial active tab after data is loaded
         setActiveTab(determineActiveTab());
         setIsInitialLoad(false);
       });
     }
-  }, [currentDate, userTimeZone, fetchMatches, fetchAccuracyData, isInitialLoad, fetchLiveMatches, determineActiveTab]);
-  
+  }, [userTimeZone, memoizedFetchMatches, fetchAccuracyData, isInitialLoad, fetchLiveMatches, determineActiveTab, getDateForSelection]);
+      
   useEffect(() => {
     const pollInterval = setInterval(() => {
       if (!isLoading) {
@@ -849,27 +902,24 @@ try {
       />
       
       <ModernAccuracyComparison 
-        user={user} 
-        onSignInClick={onOpenAuthModal}  // Add this prop
-      />
-      
-      {/* Only show NextMatchCountdown if there are no live matches */}
-      {!hasAnyLiveMatches && (
-        <NextMatchCountdown scheduledMatches={scheduledMatches} />
-      )}
-  
+  user={user} 
+  onSignInClick={onOpenAuthModal}
+  allLiveMatches={allLiveMatches}  // Add this
+  scheduledMatches={scheduledMatches} // Add this
+/>
+        
       {/* Match Voting Box */}
       {hasAvailableMatches() ? (
         <div className="mb-8 flex justify-center gap-4">
           {isVotingBoxVisible ? (
             <MatchVotingBox 
-              matches={Object.values(allMatchesForCurrentDate)
-                .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
-                .filter(match => 
-                  (match.status === 'TIMED' || match.status === 'SCHEDULED')
-                )
-                .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
-              onVote={handleVote}
+            matches={Object.values(allMatchesForCurrentDate)
+              .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
+              .filter(match => 
+                (match.status === 'TIMED' || match.status === 'SCHEDULED')
+              )
+              .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
+                          onVote={handleVote}
               onSkip={(matchId) => {
                 console.log('Skipped match:', matchId);
               }}
@@ -902,106 +952,37 @@ try {
         </div>
       ) : null}
 
-      {isLoading ? (
-        <LoadingLogo />
-      ) : !imagesLoaded ? (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-pulse text-gray-600">Loading images...</div>
+{isLoading ? (
+      <LoadingLogo />
+    ) : !imagesLoaded ? (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-pulse text-gray-600">Loading images...</div>
+      </div>
+    ) : (
+      <>
+      <TabsSection 
+        selectedDay={selectedDay}
+        setSelectedDay={handleSetSelectedDay}
+        activeTab={activeTab}
+        handleTabChange={handleTabChange}
+        hasAnyLiveMatches={hasAnyLiveMatches}
+        getDateForSelection={memoizedGetDateForSelection}
+        fetchMatches={memoizedFetchMatches}
+      />
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
+          {memoizedTabContent}
         </div>
-      ) : (
-        <>
-          <div className="flex flex-col space-y-4 mb-4">
-            {/* Tab Filters */}
-            <div className="flex justify-center">
-              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
-                {['live', 'finished', 'scheduled'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => handleTabChange(tab)}
-                    className={`
-                      px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                      flex items-center justify-center
-                      ${activeTab === tab
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-200'
-                      }
-                    `}
-                  >
-                    {tab === 'live' && (
-                      <span 
-                        className={`
-                          inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2
-                          ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}
-                        `}
-                      />
-                    )}
-                    {tab === 'finished' && <BiAlarmOff className="mr-1 sm:mr-2" />}
-                    {tab === 'scheduled' && <BiAlarm className="mr-1 sm:mr-2" />}
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* Continent Filters */}
-            <div className="flex justify-center">
-              <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
-                {['All', 'Europe', 'Americas', 'Asia', 'Africa', 'International'].map((continent) => (
-                  <button
-                    key={continent}
-                    onClick={() => setSelectedContinent(continent)}
-                    className={`
-                      px-2 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                      ${selectedContinent === continent
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-200'
-                      }
-                    `}
-                  >
-                    {continent}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {isRefreshing && (
+          <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
+            Updating...
           </div>
+        )}
+      </>
+    )}
+  </div>
+);
 
-          {/* Centered Date Navigation */}
-          <div className="flex justify-center my-4">
-            <div className="flex items-center gap-2">
-              <CustomButton 
-                onClick={() => handleDateChange(-1)}
-                className="w-10 h-10 flex items-center justify-center"
-              >
-                <span className="text-xl font-bold">&lt;</span>
-              </CustomButton>
-              
-              <h2 className="text-sm sm:text-lg font-bold text-gray-800">
-                {format(currentDate, 'dd MMM yyyy')}
-              </h2>
-              
-              <CustomButton 
-                onClick={() => handleDateChange(1)}
-                className="w-10 h-10 flex items-center justify-center"
-              >
-                <span className="text-xl font-bold">&gt;</span>
-              </CustomButton>
-            </div>
-          </div>
-
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
-            {renderTabContent()}
-          </div>
-
-          {/* Subtle refresh indicator */}
-          {isRefreshing && (
-            <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
-              Updating...
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
 };
 
 export default Matches;

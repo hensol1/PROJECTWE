@@ -578,4 +578,56 @@ router.delete('/profile', auth, async (req, res) => {
   }
 });
 
+router.get('/rankings', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get global ranking
+    const allUsers = await User.find({ 
+      finishedVotes: { $gte: 10 } 
+    }).sort({ wilsonScore: -1 });
+    
+    const globalRank = allUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    // Get country ranking
+    const countryUsers = await User.find({ 
+      country: user.country,
+      finishedVotes: { $gte: 10 }
+    }).sort({ wilsonScore: -1 });
+    
+    const countryRank = countryUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    // Get city ranking
+    const cityUsers = await User.find({ 
+      country: user.country,
+      city: user.city,
+      finishedVotes: { $gte: 10 }
+    }).sort({ wilsonScore: -1 });
+    
+    const cityRank = cityUsers.findIndex(u => u._id.toString() === user._id.toString()) + 1;
+
+    res.json({
+      global: globalRank,
+      country: {
+        rank: countryRank,
+        total: countryUsers.length,
+        name: user.country
+      },
+      city: {
+        rank: cityRank,
+        total: cityUsers.length,
+        name: user.city
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting user rankings:', error);
+    res.status(500).json({ message: 'Error getting rankings' });
+  }
+});
+
+
 module.exports = router;

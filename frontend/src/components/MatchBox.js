@@ -1,334 +1,386 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { Clock } from 'lucide-react';
+import MatchEvents from './MatchEvents';
 import StandingsButton from './StandingsButton';
 import { shouldShowStandings } from '../constants/leagueConfig';
-import MatchEvents from './MatchEvents';
-import { Clock } from 'lucide-react';
+import { FaPeopleGroup } from "react-icons/fa6";
+import { FaBrain } from "react-icons/fa";
 
-const MatchBox = ({ match, onVote, isLiveTab }) => {
+// Website brand colors
+const websiteColors = {
+  primary: '#2ECC40',
+  primaryDark: '#25a032',
+  background: '#171923',
+  backgroundGradient: '#2ECC43', // Adding the new gradient color
+  backgroundLight: '#1e2231',
+  text: '#FFFFFF'
+};
+
+const MatchBox = ({ match, onVote }) => {
   const [showEvents, setShowEvents] = useState(false);
-
-  const getScoreDisplay = () => {
-    if (match.status === 'SCHEDULED' || match.status === 'TIMED') {
-      return <span className="text-xs sm:text-sm font-medium text-gray-600">{format(new Date(match.localDate), 'HH:mm')}</span>;
-    }
-  
-    return (
-      <div className="flex flex-col items-center">
-        {(match.status === 'HALFTIME' || match.status === 'FINISHED') && (
-          <span className="text-[10px] sm:text-xs text-gray-500 mb-0.5">
-            {match.status === 'HALFTIME' ? 'HT' : 'FT'}
-          </span>
-        )}
-        <div className="flex items-center justify-center space-x-1">
-          <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
-          <span className="text-xs sm:text-sm text-gray-400">-</span>
-          <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
-        </div>
-      </div>
-    );
-  };
-  
-  const getMatchMinute = () => {
-    if (!match.minute || match.status === 'TIMED') return '';
-    switch (match.status) {
-      case 'IN_PLAY': return `${match.minute}'`;
-      case 'HALFTIME': return 'HT';
-      case 'PAUSED': return `${match.minute}' (Paused)`;
-      default: return match.status;
-    }
-  };
-
-  const getTeamPrediction = (prediction) => {
-    switch(prediction) {
-      case 'HOME_TEAM':
-        return (
-          <span className="flex items-center">
-            {match.homeTeam.name}
-            <img src={match.homeTeam.crest} alt={match.homeTeam.name} className="w-3 h-3 inline-block ml-0.5" />
-          </span>
-        );
-      case 'AWAY_TEAM':
-        return (
-          <span className="flex items-center">
-            {match.awayTeam.name}
-            <img src={match.awayTeam.crest} alt={match.awayTeam.name} className="w-3 h-3 inline-block ml-0.5" />
-          </span>
-        );
-      case 'DRAW':
-        return "Draw";
-      default:
-        return 'No prediction';
-    }
-  };
-
-  const TeamColumn = ({ team, side, onVoteClick, prediction }) => (
-    <div className="flex flex-col items-center w-20 sm:w-28">
-      <div className="flex flex-col items-center">
-        {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-          <button
-            onClick={() => onVoteClick(match.id, side)}
-            className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
-          >
-            <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
-            <img 
-              src={team.crest} 
-              alt={team.name} 
-              className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
-            />
-          </button>
-        ) : (
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
-            <img 
-              src={team.crest} 
-              alt={team.name} 
-              className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-            />
-          </div>
-        )}
-        <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
-          {team.name}
-        </span>
-      </div>
-      {prediction && (
-        <span className="text-[10px] sm:text-xs text-gray-600 mt-0.5">
-          {prediction}
-        </span>
-      )}
-    </div>
-  );
+  const [timeUntilMatch, setTimeUntilMatch] = useState('');
 
   const isPredictionCorrect = (prediction) => {
     if (match.status !== 'FINISHED') return false;
+    
     const homeScore = match.score.fullTime.home;
     const awayScore = match.score.fullTime.away;
-    const actualResult = homeScore > awayScore ? 'HOME_TEAM' : (awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW');
+    const actualResult = homeScore > awayScore ? 'HOME_TEAM' : 
+                        awayScore > homeScore ? 'AWAY_TEAM' : 
+                        'DRAW';
+                        
     return prediction === actualResult;
   };
 
-  const TeamLogo = ({ team, side, onVoteClick }) => (
-    <div className="flex flex-col items-center">
-      {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-        <button
-          onClick={() => onVoteClick(match.id, side)}
-          className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
-        >
-          <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
-          <img 
-            src={team.crest} 
-            alt={team.name} 
-            className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
-          />
-        </button>
-      ) : (
-        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
-          <img 
-            src={team.crest} 
-            alt={team.name} 
-            className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-          />
-        </div>
-      )}
-      <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
-        {team.name}
-      </span>
-    </div>
-  );
-  
-  const getVotePercentages = () => {
-    const totalVotes = match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away;
-    if (totalVotes === 0) return { home: 0, draw: 0, away: 0 };
-    
-    return {
-      home: Math.round((match.voteCounts.home / totalVotes) * 100),
-      draw: Math.round((match.voteCounts.draw / totalVotes) * 100),
-      away: Math.round((match.voteCounts.away / totalVotes) * 100)
-    };
+  const getTeamPrediction = (prediction) => {
+    if (prediction === 'HOME_TEAM') {
+      // Use full name if it's relatively short (less than 15 characters is typically safe for one line)
+      const fullName = match.homeTeam.name;
+      return fullName.length < 15 ? fullName : fullName.split(' ')[0];
+    } else if (prediction === 'AWAY_TEAM') {
+      const fullName = match.awayTeam.name;
+      return fullName.length < 15 ? fullName : fullName.split(' ')[0];
+    }
+    return prediction === 'DRAW' ? "Draw" : 'No votes yet';
   };
+    
+  useEffect(() => {
+    if (match.status === 'SCHEDULED' || match.status === 'TIMED') {
+      const updateCountdown = () => {
+        const now = new Date();
+        const matchTime = new Date(match.localDate);
+        const diff = matchTime - now;
+
+        if (diff <= 0) {
+          setTimeUntilMatch('Starting...');
+          return;
+        }
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        if (hours > 24) {
+          const days = Math.floor(hours / 24);
+          setTimeUntilMatch(`${days}d ${hours % 24}h ${minutes}m ${seconds}s`);
+        } else if (hours > 0) {
+          setTimeUntilMatch(`${hours}h ${minutes}m ${seconds}s`);
+        } else if (minutes > 0) {
+          setTimeUntilMatch(`${minutes}m ${seconds}s`);
+        } else {
+          setTimeUntilMatch(`${seconds}s`);
+        }
+      };
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [match.localDate, match.status]);
 
   return (
-    <div className="relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
-      {shouldShowStandings(match.competition.id) && (
-        <div className="absolute right-2 top-2 z-10">
-          <StandingsButton 
-            leagueId={match.competition.id}
-            season={new Date(match.localDate).getFullYear()}
-            homeTeam={match.homeTeam}
-            awayTeam={match.awayTeam}
-            leagueName={match.competition.name}
-            leagueFlag={match.competition.country?.flag}
-          />
-        </div>
-      )}
-
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
-        {/* Left Section - Home Team */}
-        <div className="flex flex-col items-center w-20 sm:w-28">
-          {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-            <button
-              onClick={() => onVote(match.id, 'home')}
-              className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
+    <div className="w-full max-w-md mx-auto overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl">
+{/* Dark Background Section */}
+<div 
+  className="relative p-4"
+  style={{
+    background: `radial-gradient(circle at top, ${websiteColors.background} 40%, transparent 90%), linear-gradient(200deg, ${websiteColors.background} 40%, ${websiteColors.backgroundGradient} 90%)`,
+    color: websiteColors.text
+  }}
+>
+        {/* Match Header - Time Until Match */}
+        {(match.status === 'SCHEDULED' || match.status === 'TIMED') && (
+          <div className="flex justify-center mb-4">
+            <div className="text-center">
+              {!match.userVote && (
+                <span className="text-sm font-medium">
+                  {format(new Date(match.localDate), 'HH:mm')}
+                </span>
+              )}
+              <span className="text-xs opacity-75 block">• {timeUntilMatch}</span>
+            </div>
+          </div>
+        )}
+  
+        {/* Standings Button */}
+        {shouldShowStandings(match.competition.id) && (
+          <div className="absolute top-4 right-4">
+            <button 
+              style={{ color: websiteColors.primary }}
+              className="hover:opacity-80 transition-opacity"
             >
-              <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
-              <img 
-                src={match.homeTeam.crest} 
-                alt={match.homeTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
+              <StandingsButton 
+                leagueId={match.competition.id}
+                season={new Date(match.localDate).getFullYear()}
+                homeTeam={match.homeTeam}
+                awayTeam={match.awayTeam}
+                leagueName={match.competition.name}
+                leagueFlag={match.competition.country?.flag}
               />
             </button>
-          ) : (
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
-              <img 
-                src={match.homeTeam.crest} 
-                alt={match.homeTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-              />
-            </div>
-          )}
-          <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
-            {match.homeTeam.name}
-          </span>
-        </div>
-
-        {/* Center Section - Score and Draw */}
-        <div className="flex flex-col items-center w-16 sm:w-20">
-          {match.status === 'IN_PLAY' && (
-            <span className="text-[10px] sm:text-xs text-green-600 font-medium animate-pulse mb-0.5">
-              {match.minute}'
-            </span>
-          )}
-          {match.status === 'HALFTIME' && (
-            <span className="text-[10px] sm:text-xs text-indigo-600 font-medium mb-0.5">
-              HT
-            </span>
-          )}
-          {match.status === 'FINISHED' && (
-            <span className="text-[10px] sm:text-xs text-gray-500 mb-0.5">
-              FT
-            </span>
-          )}
-
-          {match.status === 'SCHEDULED' || match.status === 'TIMED' ? (
-            <span className="text-xs sm:text-sm font-medium text-gray-600">
-              {format(new Date(match.localDate), 'HH:mm')}
-            </span>
-          ) : (
-            <div className="flex items-center justify-center space-x-1">
-              <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.home}</span>
-              <span className="text-xs sm:text-sm text-gray-400">-</span>
-              <span className="text-sm sm:text-base font-bold text-indigo-600">{match.score.fullTime.away}</span>
-            </div>
-          )}
-
-          {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && (
-            <button
-              onClick={() => onVote(match.id, 'draw')}
-              className="mt-1 px-2 py-0.5 text-[10px] sm:text-xs bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-200"
-            >
-              Draw
-            </button>
-          )}
-        </div>
-
-        {/* Right Section - Away Team */}
-        <div className="flex flex-col items-center w-20 sm:w-28">
-          {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-            <button
-              onClick={() => onVote(match.id, 'away')}
-              className="relative w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5 hover:bg-indigo-50 transition-colors duration-200 focus:outline-none group"
-            >
-              <div className="absolute inset-0 rounded-full border-2 border-indigo-500"></div>
-              <img 
-                src={match.awayTeam.crest} 
-                alt={match.awayTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain relative z-10"
-              />
-            </button>
-          ) : (
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 rounded-full flex items-center justify-center p-1.5">
-              <img 
-                src={match.awayTeam.crest} 
-                alt={match.awayTeam.name} 
-                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
-              />
-            </div>
-          )}
-          <span className="text-[10px] sm:text-xs font-medium mt-0.5 w-16 sm:w-20 truncate text-center">
-            {match.awayTeam.name}
-          </span>
-        </div>
-      </div>
-
-{/* Events Button - only show for live or finished matches */}
-{(match.status === 'IN_PLAY' || 
-  match.status === 'PAUSED' || 
-  match.status === 'HALFTIME' || 
-  match.status === 'FINISHED') && (
-  <div className="mt-2 flex justify-center">
-    <button
-      onClick={() => setShowEvents(true)}
-      className="flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full transition-colors"
-    >
-      <Clock className="w-4 h-4" />
-      Events
-    </button>
-  </div>
-)}
-
-      {/* Bottom Section - Predictions and Votes */}
-      <div className="mt-1.5 sm:mt-2 space-y-1 flex flex-col items-center">
-        {/* Predictions */}
-        <div className="w-full flex justify-between text-[10px] sm:text-xs px-2">
-          <p className={`rounded px-1 max-w-[45%] ${match.status === 'FINISHED' ? (isPredictionCorrect(match.fanPrediction) ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-            Fans: {match.fanPrediction ? getTeamPrediction(match.fanPrediction) : 'No votes yet'}
-            </p>
-          {match.aiPrediction && (
-            <p className={`rounded px-1 max-w-[45%] ${match.status === 'FINISHED' ? (isPredictionCorrect(match.aiPrediction) ? 'bg-green-100' : 'bg-red-100') : ''}`}>
-              Our Experts: {getTeamPrediction(match.aiPrediction)}
-            </p>
-          )}
-        </div>
-
-        {/* Vote Split & User Vote */}
-        {match.userVote && (
-          <>
-            <div className="w-2/3 mx-auto">
-              <div className="h-1 bg-gray-100 rounded-full overflow-hidden flex">
-                <div 
-                  className="bg-blue-500 transition-all duration-500"
-                  style={{ width: `${getVotePercentages().home}%` }}
+          </div>
+        )}
+  
+        {/* Teams and Score Section */}
+        <div className="flex justify-center items-center gap-12">
+          {/* Home Team */}
+          <div className="relative group">
+            {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
+              <button
+                onClick={() => onVote(match.id, 'home')}
+                className="relative bg-white bg-opacity-10 rounded-full p-2"
+              >
+                <div className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-opacity" 
+                  style={{ borderColor: websiteColors.primary }} 
                 />
-                <div 
-                  className="bg-yellow-500 transition-all duration-500"
-                  style={{ width: `${getVotePercentages().draw}%` }}
+                <img 
+                  src={match.homeTeam.crest} 
+                  alt={match.homeTeam.name}
+                  className="w-16 h-16 object-contain transition-transform group-hover:scale-110"
                 />
-                <div 
-                  className="bg-red-500 transition-all duration-500"
-                  style={{ width: `${getVotePercentages().away}%` }}
+              </button>
+            ) : (
+              <div className="bg-white bg-opacity-10 rounded-full p-2">
+                <img 
+                  src={match.homeTeam.crest} 
+                  alt={match.homeTeam.name}
+                  className="w-16 h-16 object-contain"
                 />
               </div>
+            )}
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded">
+              {match.homeTeam.name}
             </div>
-            <div className="bg-yellow-50 text-[10px] sm:text-xs p-1 rounded text-center w-2/3">
-              Your vote: {
-                match.userVote === 'home' ? match.homeTeam.name :
-                match.userVote === 'away' ? match.awayTeam.name :
-                'Draw'
-              }
+          </div>
+  
+{/* Score and Status */}
+<div className="flex flex-col items-center min-w-[60px]">
+  {(match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME') && (
+    <div className="flex flex-col items-center">
+      <span className="text-sm font-medium animate-pulse" style={{ color: '#2ECC43' }}>{match.minute}'</span>
+      <div className="flex items-center space-x-2">
+        <span className="text-xl font-bold">{match.score.fullTime.home}</span>
+        <span className="text-lg">:</span>
+        <span className="text-xl font-bold">{match.score.fullTime.away}</span>
+      </div>
+      <button
+        onClick={() => setShowEvents(true)}
+        className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
+      >
+        <Clock className="w-3 h-3" />
+        Events
+      </button>
+    </div>
+  )}
+  
+            {match.status === 'FINISHED' && (
+              <div className="flex flex-col items-center">
+                <span className="text-lg font-medium">FT</span>
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-xl font-bold">{match.score.fullTime.home}</span>
+                  <span className="text-lg">:</span>
+                  <span className="text-xl font-bold">{match.score.fullTime.away}</span>
+                </div>
+                <button
+                  onClick={() => setShowEvents(true)}
+                  className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
+                >
+                  <Clock className="w-3 h-3" />
+                  Events
+                </button>
+              </div>
+            )}
+  
+            {(match.status === 'SCHEDULED' || match.status === 'TIMED') && (
+              match.userVote ? (
+                <span className="text-sm font-medium">
+                  {format(new Date(match.localDate), 'HH:mm')}
+                </span>
+              ) : (
+                <button
+                  onClick={() => onVote(match.id, 'draw')}
+                  className="px-4 py-1 text-sm bg-opacity-20 hover:bg-opacity-30 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: websiteColors.primary,
+                    color: websiteColors.text
+                  }}
+                >
+                  Draw
+                </button>
+              )
+            )}
+          </div>
+  
+          {/* Away Team */}
+          <div className="relative group">
+            {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
+              <button
+                onClick={() => onVote(match.id, 'away')}
+                className="relative bg-white bg-opacity-10 rounded-full p-2"
+              >
+                <div className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-opacity" 
+                  style={{ borderColor: websiteColors.primary }} 
+                />
+                <img 
+                  src={match.awayTeam.crest} 
+                  alt={match.awayTeam.name}
+                  className="w-16 h-16 object-contain transition-transform group-hover:scale-110"
+                />
+              </button>
+            ) : (
+              <div className="bg-white bg-opacity-10 rounded-full p-2">
+                <img 
+                  src={match.awayTeam.crest} 
+                  alt={match.awayTeam.name}
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+            )}
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded">
+              {match.awayTeam.name}
             </div>
-          </>
+          </div>
+        </div>
+      </div>
+  
+      {/* White Background Section */}
+      <div className="bg-white p-4">
+{/* Predictions */}
+<div className="flex mb-3">
+{/* Fans Prediction */}
+<div 
+  style={{
+    backgroundColor: match.status === 'FINISHED' 
+      ? (isPredictionCorrect(match.fanPrediction) ? '#2ECC40' : '#ff4136')
+      : 'white',
+    width: '50%'
+  }}
+  className="flex items-center px-2 sm:px-4 py-2"
+>
+  <div className="flex items-center gap-1 sm:gap-2 w-full">
+    <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
+      style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
+      <FaPeopleGroup 
+        className="w-4 h-4 sm:w-5 sm:h-5" 
+        style={{ color: '#3B82F6' }} // This is the equivalent of bg-blue-500
+      />
+      Fans:
+    </span>
+      {match.fanPrediction && match.fanPrediction !== 'DRAW' && (
+        <img 
+          src={match.fanPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest} 
+          alt="" 
+          className="w-4 h-4 sm:w-6 sm:h-6" 
+        />
+      )}
+      <span className="text-xs sm:text-sm truncate" 
+        style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
+        {getTeamPrediction(match.fanPrediction)}
+      </span>
+    </div>
+  </div>
+
+  {/* Experts {/* Experts Prediction */}
+<div 
+  style={{
+    backgroundColor: match.status === 'FINISHED'
+      ? (isPredictionCorrect(match.aiPrediction) ? '#2ECC40' : '#ff4136')
+      : 'white',
+    width: '50%'
+  }}
+  className="flex items-center px-2 sm:px-4 py-2"
+>
+  <div className="flex items-center gap-1 sm:gap-2 w-full">
+    <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
+      style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
+      <FaBrain 
+        className="w-4 h-4 sm:w-5 sm:h-5" 
+        style={{ color: '#22C55E' }} // This is the equivalent of bg-green-500
+      />
+      Experts:
+    </span>
+      {match.aiPrediction && match.aiPrediction !== 'DRAW' && (
+        <img 
+          src={match.aiPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest} 
+          alt="" 
+          className="w-4 h-4 sm:w-6 sm:h-6" 
+        />
+      )}
+      <span className="text-xs sm:text-sm truncate" 
+        style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
+        {getTeamPrediction(match.aiPrediction)}
+      </span>
+    </div>
+  </div>
+</div>
+
+  
+        {/* Vote Percentages */}
+        {match.userVote && (
+          <div className="mb-3">
+            <div className="h-2 bg-gray-800 rounded-full overflow-hidden flex">
+              <div 
+                className="transition-all duration-500"
+                style={{ 
+                  width: `${(match.voteCounts.home / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0}%`,
+                  backgroundColor: websiteColors.primary 
+                }}
+              />
+              <div 
+                className="transition-all duration-500"
+                style={{ 
+                  width: `${(match.voteCounts.draw / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0}%`,
+                  backgroundColor: websiteColors.primaryDark
+                }}
+              />
+              <div 
+                className="transition-all duration-500"
+                style={{ 
+                  width: `${(match.voteCounts.away / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0}%`,
+                  backgroundColor: `${websiteColors.primary}99`
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>{Math.round((match.voteCounts.home / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0)}%</span>
+              <span>{Math.round((match.voteCounts.draw / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0)}%</span>
+              <span>{Math.round((match.voteCounts.away / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0)}%</span>
+            </div>
+          </div>
+        )}
+  
+        {/* User's Vote Display */}
+        {match.userVote && (
+          <div className="text-center text-sm">
+            <span className="px-3 py-1 rounded-full" style={{ 
+              backgroundColor: match.status === 'FINISHED' 
+                ? (isPredictionCorrect(match.userVote === 'home' ? 'HOME_TEAM' : match.userVote === 'away' ? 'AWAY_TEAM' : 'DRAW') 
+                  ? '#2ECC40' 
+                  : '#ff4136')
+                : websiteColors.primary,
+              color: websiteColors.text 
+            }}>
+              Your vote: {getTeamPrediction(
+                match.userVote === 'home' ? 'HOME_TEAM' :
+                match.userVote === 'away' ? 'AWAY_TEAM' :
+                'DRAW'
+              )}
+            </span>
+          </div>
         )}
       </div>
-
+  
       {/* Match Events Modal */}
       <MatchEvents
-  matchId={match.id}
-  isOpen={showEvents}
-  onClose={() => setShowEvents(false)}
-  homeTeam={match.homeTeam}
-  awayTeam={match.awayTeam}
-  match={match}
-  competition={match.competition} // Add this line
-/>
+        matchId={match.id}
+        isOpen={showEvents}
+        onClose={() => setShowEvents(false)}
+        homeTeam={match.homeTeam}
+        awayTeam={match.awayTeam}
+        match={match}
+        competition={match.competition}
+      />
     </div>
   );
 };

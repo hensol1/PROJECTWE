@@ -3,6 +3,13 @@ import { createPortal } from 'react-dom';
 import { PiRankingFill } from "react-icons/pi";
 import api from '../api';
 
+// Website brand colors
+const websiteColors = {
+  primary: '#2ECC40', // Bright green
+  primaryLight: '#4ddd5e', // Lighter shade for hover
+  primaryTransparent: 'rgba(46, 204, 64, 0.1)' // Transparent green for table highlights
+};
+
 const StandingsModal = ({ 
   isOpen, 
   onClose, 
@@ -68,7 +75,10 @@ const StandingsModal = ({
         <div className="flex-1 overflow-auto p-1">
           {isLoading && (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div 
+                className="animate-spin rounded-full h-8 w-8 border-b-2"
+                style={{ borderColor: websiteColors.primary }}
+              ></div>
             </div>
           )}
 
@@ -96,12 +106,12 @@ const StandingsModal = ({
                 {standings.map((team) => (
                   <tr 
                     key={team.team.id} 
-                    className={`
-                      border-b hover:bg-gray-50 transition-colors
-                      ${team.team.name === homeTeam?.name || team.team.name === awayTeam?.name
-                        ? 'bg-blue-50 hover:bg-blue-100' 
-                        : ''}
-                    `}
+                    style={{
+                      backgroundColor: (team.team.name === homeTeam?.name || team.team.name === awayTeam?.name)
+                        ? websiteColors.primaryTransparent
+                        : 'transparent',
+                    }}
+                    className="border-b hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-3 py-2">{team.rank}</td>
                     <td className="px-3 py-2">
@@ -180,7 +190,10 @@ const StandingsButton = ({ leagueId, season, homeTeam, awayTeam, leagueName, lea
         className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors duration-200"
         title="View League Standings"
       >
-        <PiRankingFill className="w-5 h-5 text-indigo-600" />
+        <PiRankingFill 
+          className="w-5 h-5" 
+          style={{ color: websiteColors.primary }}
+        />
       </button>
 
       <StandingsModal

@@ -59,16 +59,23 @@ const UserStats = () => {
   useEffect(() => {
     const fetchRankings = async () => {
       try {
-        const response = await api.getUserRankings(); // You'll need to implement this API endpoint
+        const response = await api.getUserRankings();
         setRankings(response.data);
+        console.log('Rankings fetched:', response.data);
       } catch (err) {
         console.error('Error fetching rankings:', err);
+        // Set default rankings if fetch fails
+        setRankings({
+          global: null,
+          country: { rank: null, total: 0, name: '' },
+          city: { rank: null, total: 0, name: '' }
+        });
       }
     };
   
     fetchRankings();
   }, []);
-  
+    
 
   const calculateLeagueAccuracy = (league) => {
     if (!league.totalVotes || league.totalVotes === 0) return 0;

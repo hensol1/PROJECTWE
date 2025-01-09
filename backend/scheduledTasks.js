@@ -11,6 +11,8 @@ const { fetchAndStoreEvents } = require('./fetchEvents');
 const { fetchAndStoreAllLiveEvents } = require('./fetchEvents');
 const { processStandings } = require('./fetchStandings');
 const { subHours, addHours } = require('date-fns');
+const Vote = require('./models/Vote');
+
 
 
 let matchFetchingJob = null;
@@ -293,65 +295,66 @@ async function updateUserStats() {
         console.log(`Processing ${matches.length} new finished matches for user stats`);
 
         for (const match of matches) {
-            const users = await User.find({ 'votes.matchId': match.id });
-            console.log(`Found ${users.length} users who voted on match ${match.id}`);
+            const votes = await Vote.find({ matchId: match.id });
+            console.log(`Found ${votes.length} votes for match ${match.id}`);
             
             const actualResult = match.score.winner || (
                 match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
                 match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW'
             );
 
-            for (const user of users) {
-                const vote = user.votes.find(v => v.matchId === match.id);
-                if (vote) {
-                    const userPrediction = 
+            for (const vote of votes) {
+                try {
+                    const votePrediction = 
                         vote.vote === 'home' ? 'HOME_TEAM' :
                         vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
 
-                    vote.isCorrect = userPrediction === actualResult;
+                    vote.isCorrect = votePrediction === actualResult;
+                    await vote.save();
 
-                    const allUserVotes = await Match.find({
-                        id: { $in: user.votes.map(v => v.matchId) },
-                        status: 'FINISHED'
-                    });
+                    // Update user's stats
+                    const user = await User.findById(vote.userId);
+                    if (user) {
+                        // Get all finished votes for this user
+                        const userVotes = await Vote.find({
+                            userId: user._id,
+                            isCorrect: { $ne: null }
+                        });
 
-                    const finishedVotes = allUserVotes.length;
-                    const correctVotes = allUserVotes.reduce((count, match) => {
-                        const vote = user.votes.find(v => v.matchId === match.id);
-                        if (!vote) return count;
+                        const finishedVotes = userVotes.length;
+                        const correctVotes = userVotes.filter(v => v.isCorrect).length;
 
-                        const matchResult = match.score.winner || (
-                            match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
-                            match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW'
-                        );
-                        const userPred = 
-                            vote.vote === 'home' ? 'HOME_TEAM' :
-                            vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
+                        // Calculate Wilson score
+                        const n = finishedVotes;
+                        const p = n > 0 ? correctVotes / n : 0;
+                        const z = 1.96;
+                        const zsqr = z * z;
+                        const wilsonScore = n > 0 ? 
+                            (p + zsqr/(2*n) - z * Math.sqrt((p*(1-p) + zsqr/(4*n))/n))/(1 + zsqr/n) : 0;
 
-                        return count + (matchResult === userPred ? 1 : 0);
-                    }, 0);
-
-                    const n = finishedVotes;
-                    const p = n > 0 ? correctVotes / n : 0;
-                    const z = 1.96;
-                    const zsqr = z * z;
-                    const wilsonScore = n > 0 ? 
-                        (p + zsqr/(2*n) - z * Math.sqrt((p*(1-p) + zsqr/(4*n))/n))/(1 + zsqr/n) : 0;
-
-                    await User.findByIdAndUpdate(user._id, {
-                        $set: {
+                        // Update user document
+                        await User.findByIdAndUpdate(user._id, {
                             finishedVotes,
                             correctVotes,
                             accuracy: n > 0 ? (correctVotes / n * 100) : 0,
-                            wilsonScore,
-                            votes: user.votes
-                        }
-                    });
+                            wilsonScore
+                        });
 
-                    console.log(`Updated stats for user ${user.username}: ${correctVotes}/${finishedVotes} correct`);
+                        // Force stats cache update
+                        await UserStatsCache.findOneAndUpdate(
+                            { userId: user._id },
+                            { $set: { lastUpdated: new Date(0) } },
+                            { upsert: true }
+                        );
+
+                        console.log(`Updated stats for user ${user.username}: ${correctVotes}/${finishedVotes} correct`);
+                    }
+                } catch (error) {
+                    console.error(`Error processing vote ${vote._id} for match ${match.id}:`, error);
                 }
             }
 
+            // Mark match as processed
             match.processed = true;
             await match.save();
             console.log(`Marked match ${match.id} as processed`);

@@ -8,6 +8,7 @@ import { Country } from 'country-state-city';
 import { createPortal } from 'react-dom';
 import PredictionTicker from './PredictionTicker';
 import DailyStats from './DailyStats';
+import NextMatchCountdown from './NextMatchCountdown';
 
 const formatCountryCode = (countryName) => {
   if (!countryName) return '';
@@ -184,7 +185,12 @@ const ScoreDisplay = ({
   );
 };
 
-export default function ModernAccuracyComparison({ user, onSignInClick }) { // Add onSignInClick prop
+export default function ModernAccuracyComparison({ 
+  user, 
+  onSignInClick,
+  allLiveMatches,  // Add this prop
+  scheduledMatches // Add this prop
+}) {
   const [selectedStats, setSelectedStats] = useState(null);
   const [tooltipAnchor, setTooltipAnchor] = useState(null);
   const [accuracyData, setAccuracyData] = useState({
@@ -351,17 +357,17 @@ useEffect(() => {
   return (
     <div className="w-full max-w-xl mx-auto">
       <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm py-3 px-4 mb-4">
+        {/* Score displays remain the same */}
         <div className="flex justify-between items-end gap-4 sm:gap-6">
           {scores.map((score, index) => {
             const position = index === 1 ? 'winner' : index === 0 ? 'left' : 'right';
-            
             return (
               <ScoreDisplay
                 key={score.statsType}
                 {...score}
                 position={position}
                 onIconClick={(rect) => handleIconClick(score.statsType, rect)}
-                onSignInClick={onSignInClick} // Add this prop
+                onSignInClick={onSignInClick}
                 statsType={score.statsType}
               >
                 {selectedStats === score.statsType && (
@@ -380,9 +386,16 @@ useEffect(() => {
           })}
         </div>
       </div>
+
+
+
       <PredictionTicker />
       <div className="mb-6">
         <DailyStats />
+              {/* Only show NextMatchCountdown if there are no live matches */}
+      {(!allLiveMatches || Object.keys(allLiveMatches).length === 0) && (
+        <NextMatchCountdown scheduledMatches={scheduledMatches} />
+      )}
       </div>
     </div>
   );

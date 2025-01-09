@@ -272,6 +272,7 @@ api.getDailyPredictions = () => api.get('/api/stats/daily-predictions');
 api.resetAllStats = () => api.post('/api/admin/reset-all');
 api.resetAIStats = () => api.post('/api/admin/reset-ai');
 api.resetFanStats = () => api.post('/api/admin/reset-fans');
+api.updateAllResults = () => api.post('/api/matches/update-results');
 
 
 // Contact submission
