@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
 import MatchEvents from './MatchEvents';
@@ -7,14 +7,70 @@ import { shouldShowStandings } from '../constants/leagueConfig';
 import { FaPeopleGroup } from "react-icons/fa6";
 import { FaBrain } from "react-icons/fa";
 
-// Website brand colors
 const websiteColors = {
   primary: '#2ECC40',
   primaryDark: '#25a032',
   background: '#171923',
-  backgroundGradient: '#2ECC43', // Adding the new gradient color
+  backgroundGradient: '#2ECC43',
   backgroundLight: '#1e2231',
   text: '#FFFFFF'
+};
+
+const TeamLogo = ({ team, onClick, isInteractive }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const logoRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.5 }
+    );
+
+    if (logoRef.current) {
+      observer.observe(logoRef.current);
+    }
+
+    return () => {
+      if (logoRef.current) {
+        observer.unobserve(logoRef.current);
+      }
+    };
+  }, []);
+
+  const baseClasses = "relative bg-white bg-opacity-10 rounded-full p-2";
+  const interactiveClasses = isInteractive ? "group" : "";
+
+  return (
+    <div className={`${baseClasses} ${interactiveClasses}`} ref={logoRef}>
+      {isInteractive ? (
+        <button onClick={onClick} className="relative">
+          <div className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-opacity" 
+            style={{ borderColor: websiteColors.primary }} />
+          <img 
+            src={team.crest} 
+            alt={team.name}
+            className="w-16 h-16 object-contain transition-transform group-hover:scale-110"
+          />
+        </button>
+      ) : (
+        <img 
+          src={team.crest} 
+          alt={team.name}
+          className="w-16 h-16 object-contain"
+        />
+      )}
+      
+      <div 
+        className={`absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded transition-opacity duration-300 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        {team.name}
+      </div>
+    </div>
+  );
 };
 
 const MatchBox = ({ match, onVote }) => {
@@ -125,34 +181,11 @@ const MatchBox = ({ match, onVote }) => {
         {/* Teams and Score Section */}
         <div className="flex justify-center items-center gap-12">
           {/* Home Team */}
-          <div className="relative group">
-            {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-              <button
-                onClick={() => onVote(match.id, 'home')}
-                className="relative bg-white bg-opacity-10 rounded-full p-2"
-              >
-                <div className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-opacity" 
-                  style={{ borderColor: websiteColors.primary }} 
-                />
-                <img 
-                  src={match.homeTeam.crest} 
-                  alt={match.homeTeam.name}
-                  className="w-16 h-16 object-contain transition-transform group-hover:scale-110"
-                />
-              </button>
-            ) : (
-              <div className="bg-white bg-opacity-10 rounded-full p-2">
-                <img 
-                  src={match.homeTeam.crest} 
-                  alt={match.homeTeam.name}
-                  className="w-16 h-16 object-contain"
-                />
-              </div>
-            )}
-            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded">
-              {match.homeTeam.name}
-            </div>
-          </div>
+          <TeamLogo 
+            team={match.homeTeam}
+            onClick={() => (match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && onVote(match.id, 'home')}
+            isInteractive={(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote}
+          />
   
 {/* Score and Status */}
 <div className="flex flex-col items-center min-w-[60px]">
@@ -213,34 +246,11 @@ const MatchBox = ({ match, onVote }) => {
           </div>
   
           {/* Away Team */}
-          <div className="relative group">
-            {(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote ? (
-              <button
-                onClick={() => onVote(match.id, 'away')}
-                className="relative bg-white bg-opacity-10 rounded-full p-2"
-              >
-                <div className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-opacity" 
-                  style={{ borderColor: websiteColors.primary }} 
-                />
-                <img 
-                  src={match.awayTeam.crest} 
-                  alt={match.awayTeam.name}
-                  className="w-16 h-16 object-contain transition-transform group-hover:scale-110"
-                />
-              </button>
-            ) : (
-              <div className="bg-white bg-opacity-10 rounded-full p-2">
-                <img 
-                  src={match.awayTeam.crest} 
-                  alt={match.awayTeam.name}
-                  className="w-16 h-16 object-contain"
-                />
-              </div>
-            )}
-            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded">
-              {match.awayTeam.name}
-            </div>
-          </div>
+          <TeamLogo 
+            team={match.awayTeam}
+            onClick={() => (match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && onVote(match.id, 'away')}
+            isInteractive={(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote}
+          />
         </div>
       </div>
   
