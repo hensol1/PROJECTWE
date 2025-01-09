@@ -7,13 +7,13 @@ import { format, addDays, subDays, parseISO, startOfDay, endOfDay, isToday } fro
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import { BiAlarm, BiAlarmOff } from "react-icons/bi";
 import CustomButton from './CustomButton';
-import NextMatchCountdown from './NextMatchCountdown';
 import LoadingLogo from './LoadingLogo';
 import NotificationQueue from './NotificationQueue';
-import MatchVotingBox from './MatchVotingBox';
 import LeagueHeader from './LeagueHeader';
 import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
+import DailyStats from './DailyStats';
+
 
 // Constants
 
@@ -36,8 +36,6 @@ const [goalNotifications, setGoalNotifications] = useState([]);
 const [isRefreshing, setIsRefreshing] = useState(false);
 const [processedScoreUpdates] = useState(new Set());
 const [imagesLoaded, setImagesLoaded] = useState(false);
-const [isAutoVoting, setIsAutoVoting] = useState(false);
-const [isVotingBoxVisible, setIsVotingBoxVisible] = useState(false);
 const handleSetSelectedDay = useCallback((day) => {
   setSelectedDay(day);
 }, []);
@@ -181,15 +179,6 @@ const allMatchesForCurrentDate = matches[currentDateKey] || {};
       [leagueKey]: !prev[leagueKey]
     }));
   }, []);
-
-  const hasAvailableMatches = () => {
-    return Object.values(allMatchesForCurrentDate)
-      .flat()
-      .some(match => 
-        (match.status === 'TIMED' || match.status === 'SCHEDULED') && 
-        !match.userVote
-      );
-  };
 
   // Core utility functions
   const preloadImages = useCallback(async (matchesData) => {
@@ -623,57 +612,13 @@ try {
     }
   }, [processedScoreUpdates]);
 
-  const handleAutoVote = async () => {
-    if (!user) {
-      onOpenAuthModal('Please sign in or register to show us you know better!');
-      return;
-    }
-
-    try {
-      setIsAutoVoting(true);
-const formattedDate = format(zonedTimeToUtc(selectedDate, userTimeZone), 'yyyy-MM-dd');
-      const response = await api.autoVote(formattedDate);
-  
-      setMatches(prevMatches => {
-        const newMatches = { ...prevMatches };
-        response.data.votedMatches.forEach(({ matchId, vote, votes }) => {
-          for (const dateKey in newMatches) {
-            for (const leagueKey in newMatches[dateKey]) {
-              newMatches[dateKey][leagueKey] = newMatches[dateKey][leagueKey].map(match => {
-                if (match.id === matchId) {
-                  return {
-                    ...match,
-                    userVote: vote,
-                    voteCounts: votes
-                  };
-                }
-                return match;
-              });
-            }
-          }
-        });
-        return newMatches;
-      });
-
-      alert(`Auto-voted for ${response.data.votedMatches.length} matches!`);
-    } catch (error) {
-      console.error('Error in auto-vote:', error);
-      alert('Failed to auto-vote. Please try again.');
-    } finally {
-      setIsAutoVoting(false);
-    }
-  };
-
   const handleVote = async (matchId, vote) => {
     try {
-      // If user is not logged in, show auth modal
       if (!user) {
-        // Show authentication modal with custom message
         onOpenAuthModal('Please sign in or register to show us you know better!');
         return;
       }
 
-      // Regular flow for logged-in users
       const response = await api.voteForMatch(matchId, vote);
       setMatches(prevMatches => {
         const updatedMatches = { ...prevMatches };
@@ -904,85 +849,44 @@ const formattedDate = format(zonedTimeToUtc(selectedDate, userTimeZone), 'yyyy-M
       <ModernAccuracyComparison 
   user={user} 
   onSignInClick={onOpenAuthModal}
-  allLiveMatches={allLiveMatches}  // Add this
-  scheduledMatches={scheduledMatches} // Add this
+  allLiveMatches={allLiveMatches}
+  scheduledMatches={scheduledMatches}
+  // Add these new props
+  selectedDate={selectedDate}
+  matches={matches}
+  setMatches={setMatches}
 />
-        
-      {/* Match Voting Box */}
-      {hasAvailableMatches() ? (
-        <div className="mb-8 flex justify-center gap-4">
-          {isVotingBoxVisible ? (
-            <MatchVotingBox 
-            matches={Object.values(allMatchesForCurrentDate)
-              .reduce((acc, leagueMatches) => [...acc, ...leagueMatches], [])
-              .filter(match => 
-                (match.status === 'TIMED' || match.status === 'SCHEDULED')
-              )
-              .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))}
-                          onVote={handleVote}
-              onSkip={(matchId) => {
-                console.log('Skipped match:', matchId);
-              }}
-              onClose={() => setIsVotingBoxVisible(false)}
-              user={user}
-            />
-          ) : (
-            <div className="flex gap-4">
-              <button
-                onClick={() => setIsVotingBoxVisible(true)}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
-                          shadow transition-all duration-200"
-              >
-                Quick Predict Now!
-              </button>
-              {user && (
-                <button
-                  onClick={handleAutoVote}
-                  disabled={isAutoVoting}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium
-                    ${isAutoVoting 
-                      ? 'bg-gray-300 cursor-not-allowed' 
-                      : 'bg-blue-500 hover:bg-blue-600 text-white shadow transition-all duration-200'}`}
-                >
-                  {isAutoVoting ? 'Auto-voting...' : 'Auto Vote'}
-                </button>
-              )}
+
+      {isLoading ? (
+        <LoadingLogo />
+      ) : !imagesLoaded ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-pulse text-gray-600">Loading images...</div>
+        </div>
+      ) : (
+        <>
+          <TabsSection 
+            selectedDay={selectedDay}
+            setSelectedDay={handleSetSelectedDay}
+            activeTab={activeTab}
+            handleTabChange={handleTabChange}
+            hasAnyLiveMatches={hasAnyLiveMatches}
+            getDateForSelection={memoizedGetDateForSelection}
+            fetchMatches={memoizedFetchMatches}
+          />
+          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
+            {memoizedTabContent}
+          </div>
+
+          {isRefreshing && (
+            <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
+              Updating...
             </div>
           )}
-        </div>
-      ) : null}
-
-{isLoading ? (
-      <LoadingLogo />
-    ) : !imagesLoaded ? (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-pulse text-gray-600">Loading images...</div>
-      </div>
-    ) : (
-      <>
-      <TabsSection 
-        selectedDay={selectedDay}
-        setSelectedDay={handleSetSelectedDay}
-        activeTab={activeTab}
-        handleTabChange={handleTabChange}
-        hasAnyLiveMatches={hasAnyLiveMatches}
-        getDateForSelection={memoizedGetDateForSelection}
-        fetchMatches={memoizedFetchMatches}
-      />
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
-          {memoizedTabContent}
-        </div>
-
-        {isRefreshing && (
-          <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
-            Updating...
-          </div>
-        )}
-      </>
-    )}
-  </div>
-);
-
+        </>
+      )}
+    </div>
+  );
 };
 
 export default Matches;

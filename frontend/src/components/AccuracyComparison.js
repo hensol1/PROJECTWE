@@ -188,8 +188,11 @@ const ScoreDisplay = ({
 export default function ModernAccuracyComparison({ 
   user, 
   onSignInClick,
-  allLiveMatches,  // Add this prop
-  scheduledMatches // Add this prop
+  allLiveMatches,
+  scheduledMatches,
+  selectedDate, // Add these new props
+  matches,      // Add these new props
+  setMatches    // Add these new props
 }) {
   const [selectedStats, setSelectedStats] = useState(null);
   const [tooltipAnchor, setTooltipAnchor] = useState(null);
@@ -391,7 +394,13 @@ useEffect(() => {
 
       <PredictionTicker />
       <div className="mb-6">
-        <DailyStats />
+      <DailyStats
+      user={user}
+      onOpenAuthModal={onSignInClick}
+      selectedDate={selectedDate}
+      matches={matches}
+      setMatches={setMatches}
+    />
               {/* Only show NextMatchCountdown if there are no live matches */}
       {(!allLiveMatches || Object.keys(allLiveMatches).length === 0) && (
         <NextMatchCountdown scheduledMatches={scheduledMatches} />
@@ -400,3 +409,5 @@ useEffect(() => {
     </div>
   );
 }
+
+
