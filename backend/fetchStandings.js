@@ -10,7 +10,7 @@ const HEADERS = {
 };
 
 // MongoDB Connection URL - replace with your actual connection string
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // MongoDB Connection function
 async function connectToMongoDB() {
