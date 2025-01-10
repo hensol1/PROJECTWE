@@ -9,15 +9,13 @@ const AccuracyStats = require('./models/AccuracyStats');
 const { recalculateAllStats } = require('./utils/statsProcessor');
 const { fetchAndStoreEvents } = require('./fetchEvents');
 const { fetchAndStoreAllLiveEvents } = require('./fetchEvents');
-const { processStandings } = require('./fetchStandings');
+const { processStandings, ALLOWED_LEAGUE_IDS, getCurrentSeason, cleanup: mongoCleanup } = require('./fetchStandings');
 const { subHours, addHours } = require('date-fns');
 const Vote = require('./models/Vote');
 
-
-
 let matchFetchingJob = null;
 
-const cleanup = async () => {
+const cleanupStatsCache = async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     await UserStatsCache.deleteMany({ lastUpdated: { $lt: thirtyDaysAgo } });
 };
@@ -456,35 +454,76 @@ const standingsUpdateJob = cron.schedule('0 23 * * *', async () => {
     try {
         console.log('Starting daily standings update at', new Date().toISOString());
         
-        // Get all unique league IDs from matches in the current season
-        const currentYear = new Date().getFullYear();
-        const activeLeagues = await Match.distinct('competition.id', {
-            utcDate: {
-                $gte: new Date(currentYear, 0, 1), // January 1st of current year
-                $lte: new Date(currentYear, 11, 31) // December 31st of current year
-            }
-        });
+        const currentYear = getCurrentSeason();
+        console.log(`Updating standings for season ${currentYear}/${currentYear + 1}`);
         
-        console.log(`Found ${activeLeagues.length} active leagues to update`);
+        const results = {
+            successful: [],
+            failed: [],
+            noData: [],
+            skipped: []
+        };
         
-        // Process each league with a delay between calls to respect API rate limits
-        for (const leagueId of activeLeagues) {
+        // Process each allowed league
+        for (const leagueId of ALLOWED_LEAGUE_IDS) {
             try {
-                console.log(`Updating standings for league ${leagueId} season ${currentYear}`);
-                await processStandings(leagueId, currentYear);
+                console.log(`\nProcessing league ID: ${leagueId}`);
                 
-                // Wait 5 seconds between updates to respect API rate limits
+                const result = await processStandings(leagueId, currentYear);
+                
+                if (result.success) {
+                    results.successful.push(leagueId);
+                    console.log(`✓ Successfully updated league ${leagueId}`);
+                } else if (result.error === 'NO_DATA') {
+                    results.noData.push(leagueId);
+                    console.log(`? No data available for league ${leagueId}`);
+                } else if (result.error === 'LEAGUE_NOT_ALLOWED') {
+                    results.skipped.push(leagueId);
+                    console.log(`- Skipped league ${leagueId}`);
+                } else {
+                    results.failed.push({
+                        leagueId,
+                        error: result.error,
+                        details: result.details
+                    });
+                    console.log(`✗ Failed to update league ${leagueId}: ${result.error}`);
+                }
+                
+                // Respect API rate limits - wait 5 seconds between requests
                 await new Promise(resolve => setTimeout(resolve, 5000));
             } catch (error) {
-                console.error(`Error updating standings for league ${leagueId}:`, error);
-                // Continue with other leagues even if one fails
-                continue;
+                results.failed.push({
+                    leagueId,
+                    error: 'UNEXPECTED_ERROR',
+                    details: error.message
+                });
+                console.error(`✗ Error processing league ${leagueId}:`, error);
             }
         }
         
-        console.log('Daily standings update completed at', new Date().toISOString());
+        // Log final results
+        console.log('\n=== Standings Update Summary ===');
+        console.log(`Timestamp: ${new Date().toISOString()}`);
+        console.log(`Season: ${currentYear}/${currentYear + 1}`);
+        console.log(`Total leagues processed: ${ALLOWED_LEAGUE_IDS.length}`);
+        console.log(`Successful updates: ${results.successful.length}`);
+        console.log(`Failed updates: ${results.failed.length}`);
+        console.log(`No data available: ${results.noData.length}`);
+        console.log(`Skipped leagues: ${results.skipped.length}`);
+        
+        if (results.failed.length > 0) {
+            console.log('\nFailed Leagues:');
+            results.failed.forEach(failure => {
+                console.log(`- League ${failure.leagueId}: ${failure.error} (${failure.details})`);
+            });
+        }
+
+        // Clean up MongoDB connection after all operations are complete
+        await mongoCleanup();
+        
     } catch (error) {
-        console.error('Error in standings update job:', error);
+        console.error('Critical error in standings update job:', error);
+        await mongoCleanup(); // Ensure cleanup happens even on error
     }
 });
 

@@ -42,7 +42,24 @@ const StandingSchema = new mongoose.Schema({
     lastUpdated: {
         type: Date,
         default: Date.now
-    }
+    },
+    // New fields
+    lastSuccessfulFetch: {
+        type: Date
+    },
+    fetchErrors: [{
+        timestamp: {
+            type: Date,
+            default: Date.now
+        },
+        error: {
+            message: String,
+            code: String,
+            status: Number,
+            apiErrors: Object,
+            timestamp: String
+        }
+    }]
 });
 
 // Compound index for faster queries
