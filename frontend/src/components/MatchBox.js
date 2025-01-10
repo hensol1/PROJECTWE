@@ -296,7 +296,7 @@ const MatchBox = ({ match, onVote }) => {
   <div 
   style={{
     backgroundColor: match.status === 'FINISHED' 
-      ? (isPredictionCorrect(match.fanPrediction) ? '#2ECC40' : '#ff4136')
+      ? (isPredictionCorrect(match.aiPrediction) ? '#2ECC40' : '#ff4136')
       : 'white',
     width: '49%',
     marginRight: '2%'
