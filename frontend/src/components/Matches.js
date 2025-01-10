@@ -865,15 +865,17 @@ try {
         </div>
       ) : (
         <>
-          <TabsSection 
-            selectedDay={selectedDay}
-            setSelectedDay={handleSetSelectedDay}
-            activeTab={activeTab}
-            handleTabChange={handleTabChange}
-            hasAnyLiveMatches={hasAnyLiveMatches}
-            getDateForSelection={memoizedGetDateForSelection}
-            fetchMatches={memoizedFetchMatches}
-          />
+<TabsSection 
+  selectedDay={selectedDay}
+  setSelectedDay={handleSetSelectedDay}
+  activeTab={activeTab}
+  handleTabChange={handleTabChange}
+  hasAnyLiveMatches={hasAnyLiveMatches}
+  getDateForSelection={memoizedGetDateForSelection}
+  fetchMatches={memoizedFetchMatches}
+  hasFinishedMatches={Object.keys(finishedMatches).length > 0}
+  hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
+/>
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
             {memoizedTabContent}
           </div>

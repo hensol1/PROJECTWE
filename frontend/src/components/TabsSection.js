@@ -32,11 +32,14 @@ const DateTabs = memo(({ selectedDay, onDateSelect }) => {
 });
 
 // Separate StatusTabs into its own memoized component
-const StatusTabs = memo(({ selectedDay, activeTab, onTabChange, hasAnyLiveMatches }) => {
+const StatusTabs = memo(({ selectedDay, activeTab, onTabChange, hasAnyLiveMatches, hasFinishedMatches, hasScheduledMatches }) => {
   if (selectedDay === 'yesterday') {
     return (
       <button className="px-6 py-2 text-sm font-medium text-white bg-white bg-opacity-10 rounded-lg flex items-center gap-2 min-w-[100px]">
-        <BiAlarmOff className="w-4 h-4" />
+        <BiAlarmOff 
+          className="w-4 h-4" 
+          style={{ color: hasFinishedMatches ? '#ff4136' : '#9CA3AF' }}
+        />
         Finished
       </button>
     );
@@ -45,7 +48,10 @@ const StatusTabs = memo(({ selectedDay, activeTab, onTabChange, hasAnyLiveMatche
   if (selectedDay === 'tomorrow') {
     return (
       <button className="px-6 py-2 text-sm font-medium text-white bg-white bg-opacity-10 rounded-lg flex items-center gap-2 min-w-[100px]">
-        <BiAlarm className="w-4 h-4" />
+        <BiAlarm 
+          className="w-4 h-4" 
+          style={{ color: hasScheduledMatches ? '#3B82F6' : '#9CA3AF' }}
+        />
         Scheduled
       </button>
     );
@@ -68,8 +74,18 @@ const StatusTabs = memo(({ selectedDay, activeTab, onTabChange, hasAnyLiveMatche
         {tab === 'live' && (
           <span className={`w-2 h-2 rounded-full ${hasAnyLiveMatches ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
         )}
-        {tab === 'finished' && <BiAlarmOff className="w-4 h-4" />}
-        {tab === 'scheduled' && <BiAlarm className="w-4 h-4" />}
+        {tab === 'finished' && (
+          <BiAlarmOff 
+            className="w-4 h-4" 
+            style={{ color: hasFinishedMatches ? '#ff4136' : '#9CA3AF' }}
+          />
+        )}
+        {tab === 'scheduled' && (
+          <BiAlarm 
+            className="w-4 h-4" 
+            style={{ color: hasScheduledMatches ? '#3B82F6' : '#9CA3AF' }}
+          />
+        )}
         {tab.charAt(0).toUpperCase() + tab.slice(1)}
       </button>
     ))
@@ -81,7 +97,9 @@ const TabsSection = memo(({
   setSelectedDay, 
   activeTab, 
   handleTabChange, 
-  hasAnyLiveMatches, 
+  hasAnyLiveMatches,
+  hasFinishedMatches,
+  hasScheduledMatches, 
   getDateForSelection, 
   fetchMatches 
 }) => {
@@ -110,6 +128,8 @@ const TabsSection = memo(({
             activeTab={activeTab}
             onTabChange={handleTabChange}
             hasAnyLiveMatches={hasAnyLiveMatches}
+            hasFinishedMatches={hasFinishedMatches}
+            hasScheduledMatches={hasScheduledMatches}
           />
         </div>
       </div>

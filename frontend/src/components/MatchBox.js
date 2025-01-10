@@ -264,9 +264,10 @@ const MatchBox = ({ match, onVote }) => {
     backgroundColor: match.status === 'FINISHED' 
       ? (isPredictionCorrect(match.fanPrediction) ? '#2ECC40' : '#ff4136')
       : 'white',
-    width: '50%'
+    width: '49%',
+    marginRight: '2%'
   }}
-  className="flex items-center px-2 sm:px-4 py-2"
+  className="flex items-center px-2 sm:px-4 py-2 rounded-md"
 >
   <div className="flex items-center gap-1 sm:gap-2 w-full">
     <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
@@ -292,14 +293,15 @@ const MatchBox = ({ match, onVote }) => {
   </div>
 
   {/* Experts {/* Experts Prediction */}
-<div 
+  <div 
   style={{
-    backgroundColor: match.status === 'FINISHED'
-      ? (isPredictionCorrect(match.aiPrediction) ? '#2ECC40' : '#ff4136')
+    backgroundColor: match.status === 'FINISHED' 
+      ? (isPredictionCorrect(match.fanPrediction) ? '#2ECC40' : '#ff4136')
       : 'white',
-    width: '50%'
+    width: '49%',
+    marginRight: '2%'
   }}
-  className="flex items-center px-2 sm:px-4 py-2"
+  className="flex items-center px-2 sm:px-4 py-2 rounded-md"
 >
   <div className="flex items-center gap-1 sm:gap-2 w-full">
     <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
