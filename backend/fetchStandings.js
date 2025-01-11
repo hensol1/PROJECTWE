@@ -1,6 +1,7 @@
 const axios = require('axios');
 const mongoose = require('mongoose');
 const Standing = require('./models/Standing');
+require('dotenv').config();
 
 const API_KEY = "5f3eb3a125615327d83d13e16a1a7f77";
 const BASE_URL = "https://v3.football.api-sports.io";
@@ -9,7 +10,7 @@ const HEADERS = {
     "x-rapidapi-host": "v3.football.api-sports.io"
 };
 
-// MongoDB Connection URL - replace with your actual connection string
+// Use the MONGODB_URI from environment variables
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // MongoDB Connection function
@@ -20,6 +21,10 @@ async function connectToMongoDB() {
     }
     
     try {
+        if (!MONGODB_URI) {
+            throw new Error('MONGODB_URI is not defined in environment variables');
+        }
+        
         mongoose.set('strictQuery', false);
         await mongoose.connect(MONGODB_URI);
         console.log('Connected to MongoDB');
