@@ -12,6 +12,7 @@ const { fetchAndStoreAllLiveEvents } = require('./fetchEvents');
 const { processStandings, ALLOWED_LEAGUE_IDS, getCurrentSeason, cleanup: mongoCleanup } = require('./fetchStandings');
 const { subHours, addHours } = require('date-fns');
 const Vote = require('./models/Vote');
+const UserStatsCache = require('./models/UserStatsCache');
 
 let matchFetchingJob = null;
 
