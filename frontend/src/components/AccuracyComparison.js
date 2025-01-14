@@ -1,68 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Sparkle } from 'lucide-react';
-import { IoPersonOutline } from "react-icons/io5";
-import { FaPeopleGroup } from "react-icons/fa6";
 import { FaBrain } from "react-icons/fa";
 import api from '../api';
-import { Country } from 'country-state-city';
-import { createPortal } from 'react-dom';
 import PredictionTicker from './PredictionTicker';
-import DailyStats from './DailyStats';
 import NextMatchCountdown from './NextMatchCountdown';
 
-const formatCountryCode = (countryName) => {
-  if (!countryName) return '';
-  
-  if (countryName.length === 2) {
-    return countryName.toLowerCase();
-  }
-
-  const country = Country.getAllCountries().find(
-    country => country.name.toLowerCase() === countryName.toLowerCase()
-  );
-
-  return country ? country.isoCode.toLowerCase() : countryName.toLowerCase();
-};
-
-const formatStats = (stats) => {
-  if (!stats) return { total: 0, correct: 0 };
-  return {
-    total: stats.total || stats.finishedVotes || 0,
-    correct: stats.correct || stats.correctVotes || 0
-  };
-};
-
 const StatsPopover = ({ stats, color, anchorRect }) => {
-  console.log('Stats received in popover:', stats); // Debug log
-  
-  const formattedStats = formatStats(stats);
+  if (!anchorRect || !stats) return null;
+
+  const formattedStats = {
+    total: stats.total || 0,
+    correct: stats.correct || 0
+  };
+
   const successRate = formattedStats.total === 0 ? 0 : 
     (formattedStats.correct / formattedStats.total) * 100;
 
-  // Add debug logs
-  console.log('Formatted stats:', formattedStats);
-  console.log('Calculated success rate:', successRate);
-
-  if (!anchorRect) return null;
-
-  // Calculate viewport width
-  const viewportWidth = window.innerWidth;
-  
   // Calculate tooltip position
-  const tooltipWidth = 192; // w-48 = 12rem = 192px
+  const viewportWidth = window.innerWidth;
+  const tooltipWidth = 192;
   let leftPosition = anchorRect.left + (anchorRect.width / 2);
-  let transformX = -50; // default -50%
+  let transformX = -50;
 
-  // Adjust position if too close to right edge
   if (leftPosition + (tooltipWidth / 2) > viewportWidth) {
-    leftPosition = viewportWidth - 20; // 20px from right edge
-    transformX = -100; // transform from right edge
+    leftPosition = viewportWidth - 20;
+    transformX = -100;
   }
   
-  // Adjust position if too close to left edge
   if (leftPosition - (tooltipWidth / 2) < 0) {
-    leftPosition = 20; // 20px from left edge
-    transformX = 0; // no transform needed
+    leftPosition = 20;
+    transformX = 0;
   }
 
   return createPortal(
@@ -105,104 +73,52 @@ const StatsPopover = ({ stats, color, anchorRect }) => {
   );
 };
 
-const ScoreDisplay = ({ 
-  icon: Icon, 
-  score, 
-  title, 
-  position = 'middle', 
-  color = 'bg-blue-500', 
-  isUser = false, 
-  userCountry = null, 
-  username = null, 
-  onIconClick,
-  statsType,
-  onSignInClick, // Add this prop
-  children 
+const ExpertScoreDisplay = ({ 
+  score,
+  color = 'bg-green-500',
+  onIconClick
 }) => {
   const iconRef = useRef(null);
 
   const handleClick = () => {
-    if (!isUser) {
-      // If it's not the user score, handle stats click
-      if (iconRef.current) {
-        const rect = iconRef.current.getBoundingClientRect();
-        onIconClick(rect);
-      }
-    } else if (!username) {
-      // If it's the user score but no user is logged in, trigger sign in
-      onSignInClick?.();
-    } else {
-      // If user is logged in, show stats
-      if (iconRef.current) {
-        const rect = iconRef.current.getBoundingClientRect();
-        onIconClick(rect);
-      }
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect();
+      onIconClick(rect);
     }
   };
 
   return (
-    <div className={`flex flex-col items-center ${position === 'winner' ? 'order-2' : position === 'left' ? 'order-1' : 'order-3'} relative`}>
+    <div className="flex flex-col items-center relative">
       <div 
         ref={iconRef}
         onClick={handleClick}
-        className={`
-          relative cursor-pointer
-          ${position === 'winner' ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-12 h-12 sm:w-16 sm:h-16'} 
-          ${position === 'winner' ? 'mb-3' : 'mb-2'}
-        `}
+        className="w-16 h-16 sm:w-20 sm:h-20 mb-3 cursor-pointer"
       >
-        {isUser && userCountry ? (
-          <div className={`w-full h-full rounded-full ${color} p-[2px] flex items-center justify-center overflow-hidden`}>
-            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-white">
-              <img 
-                src={`https://flagcdn.com/w160/${formatCountryCode(userCountry)}.png`}
-                alt={userCountry}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.log(`Failed to load flag for country: ${userCountry}`);
-                  e.target.style.display = 'none';
-                }}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className={`${color} rounded-full p-3 w-full h-full flex items-center justify-center`}>
-            <Icon className="w-full h-full text-white" />
-          </div>
-        )}
+        <div className={`${color} rounded-full p-3 w-full h-full flex items-center justify-center`}>
+          <FaBrain className="w-full h-full text-white" />
+        </div>
       </div>
-      <span className={`
-        font-bold text-gray-800
-        ${position === 'winner' ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl'}
-      `}>
+      <span className="font-bold text-2xl sm:text-3xl text-gray-800">
         {score.toFixed(1)}%
       </span>
-      <span className="text-xs sm:text-sm text-gray-500 mt-0.5">
-        {isUser ? (username || 'Sign In') : title}
+      <span className="text-sm text-gray-500 mt-0.5">
+        Our Experts
       </span>
-      {children}
     </div>
   );
 };
 
-export default function ModernAccuracyComparison({ 
-  user, 
-  onSignInClick,
+export default function AccuracyComparison({ 
   allLiveMatches,
   scheduledMatches,
-  selectedDate, // Add these new props
-  matches,      // Add these new props
-  setMatches    // Add these new props
 }) {
-  const [selectedStats, setSelectedStats] = useState(null);
   const [tooltipAnchor, setTooltipAnchor] = useState(null);
+  const [showStats, setShowStats] = useState(false);
   const [accuracyData, setAccuracyData] = useState({
-    fanAccuracy: 0,
     aiAccuracy: 0,
     lastUpdated: new Date()
   });
   const [dailyStats, setDailyStats] = useState(null);
-  const [animatedFanAccuracy, setAnimatedFanAccuracy] = useState(0);
   const [animatedAiAccuracy, setAnimatedAiAccuracy] = useState(0);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -215,84 +131,68 @@ export default function ModernAccuracyComparison({
         api.fetchDailyAccuracy()
       ]);
   
-      console.log('Raw daily response:', dailyResponse);
-  
-      const dailyStats = {
+      // Add console.log to debug the response
+      console.log('Accuracy Response:', accuracyResponse);
+      
+      // Ensure we have a default value if the response is empty
+      const aiAccuracy = accuracyResponse?.aiAccuracy || 0;
+      
+      const aiStats = {
         ai: {
-          total: dailyResponse.data?.ai?.total || 0,
-          correct: dailyResponse.data?.ai?.correct || 0
-        },
-        fans: {
-          total: dailyResponse.data?.fans?.total || 0,
-          correct: dailyResponse.data?.fans?.correct || 0
-        },
-        user: {
-          total: dailyResponse.data?.user?.total || 0,
-          correct: dailyResponse.data?.user?.correct || 0
+          total: dailyResponse?.data?.ai?.total || 0,
+          correct: dailyResponse?.data?.ai?.correct || 0
         }
       };
   
-      // Remove the sanity check as it's causing valid stats to be reset
-      console.log('Processed daily stats:', dailyStats);
-  
-      setAccuracyData(accuracyResponse.data);
-      setDailyStats(dailyStats);
+      setAccuracyData({
+        aiAccuracy,
+        lastUpdated: new Date()
+      });
+      setDailyStats(aiStats);
       setError(null);
     } catch (error) {
       console.error('Error fetching accuracy data:', error);
+      // Set default values on error
+      setAccuracyData({
+        aiAccuracy: 0,
+        lastUpdated: new Date()
+      });
+      setDailyStats({
+        ai: {
+          total: 0,
+          correct: 0
+        }
+      });
       setError('Failed to fetch accuracy data');
     } finally {
       setIsLoading(false);
     }
   };
-        
-useEffect(() => {
-  fetchData();
-  // Only set up interval if component is mounted
-  const refreshInterval = setInterval(fetchData, 15 * 60 * 1000);
-  
-  return () => {
-    clearInterval(refreshInterval);
-  };
-}, []);
+            
+  useEffect(() => {
+    fetchData();
+    const refreshInterval = setInterval(fetchData, 15 * 60 * 1000);
+    return () => clearInterval(refreshInterval);
+  }, []);
 
   useEffect(() => {
-    const targetFan = accuracyData.fanAccuracy;
-    const targetAi = accuracyData.aiAccuracy;
+    const targetAi = accuracyData?.aiAccuracy || 0;
     const duration = 1500;
     const steps = 60;
     
     const interval = setInterval(() => {
-      setAnimatedFanAccuracy(prev => {
-        const next = prev + (targetFan / steps);
-        return next >= targetFan ? targetFan : next;
-      });
-      
       setAnimatedAiAccuracy(prev => {
         const next = prev + (targetAi / steps);
         return next >= targetAi ? targetAi : next;
       });
     }, duration / steps);
-
+  
     return () => clearInterval(interval);
-  }, [accuracyData]);
-
-  // Click handler for tooltips
-  const handleIconClick = (statsType, rect) => {
-    if (selectedStats === statsType) {
-      setSelectedStats(null);
-      setTooltipAnchor(null);
-    } else {
-      setSelectedStats(statsType);
-      setTooltipAnchor(rect);
-    }
-  };
-
-  const calculateUserAccuracy = () => {
-    if (!user || !user.stats) return 0;
-    const { finishedVotes, correctVotes } = user.stats;
-    if (!finishedVotes || finishedVotes === 0) return 0;
-    return (correctVotes / finishedVotes) * 100;
+  }, [accuracyData?.aiAccuracy]);
+    
+  const handleIconClick = (rect) => {
+    setShowStats(!showStats);
+    setTooltipAnchor(rect);
   };
 
   if (isLoading) {
@@ -317,97 +217,32 @@ useEffect(() => {
     );
   }
 
-  const userScore = calculateUserAccuracy();
-  
-  // Create all possible scores first
-  let allScores = [
-    { 
-      score: animatedAiAccuracy, 
-      title: 'Our Experts', 
-      icon: FaBrain, 
-      color: 'bg-green-500',
-      statsType: 'ai'
-    },
-    { 
-      score: animatedFanAccuracy, 
-      title: 'Fans', 
-      icon: FaPeopleGroup, 
-      color: 'bg-blue-500',
-      statsType: 'fans'
-    },
-    { 
-      score: userScore, 
-      title: 'Your Score',
-      isUser: true,
-      userCountry: user?.country,
-      username: user?.username,
-      icon: IoPersonOutline,
-      color: 'bg-yellow-500',
-      statsType: user ? 'user' : null
-    }
-  ];
-
-  // Sort scores in descending order
-  allScores.sort((a, b) => b.score - a.score);
-
-  // Rearrange for podium display (2nd, 1st, 3rd)
-  const scores = [
-    allScores[1], // Second place (left)
-    allScores[0], // First place (middle)
-    allScores[2]  // Third place (right)
-  ];
-
   return (
     <div className="w-full max-w-xl mx-auto">
       <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm py-3 px-4 mb-4">
-        {/* Score displays remain the same */}
-        <div className="flex justify-between items-end gap-4 sm:gap-6">
-          {scores.map((score, index) => {
-            const position = index === 1 ? 'winner' : index === 0 ? 'left' : 'right';
-            return (
-              <ScoreDisplay
-                key={score.statsType}
-                {...score}
-                position={position}
-                onIconClick={(rect) => handleIconClick(score.statsType, rect)}
-                onSignInClick={onSignInClick}
-                statsType={score.statsType}
-              >
-                {selectedStats === score.statsType && (
-                  <StatsPopover 
-                    stats={
-                      score.statsType === 'user' 
-                        ? dailyStats?.user 
-                        : dailyStats?.[score.statsType]
-                    }
-                    color={score.color}
-                    anchorRect={tooltipAnchor}
-                  />
-                )}
-              </ScoreDisplay>
-            );
-          })}
+        <div className="flex justify-center">
+        <ExpertScoreDisplay
+  score={animatedAiAccuracy || 0}  // Add default value
+  color="bg-green-500"
+  onIconClick={handleIconClick}
+/>
+
+          {showStats && (
+            <StatsPopover 
+              stats={dailyStats?.ai}
+              color="bg-green-500"
+              anchorRect={tooltipAnchor}
+            />
+          )}
         </div>
       </div>
 
-
-
       <PredictionTicker />
       <div className="mb-6">
-      <DailyStats
-      user={user}
-      onOpenAuthModal={onSignInClick}
-      selectedDate={selectedDate}
-      matches={matches}
-      setMatches={setMatches}
-    />
-              {/* Only show NextMatchCountdown if there are no live matches */}
-      {(!allLiveMatches || Object.keys(allLiveMatches).length === 0) && (
-        <NextMatchCountdown scheduledMatches={scheduledMatches} />
-      )}
+        {(!allLiveMatches || Object.keys(allLiveMatches).length === 0) && (
+          <NextMatchCountdown scheduledMatches={scheduledMatches} />
+        )}
       </div>
     </div>
   );
 }
-
-

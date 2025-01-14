@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import { format, addDays, subDays, isSameDay, parseISO } from 'date-fns';
 import ContactAdmin from './ContactAdmin';
+import AdminLoginForm from './AdminLoginForm';
+import MatchDebugger from './MatchDebugger';
 
 // Admin action button component
 const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
@@ -29,23 +31,18 @@ const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
 const AdminControls = ({ selectedDate, onRefreshMatches }) => {  
   const [isFetching, setIsFetching] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
-  const [isResetting, setIsResetting] = useState({
-    all: false,
-    ai: false,
-    fans: false
-  });
+  const [isResettingAI, setIsResettingAI] = useState(false);
   const [lastAction, setLastAction] = useState(null);
 
   const handleFetchMatches = async () => {
     try {
       setIsFetching(true);
-      console.log('Triggering fetch for date:', selectedDate); // Debug log
+      console.log('Triggering fetch for date:', selectedDate);
       
       const response = await api.triggerFetchMatches(selectedDate);
       if (response.data.success) {
         console.log('Fetch matches result:', response.data);
         
-        // Refresh the matches display after fetching
         await onRefreshMatches(selectedDate, true);
   
         setLastAction({ 
@@ -65,7 +62,6 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
       setIsFetching(false);
     }
   };
-  
       
   const handleRecalculateStats = async () => {
     try {
@@ -74,7 +70,7 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
       console.log('Recalculation result:', response.data);
       setLastAction({ 
         type: 'success', 
-        message: `Stats recalculated successfully. AI: ${response.data.stats.ai.accuracy}, Fans: ${response.data.stats.fans.accuracy}`
+        message: `Stats recalculated successfully. AI accuracy: ${response.data.aiStats.accuracy}%`
       });
     } catch (error) {
       console.error('Recalculation error:', error);
@@ -87,37 +83,18 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
     }
   };
 
-  const handleResetStats = async (type) => {
-    const messages = {
-      all: 'all prediction stats',
-      ai: 'AI prediction stats',
-      fans: 'fan prediction stats'
-    };
-
-    if (!window.confirm(`Are you sure you want to reset ${messages[type]}? This action cannot be undone.`)) {
+  const handleResetAIStats = async () => {
+    if (!window.confirm('Are you sure you want to reset AI prediction stats? This action cannot be undone.')) {
       return;
     }
 
     try {
-      setIsResetting(prev => ({ ...prev, [type]: true }));
-      
-      switch(type) {
-        case 'all':
-          await api.resetAllStats();
-          break;
-        case 'ai':
-          await api.resetAIStats();
-          break;
-        case 'fans':
-          await api.resetFanStats();
-          break;
-        default:
-          throw new Error('Invalid reset type');
-      }
+      setIsResettingAI(true);
+      await api.resetAIStats();
 
       setLastAction({ 
         type: 'success', 
-        message: `${messages[type]} reset successfully. Please recalculate stats to get new values.`
+        message: 'AI stats reset successfully. Please recalculate stats to get new values.'
       });
       
       // Automatically trigger recalculation after reset
@@ -126,10 +103,10 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
       console.error('Reset error:', error);
       setLastAction({ 
         type: 'error', 
-        message: `Error resetting ${messages[type]}: ` + (error.response?.data?.message || error.message) 
+        message: 'Error resetting AI stats: ' + (error.response?.data?.message || error.message) 
       });
     } finally {
-      setIsResetting(prev => ({ ...prev, [type]: false }));
+      setIsResettingAI(false);
     }
   };
 
@@ -151,30 +128,16 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
         />
       </div>
       
-      {/* Reset buttons section */}
-      <div className="flex flex-wrap gap-4 mb-4 border-t pt-4">
-        <AdminButton
-          onClick={() => handleResetStats('ai')}
-          isLoading={isResetting.ai}
-          label="Reset AI Stats"
-          loadingLabel="Resetting AI..."
-          className="bg-orange-500 hover:bg-orange-600"
-        />
-        <AdminButton
-          onClick={() => handleResetStats('fans')}
-          isLoading={isResetting.fans}
-          label="Reset Fan Stats"
-          loadingLabel="Resetting Fans..."
-          className="bg-purple-500 hover:bg-purple-600"
-        />
-        <AdminButton
-          onClick={() => handleResetStats('all')}
-          isLoading={isResetting.all}
-          label="Reset All Stats"
-          loadingLabel="Resetting All..."
-          className="bg-red-500 hover:bg-red-600"
-        />
-      </div>
+{/* Reset section */}
+<div className="flex flex-wrap gap-4 mb-4 border-t pt-4">
+  <AdminButton
+    onClick={handleResetAIStats}
+    isLoading={isResettingAI}
+    label="Reset AI Stats"
+    loadingLabel="Resetting AI..."
+    className="bg-orange-500 hover:bg-orange-600"
+  />
+</div>
 
       {lastAction && (
         <div className={`mt-2 p-2 rounded ${
@@ -267,6 +230,7 @@ const MatchCard = ({ match, onPrediction }) => {
 };
 
 const AdminPage = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('matches'); 
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -275,14 +239,29 @@ const AdminPage = () => {
   const scrollPositionRef = useRef(0);
 
   useEffect(() => {
-    fetchMatches(currentDate);
-  }, [currentDate]);
+    // Check for admin token on component mount
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      // Set the token in API headers
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchMatches(currentDate);
+    }
+  }, [currentDate, isAuthenticated]);
+
+  const handleLoginSuccess = (token) => {
+    setIsAuthenticated(true);
+  };
 
   const fetchMatches = async (date, preserveScroll = false) => {
     try {
       setIsLoading(true);
       
-      // Store current scroll position if preserveScroll is true
       if (preserveScroll) {
         scrollPositionRef.current = window.scrollY;
       }
@@ -290,12 +269,10 @@ const AdminPage = () => {
       const formattedDate = format(date, 'yyyy-MM-dd');
       const response = await api.fetchMatches(formattedDate);
       
-      // Filter matches to only include those from the selected date
       const filteredMatches = response.data.matches.filter(match => 
         isSameDay(parseISO(match.utcDate), date)
       );
 
-      // Group filtered matches by competition
       const groupedMatches = filteredMatches.reduce((acc, match) => {
         if (!acc[match.competition.name]) {
           acc[match.competition.name] = [];
@@ -306,7 +283,6 @@ const AdminPage = () => {
 
       setMatches(groupedMatches);
 
-      // Restore scroll position after state update if preserveScroll is true
       if (preserveScroll) {
         requestAnimationFrame(() => {
           window.scrollTo(0, scrollPositionRef.current);
@@ -337,7 +313,6 @@ const AdminPage = () => {
         message: 'AI prediction recorded'
       });
       
-      // Fetch matches with scroll position preservation
       await fetchMatches(currentDate, true);
     } catch (error) {
       console.error('Error making AI prediction:', error);
@@ -347,6 +322,10 @@ const AdminPage = () => {
       });
     }
   };
+
+  if (!isAuthenticated) {
+    return <AdminLoginForm onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-4">
@@ -381,7 +360,7 @@ const AdminPage = () => {
       selectedDate={currentDate} 
       onRefreshMatches={fetchMatches} // Move this inside AdminControls
     />
-        
+    <MatchDebugger />
       {/* Date Navigation */}
       <div className="flex justify-between items-center mb-6">
         <button 

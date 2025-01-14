@@ -34,7 +34,7 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
               transition={{ duration: 0.5 }}
             >
               <h2 className="text-3xl font-bold bg-gradient-to-r from-green-500 to-green-700 bg-clip-text text-transparent">
-                Think You Know Better?
+                AI-Powered Expert Predictions
               </h2>
             </motion.div>
             <motion.div
@@ -42,7 +42,18 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <p className="text-xl text-gray-600">Challenge our AI and join thousands of fans in predicting match outcomes!</p>
+              <p className="text-xl text-gray-600 mb-4">
+                Stay ahead with our cutting-edge prediction technology
+              </p>
+              <div className="bg-green-50 rounded-lg p-6 border border-green-200 text-left">
+                <p className="text-gray-700 leading-relaxed text-sm">
+                  Our platform stands out through its innovative combination of human insight 
+                  and artificial intelligence. Our expert system utilizes sophisticated algorithms, 
+                  machine learning models, and AI tools to analyze matches and generate predictions 
+                  with remarkable accuracy. We're confident in our ability to outperform traditional 
+                  prediction methods, and we have the track record to prove it.
+                </p>
+              </div>
             </motion.div>
             <motion.div
               initial={{ opacity: 0 }}
@@ -50,16 +61,17 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
               transition={{ delay: 0.6 }}
               className="flex justify-center mt-6"
             >
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <p className="text-green-700 font-medium">Join the ultimate football prediction challenge!</p>
+              <div className="flex items-center gap-2 text-green-700 font-medium">
+                <HeaderLogo className="w-5 h-5" />
+                <span>Your trusted source for football predictions</span>
               </div>
             </motion.div>
           </div>
         </div>
       )
-    },
+        },
     {
-      title: "How to Play",
+      title: "Key Features",
       content: (
         <div className="space-y-6">
           <motion.div 
@@ -78,11 +90,11 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
                 >
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xl font-bold shadow-lg flex-shrink-0">1</div>
                   <div className="bg-white p-4 rounded-lg shadow-md flex-1">
-                    <h3 className="font-semibold text-lg text-green-700 mb-2">Make Your Prediction</h3>
-                    <p className="text-gray-600">Vote on upcoming matches and predict the winners</p>
+                    <h3 className="font-semibold text-lg text-green-700 mb-2">Expert Predictions</h3>
+                    <p className="text-gray-600">Get accurate predictions for upcoming matches</p>
                   </div>
                 </motion.div>
-
+  
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -91,11 +103,11 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
                 >
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xl font-bold shadow-lg flex-shrink-0">2</div>
                   <div className="bg-white p-4 rounded-lg shadow-md flex-1">
-                    <h3 className="font-semibold text-lg text-green-700 mb-2">Create Your Account</h3>
-                    <p className="text-gray-600">Register to track your predictions and compete with others</p>
+                    <h3 className="font-semibold text-lg text-green-700 mb-2">Live Scores</h3>
+                    <p className="text-gray-600">Follow matches in real-time with live score updates</p>
                   </div>
                 </motion.div>
-
+  
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -104,8 +116,8 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
                 >
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xl font-bold shadow-lg flex-shrink-0">3</div>
                   <div className="bg-white p-4 rounded-lg shadow-md flex-1">
-                    <h3 className="font-semibold text-lg text-green-700 mb-2">Watch Live Results</h3>
-                    <p className="text-gray-600">See your predictions come true in real-time!</p>
+                    <h3 className="font-semibold text-lg text-green-700 mb-2">Performance Tracking</h3>
+                    <p className="text-gray-600">Track our experts' prediction accuracy over time</p>
                   </div>
                 </motion.div>
               </div>
@@ -115,7 +127,7 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
       )
     },
     {
-      title: "Climb the Rankings",
+      title: "Match Coverage",
       content: (
         <div className="space-y-6">
           <motion.div
@@ -123,10 +135,10 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-6"
           >
-            <h2 className="text-2xl font-bold text-green-700 mb-2">Compete Globally</h2>
-            <p className="text-gray-600">See where you stand among the world's best predictors</p>
+            <h2 className="text-2xl font-bold text-green-700 mb-2">Comprehensive Coverage</h2>
+            <p className="text-gray-600">Expert predictions for major leagues worldwide</p>
           </motion.div>
-
+  
           <div className="grid grid-cols-1 gap-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -141,12 +153,12 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-green-700">Global Rankings</h3>
-                  <p className="text-sm text-gray-600">Compete with predictors worldwide</p>
+                  <h3 className="font-semibold text-green-700">Top Leagues</h3>
+                  <p className="text-sm text-gray-600">Premier League, La Liga, Bundesliga & more</p>
                 </div>
               </div>
             </motion.div>
-
+  
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -156,16 +168,16 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-green-700">National Rankings</h3>
-                  <p className="text-sm text-gray-600">Be the best in your country</p>
+                  <h3 className="font-semibold text-green-700">Performance Analysis</h3>
+                  <p className="text-sm text-gray-600">Detailed accuracy statistics and trends</p>
                 </div>
               </div>
             </motion.div>
-
+  
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -175,12 +187,12 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-green-700">Local Leaderboard</h3>
-                  <p className="text-sm text-gray-600">Dominate your city's rankings</p>
+                  <h3 className="font-semibold text-green-700">Real-Time Updates</h3>
+                  <p className="text-sm text-gray-600">Live scores and instant match events</p>
                 </div>
               </div>
             </motion.div>
@@ -189,7 +201,7 @@ const WelcomeSlides = ({ isOpen, setIsOpen }) => {
       )
     }
   ];
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-2xl bg-white">

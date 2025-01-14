@@ -1,62 +1,64 @@
 const express = require('express');
 const router = express.Router();
 const Match = require('../models/Match');
-const Vote = require('../models/Vote');
+const AIPredictionStat = require('../models/AIPredictionStat');
 
-  
+// Get daily stats
 router.get('/daily-predictions', async (req, res) => {
   try {
-      // Get today's date range in UTC
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-      console.log('Querying for date range:', {
-          start: today.toISOString(),
-          end: tomorrow.toISOString()
-      });
+    console.log('Querying for date range:', { start: today.toISOString(), end: tomorrow.toISOString() });
 
-      // Get all matches for today
-      const matches = await Match.find({
-          utcDate: {
-              $gte: today.toISOString(),
-              $lt: tomorrow.toISOString()
-          }
-      });
-
-      console.log('Found matches:', matches.length);
-
-      // Get total votes for these matches from Vote collection
-      let totalVotes = 0;
-      if (matches.length > 0) {
-          const matchIds = matches.map(match => match.id);
-          const voteCount = await Vote.countDocuments({
-              matchId: { $in: matchIds }
-          });
-          totalVotes = voteCount;
+    const matches = await Match.find({
+      utcDate: {
+        $gte: today.toISOString(),
+        $lt: tomorrow.toISOString()
       }
+    });
 
-      console.log('Total votes calculated:', totalVotes);
+    console.log('Found matches:', matches.length);
 
-      const stats = {
-          totalMatches: matches.length,
-          totalVotes: totalVotes,
-          matchDetails: matches.map(match => {
-              // Get vote counts from match document
-              const votes = match.votes || { home: 0, draw: 0, away: 0 };
-              return {
-                  id: match.id,
-                  votes: votes,
-                  matchTime: match.utcDate
-              };
-          })
-      };
+    const stats = {
+      totalMatches: matches.length,
+      aiPredictions: matches.filter(m => m.aiPrediction).length,
+      completedMatches: matches.filter(m => m.status === 'FINISHED').length
+    };
 
-      res.json(stats);
+    res.json(stats);
   } catch (error) {
-      console.error('Error fetching daily predictions:', error);
-      res.status(500).json({ error: 'Failed to fetch daily predictions' });
+    console.error('Error fetching daily predictions:', error);
+    res.status(500).json({ message: 'Error fetching daily predictions' });
+  }
+});
+
+// Get general stats
+router.get('/general', async (req, res) => {
+  try {
+    const [matches, aiStats] = await Promise.all([
+      Match.find({ status: 'FINISHED' }),
+      AIPredictionStat.findOne()
+    ]);
+
+    const stats = {
+      totalMatches: matches.length,
+      predictedMatches: matches.filter(m => m.aiPrediction).length,
+      aiAccuracy: aiStats ? {
+        total: aiStats.totalPredictions,
+        correct: aiStats.correctPredictions,
+        percentage: aiStats.totalPredictions > 0 
+          ? (aiStats.correctPredictions / aiStats.totalPredictions * 100).toFixed(2)
+          : 0
+      } : { total: 0, correct: 0, percentage: 0 }
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching general stats:', error);
+    res.status(500).json({ message: 'Error fetching stats' });
   }
 });
 

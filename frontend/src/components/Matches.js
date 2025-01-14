@@ -12,8 +12,8 @@ import NotificationQueue from './NotificationQueue';
 import LeagueHeader from './LeagueHeader';
 import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
-import DailyStats from './DailyStats';
-
+import LeagueFilter from './LeagueFilter';
+import LeagueFilterButton from './LeagueFilterButton';
 
 // Constants
 
@@ -36,6 +36,8 @@ const [goalNotifications, setGoalNotifications] = useState([]);
 const [isRefreshing, setIsRefreshing] = useState(false);
 const [processedScoreUpdates] = useState(new Set());
 const [imagesLoaded, setImagesLoaded] = useState(false);
+const [selectedLeague, setSelectedLeague] = useState(null);
+const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 const handleSetSelectedDay = useCallback((day) => {
   setSelectedDay(day);
 }, []);
@@ -171,8 +173,39 @@ const allMatchesForCurrentDate = matches[currentDateKey] || {};
       
   const hasAnyLiveMatches = Object.keys(liveMatches).length > 0 || Object.keys(allLiveMatches).length > 0;
 
+  const extractLeagues = useCallback(() => {
+    const leaguesMap = new Map();
+  
+    // Extract from regular matches
+    Object.values(matchesForCurrentDate).forEach(leagueMatches => {
+      const firstMatch = leagueMatches[0];
+      if (firstMatch) {
+        leaguesMap.set(firstMatch.competition.id, {
+          id: firstMatch.competition.id,
+          name: firstMatch.competition.name,
+          emblem: firstMatch.competition.emblem,
+          country: firstMatch.competition.country
+        });
+      }
+    });
+  
+    // Extract from live matches
+    Object.values(allLiveMatches).forEach(leagueMatches => {
+      const firstMatch = leagueMatches[0];
+      if (firstMatch) {
+        leaguesMap.set(firstMatch.competition.id, {
+          id: firstMatch.competition.id,
+          name: firstMatch.competition.name,
+          emblem: firstMatch.competition.emblem,
+          country: firstMatch.competition.country
+        });
+      }
+    });
+  
+    return Array.from(leaguesMap.values());
+  }, [matchesForCurrentDate, allLiveMatches]);
+    
   // Utility functions
-
   const toggleLeague = useCallback((leagueKey) => {
     setCollapsedLeagues(prev => ({
       ...prev,
@@ -646,80 +679,126 @@ try {
     }
   };
 
-
-  // Render functions
-  const renderMatches = (matches) => {
-    return Object.entries(matches).sort(([leagueKeyA, matchesA], [leagueKeyB, matchesB]) => {
-      const [, aId] = leagueKeyA.split('_');
-      const [, bId] = leagueKeyB.split('_');
-
-      const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
-      const statusA = Math.min(...matchesA.map(match => statusOrder.indexOf(match.status)));
-      const statusB = Math.min(...matchesB.map(match => statusOrder.indexOf(match.status)));
-
-      if (statusA !== statusB) {
-        return statusA - statusB;
-      }
-
-      const aIndex = priorityLeagues.indexOf(parseInt(aId));
-      const bIndex = priorityLeagues.indexOf(parseInt(bId));
-      
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      } else if (aIndex !== -1) {
-        return -1;
-      } else if (bIndex !== -1) {
-        return 1;
-      }
-
-      return leagueKeyA.localeCompare(leagueKeyB);
-    }).map(([leagueKey, competitionMatches]) => {
-      const [leagueName] = leagueKey.split('_');
-      return (
-        <div key={leagueKey} className="mb-4 last:mb-0 max-w-md mx-auto w-full">
-          <button 
-            className="w-full group relative overflow-hidden"
-            onClick={() => toggleLeague(leagueKey)}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 opacity-90" />
-            
-            <div className="relative flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 backdrop-blur-sm border border-indigo-100/50 rounded-lg group-hover:border-indigo-200/70 transition-all duration-300">
-              <LeagueHeader 
-                leagueName={leagueName}
-                leagueEmblem={competitionMatches[0].competition.emblem}
-                country={competitionMatches[0].competition.country}
-              />
-              
-              <div className={`
-                transition-transform duration-300 text-indigo-500 scale-75 sm:scale-100
-                ${collapsedLeagues[leagueKey] ? 'rotate-180' : 'rotate-0'}
-              `}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m6 9 6 6 6-6"/>
-                </svg>
-              </div>
-            </div>
-          </button>
-              
-          {!collapsedLeagues[leagueKey] && (
-            <div className="mt-1">
-              <AnimatedList delay={200} className="!overflow-visible gap-1">
-                {competitionMatches.map(match => (
-                  <MatchBox 
-                    key={match.id} 
-                    match={match}
-                    onVote={handleVote}
-                    isLiveTab={activeTab === 'live'}
-                  />
-                ))}
-              </AnimatedList>
-            </div>
-          )}
-        </div>
-      );
+    // Add this function to determine the best available tab for a league
+const determineAppropriateTab = useCallback((leagueId = null) => {
+  const checkMatches = (matches, leagueId) => {
+    if (!leagueId) return Object.keys(matches).length > 0;
+    return Object.entries(matches).some(([key]) => {
+      const [, id] = key.split('_');
+      return parseInt(id) === leagueId;
     });
   };
 
+  // Check live matches first
+  if (checkMatches(allLiveMatches, leagueId)) {
+    return 'live';
+  }
+  
+  // Then check scheduled matches
+  if (checkMatches(scheduledMatches, leagueId)) {
+    return 'scheduled';
+  }
+  
+  // Finally check finished matches
+  if (checkMatches(finishedMatches, leagueId)) {
+    return 'finished';
+  }
+  
+  // Default to scheduled if no matches found
+  return 'scheduled';
+}, [allLiveMatches, scheduledMatches, finishedMatches]);
+
+// Modify the league selection handler
+const handleLeagueSelect = useCallback((leagueId) => {
+  setSelectedLeague(leagueId);
+  setActiveTab(determineAppropriateTab(leagueId));
+}, [determineAppropriateTab]);
+
+
+
+  // Render functions
+  const renderMatches = (matches) => {
+    return Object.entries(matches)
+      // First filter by selected league
+      .filter(([leagueKey]) => {
+        if (!selectedLeague) return true; // If no league selected, show all
+        const [, leagueId] = leagueKey.split('_');
+        return parseInt(leagueId) === selectedLeague;
+      })
+      // Then sort the matches
+      .sort(([leagueKeyA, matchesA], [leagueKeyB, matchesB]) => {
+        const [, aId] = leagueKeyA.split('_');
+        const [, bId] = leagueKeyB.split('_');
+  
+        const statusOrder = ['IN_PLAY', 'PAUSED', 'HALFTIME', 'LIVE', 'TIMED', 'SCHEDULED', 'FINISHED'];
+        const statusA = Math.min(...matchesA.map(match => statusOrder.indexOf(match.status)));
+        const statusB = Math.min(...matchesB.map(match => statusOrder.indexOf(match.status)));
+  
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        }
+  
+        const aIndex = priorityLeagues.indexOf(parseInt(aId));
+        const bIndex = priorityLeagues.indexOf(parseInt(bId));
+        
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        } else if (aIndex !== -1) {
+          return -1;
+        } else if (bIndex !== -1) {
+          return 1;
+        }
+  
+        return leagueKeyA.localeCompare(leagueKeyB);
+      })
+      // Finally render each league's matches
+      .map(([leagueKey, competitionMatches]) => {
+        const [leagueName] = leagueKey.split('_');
+        return (
+          <div key={leagueKey} className="mb-4 last:mb-0 max-w-md mx-auto w-full">
+            <button 
+              className="w-full group relative overflow-hidden"
+              onClick={() => toggleLeague(leagueKey)}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 opacity-90" />
+              
+              <div className="relative flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 backdrop-blur-sm border border-indigo-100/50 rounded-lg group-hover:border-indigo-200/70 transition-all duration-300">
+                <LeagueHeader 
+                  leagueName={leagueName}
+                  leagueEmblem={competitionMatches[0].competition.emblem}
+                  country={competitionMatches[0].competition.country}
+                />
+                
+                <div className={`
+                  transition-transform duration-300 text-indigo-500 scale-75 sm:scale-100
+                  ${collapsedLeagues[leagueKey] ? 'rotate-180' : 'rotate-0'}
+                `}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </div>
+              </div>
+            </button>
+                
+            {!collapsedLeagues[leagueKey] && (
+              <div className="mt-1">
+                <AnimatedList delay={200} className="!overflow-visible gap-1">
+                  {competitionMatches.map(match => (
+                    <MatchBox 
+                      key={match.id} 
+                      match={match}
+                      onVote={handleVote}
+                      isLiveTab={activeTab === 'live'}
+                    />
+                  ))}
+                </AnimatedList>
+              </div>
+            )}
+          </div>
+        );
+      });
+  };
+  
   const renderStatusTabs = () => {
     if (selectedDay === 'yesterday') {
       return (
@@ -805,11 +884,11 @@ try {
         return null;
     }
   };
-
+  
   const memoizedTabContent = useMemo(() => {
     return renderTabContent();
-  }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches]);  
-
+  }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches, selectedLeague, determineAppropriateTab]);
+    
   // Effect Hooks
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -840,55 +919,86 @@ try {
   
   // Component Return
   return (
-    <div className="max-w-3xl mx-auto px-2">
+    <div className="max-w-6xl mx-auto px-2">
       <NotificationQueue 
         notifications={goalNotifications}
         onDismiss={handleNotificationDismiss}
       />
       
       <ModernAccuracyComparison 
-  user={user} 
-  onSignInClick={onOpenAuthModal}
-  allLiveMatches={allLiveMatches}
-  scheduledMatches={scheduledMatches}
-  // Add these new props
-  selectedDate={selectedDate}
-  matches={matches}
-  setMatches={setMatches}
-/>
-
-      {isLoading ? (
-        <LoadingLogo />
-      ) : !imagesLoaded ? (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-pulse text-gray-600">Loading images...</div>
-        </div>
-      ) : (
-        <>
-<TabsSection 
-  selectedDay={selectedDay}
-  setSelectedDay={handleSetSelectedDay}
-  activeTab={activeTab}
-  handleTabChange={handleTabChange}
-  hasAnyLiveMatches={hasAnyLiveMatches}
-  getDateForSelection={memoizedGetDateForSelection}
-  fetchMatches={memoizedFetchMatches}
-  hasFinishedMatches={Object.keys(finishedMatches).length > 0}
-  hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
-/>
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-3 max-w-2xl mx-auto">
-            {memoizedTabContent}
+        user={user} 
+        onSignInClick={onOpenAuthModal}
+        allLiveMatches={allLiveMatches}
+        scheduledMatches={scheduledMatches}
+        selectedDate={selectedDate}
+        matches={matches}
+        setMatches={setMatches}
+      />
+  
+  {isLoading ? (
+      <LoadingLogo />
+    ) : !imagesLoaded ? (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-pulse text-gray-600">Loading images...</div>
+      </div>
+    ) : (
+      <div className="relative">
+        <TabsSection 
+          selectedDay={selectedDay}
+          setSelectedDay={handleSetSelectedDay}
+          activeTab={activeTab}
+          handleTabChange={handleTabChange}
+          hasAnyLiveMatches={hasAnyLiveMatches}
+          getDateForSelection={memoizedGetDateForSelection}
+          fetchMatches={memoizedFetchMatches}
+          hasFinishedMatches={Object.keys(finishedMatches).length > 0}
+          hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
+        />
+        
+        <div className="flex mt-4 relative justify-center">
+          {/* Desktop League Filter - Now relative positioned */}
+          <div className="hidden md:block sticky top-4 h-fit w-64 mr-4">
+            <LeagueFilter
+              leagues={extractLeagues()}
+              selectedLeague={selectedLeague}
+              onLeagueSelect={handleLeagueSelect}
+              isMobileOpen={isMobileFilterOpen}
+              onClose={() => setIsMobileFilterOpen(false)}
+            />
           </div>
 
-          {isRefreshing && (
-            <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
-              Updating...
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+          {/* Mobile League Filter */}
+          <div className="md:hidden">
+            <LeagueFilter
+              leagues={extractLeagues()}
+              selectedLeague={selectedLeague}
+              onLeagueSelect={handleLeagueSelect}
+              isMobileOpen={isMobileFilterOpen}
+              onClose={() => setIsMobileFilterOpen(false)}
+            />
+          </div>
+
+          {/* Mobile Filter Button */}
+          <LeagueFilterButton
+            onClick={() => setIsMobileFilterOpen(true)}
+            selectedLeague={selectedLeague}
+          />
+
+          {/* Matches Content - Centered */}
+          <div className="w-full max-w-md">
+            {memoizedTabContent}
+          </div>
+        </div>
+
+        {isRefreshing && (
+          <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
+            Updating...
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+);
 };
 
 export default Matches;

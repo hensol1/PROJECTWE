@@ -5,17 +5,12 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { HelmetProvider } from 'react-helmet-async'; // Add this import
 import HeaderLogo from './components/HeaderLogo';
 import LoadingLogo from './components/LoadingLogo';
-import AuthComponent from './components/AuthComponent';
 import Matches from './components/Matches';
-import UserProfile from './components/UserProfile';
-import UserStats from './components/UserStats';
 import AdminPage from './components/AdminPage';
-import Leaderboard from './components/Leaderboard';
 import IconMenu from './components/IconMenu';
 import LoadingScreen from './components/LoadingScreen';
 import api from './api';
 import config from './config';
-import ResetPassword from './components/ResetPassword';
 import CookieConsent from './components/CookieConsent.js';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import AboutUs from './components/AboutUs';
@@ -24,8 +19,8 @@ import Footer from './components/Footer';
 import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
 import SEO from './components/SEO';
-import { BookOpen } from 'lucide-react'; 
-import DailyStats from './components/DailyStats';
+import StatsPage from './components/StatsPage';
+import { BookOpen, LineChart } from 'lucide-react'; // Add LineChart to imports
 
 function App() {
   const [user, setUser] = useState(null);
@@ -66,7 +61,7 @@ function App() {
 
   if (loading || initialLoad) {
     return <LoadingScreen />;
-  }
+  }  
 
   return (
     <HelmetProvider>
@@ -113,18 +108,18 @@ function App() {
   className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
 >
   <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
-  <span className="hidden md:inline font-medium">How To Play</span>
 </button>
+<Link
+    to="/stats"
+    className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
+  >
+    <LineChart className="w-5 h-5 md:w-6 md:h-6" />
+  </Link>
+
                   </div>
 
                   <div className="flex justify-end">
                     <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
-                      <AuthComponent 
-                        setUser={setUser} 
-                        user={user} 
-                        externalModalOpen={authModalOpen}
-                        setExternalModalOpen={setAuthModalOpen}
-                      />
                     </div>
                   </div>
                 </div>
@@ -151,19 +146,6 @@ function App() {
                     } 
                   />
                   <Route 
-                    path="/leaderboard" 
-                    element={
-                      <>
-                        <SEO 
-                          title="Prediction Leaderboard - We Know Better"
-                          description="See top football predictors worldwide. Compare fan predictions vs AI accuracy on We Know Better."
-                          path="/leaderboard"
-                        />
-                        <Leaderboard />
-                      </>
-                    }
-                  />
-                  <Route 
                     path="/profile" 
                     element={
                       user ? (
@@ -173,22 +155,6 @@ function App() {
                             description="Manage your football prediction profile and see your prediction statistics."
                             path="/profile"
                           />
-                          <UserProfile user={user} />
-                        </>
-                      ) : <Navigate to="/" />
-                    }
-                  />
-                  <Route 
-                    path="/stats" 
-                    element={
-                      user ? (
-                        <>
-                          <SEO 
-                            title="My Stats - We Know Better"
-                            description="View your detailed prediction statistics and performance metrics."
-                            path="/stats"
-                          />
-                          <UserStats user={user} />
                         </>
                       ) : <Navigate to="/" />
                     }
@@ -203,19 +169,6 @@ function App() {
                           path="/privacy-policy"
                         />
                         <PrivacyPolicy />
-                      </>
-                    }
-                  />
-                  <Route 
-                    path="/reset-password" 
-                    element={
-                      <>
-                        <SEO 
-                          title="Reset Password - We Know Better"
-                          description="Reset your password for your We Know Better account."
-                          path="/reset-password"
-                        />
-                        <ResetPassword />
                       </>
                     }
                   />
@@ -245,21 +198,34 @@ function App() {
                       </>
                     }
                   />
-                  {user?.isAdmin && (
-                    <Route 
-                      path="/admin" 
-                      element={
-                        <>
-                          <SEO 
-                            title="Admin Dashboard - We Know Better"
-                            description="Admin dashboard for We Know Better platform management."
-                            path="/admin"
-                          />
-                          <AdminPage />
-                        </>
-                      }
-                    />
-                  )}
+<Route 
+  path="/admin" 
+  element={
+    <>
+      <SEO 
+        title="Admin Dashboard - We Know Better"
+        description="Admin dashboard for We Know Better platform management."
+        path="/admin"
+      />
+      <AdminPage />
+    </>
+  }
+/>
+<Route 
+  path="/stats" 
+  element={
+    <>
+      <SEO 
+        title="AI Performance Stats - We Know Better"
+        description="Track our AI's prediction performance over time with detailed statistics and visualizations."
+        path="/stats"
+      />
+      <StatsPage />
+    </>
+  }
+/>
+
+
                   <Route 
                     path="/admin/contacts" 
                     element={

@@ -4,8 +4,9 @@ import { Clock } from 'lucide-react';
 import MatchEvents from './MatchEvents';
 import StandingsButton from './StandingsButton';
 import { shouldShowStandings } from '../constants/leagueConfig';
-import { FaPeopleGroup } from "react-icons/fa6";
 import { FaBrain } from "react-icons/fa";
+import HeaderLogo from './/HeaderLogo';
+
 
 const websiteColors = {
   primary: '#2ECC40',
@@ -16,7 +17,7 @@ const websiteColors = {
   text: '#FFFFFF'
 };
 
-const TeamLogo = ({ team, onClick, isInteractive }) => {
+const TeamLogo = ({ team }) => {
   const [isVisible, setIsVisible] = useState(false);
   const logoRef = useRef(null);
 
@@ -39,29 +40,13 @@ const TeamLogo = ({ team, onClick, isInteractive }) => {
     };
   }, []);
 
-  const baseClasses = "relative bg-white bg-opacity-10 rounded-full p-2";
-  const interactiveClasses = isInteractive ? "group" : "";
-
   return (
-    <div className={`${baseClasses} ${interactiveClasses}`} ref={logoRef}>
-      {isInteractive ? (
-        <button onClick={onClick} className="relative">
-          <div className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-opacity" 
-            style={{ borderColor: websiteColors.primary }} />
-          <img 
-            src={team.crest} 
-            alt={team.name}
-            className="w-16 h-16 object-contain transition-transform group-hover:scale-110"
-          />
-        </button>
-      ) : (
-        <img 
-          src={team.crest} 
-          alt={team.name}
-          className="w-16 h-16 object-contain"
-        />
-      )}
-      
+    <div className="relative bg-white bg-opacity-10 rounded-full p-2" ref={logoRef}>
+      <img 
+        src={team.crest} 
+        alt={team.name}
+        className="w-16 h-16 object-contain"
+      />
       <div 
         className={`absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded transition-opacity duration-300 ${
           isVisible ? 'opacity-100' : 'opacity-0'
@@ -72,6 +57,7 @@ const TeamLogo = ({ team, onClick, isInteractive }) => {
     </div>
   );
 };
+
 
 const MatchBox = ({ match, onVote }) => {
   const [showEvents, setShowEvents] = useState(false);
@@ -88,7 +74,7 @@ const MatchBox = ({ match, onVote }) => {
                         
     return prediction === actualResult;
   };
-
+  
   const getTeamPrediction = (prediction) => {
     if (prediction === 'HOME_TEAM') {
       // Use full name if it's relatively short (less than 15 characters is typically safe for one line)
@@ -145,20 +131,6 @@ const MatchBox = ({ match, onVote }) => {
     color: websiteColors.text
   }}
 >
-        {/* Match Header - Time Until Match */}
-        {(match.status === 'SCHEDULED' || match.status === 'TIMED') && (
-          <div className="flex justify-center mb-4">
-            <div className="text-center">
-              {!match.userVote && (
-                <span className="text-sm font-medium">
-                  {format(new Date(match.localDate), 'HH:mm')}
-                </span>
-              )}
-              <span className="text-xs opacity-75 block">• {timeUntilMatch}</span>
-            </div>
-          </div>
-        )}
-  
         {/* Standings Button */}
         {shouldShowStandings(match.competition.id) && (
           <div className="absolute top-4 right-4">
@@ -207,43 +179,35 @@ const MatchBox = ({ match, onVote }) => {
     </div>
   )}
   
-            {match.status === 'FINISHED' && (
-              <div className="flex flex-col items-center">
-                <span className="text-lg font-medium">FT</span>
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-xl font-bold">{match.score.fullTime.home}</span>
-                  <span className="text-lg">:</span>
-                  <span className="text-xl font-bold">{match.score.fullTime.away}</span>
-                </div>
-                <button
-                  onClick={() => setShowEvents(true)}
-                  className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
-                >
-                  <Clock className="w-3 h-3" />
-                  Events
-                </button>
-              </div>
-            )}
-  
-            {(match.status === 'SCHEDULED' || match.status === 'TIMED') && (
-              match.userVote ? (
-                <span className="text-sm font-medium">
-                  {format(new Date(match.localDate), 'HH:mm')}
-                </span>
-              ) : (
-                <button
-                  onClick={() => onVote(match.id, 'draw')}
-                  className="px-4 py-1 text-sm bg-opacity-20 hover:bg-opacity-30 rounded-full transition-colors"
-                  style={{
-                    backgroundColor: websiteColors.primary,
-                    color: websiteColors.text
-                  }}
-                >
-                  Draw
-                </button>
-              )
-            )}
-          </div>
+  {match.status === 'FINISHED' && (
+    <div className="flex flex-col items-center">
+      <span className="text-lg font-medium">FT</span>
+      <div className="flex items-center space-x-2 mb-2">
+        <span className="text-xl font-bold">{match.score.fullTime.home}</span>
+        <span className="text-lg">:</span>
+        <span className="text-xl font-bold">{match.score.fullTime.away}</span>
+      </div>
+      <button
+        onClick={() => setShowEvents(true)}
+        className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
+      >
+        <Clock className="w-3 h-3" />
+        Events
+      </button>
+    </div>
+  )}
+
+  {(match.status === 'SCHEDULED' || match.status === 'TIMED') && (
+    <div className="flex flex-col items-center">
+      <span className="text-sm font-medium">
+        {format(new Date(match.localDate), 'HH:mm')}
+      </span>
+      <span className="text-xs opacity-75 mt-1">
+        {timeUntilMatch}
+      </span>
+    </div>
+  )}
+</div>
   
           {/* Away Team */}
           <TeamLogo 
@@ -257,61 +221,32 @@ const MatchBox = ({ match, onVote }) => {
       {/* White Background Section */}
       <div className="bg-white p-4">
 {/* Predictions */}
-<div className="flex mb-3">
-{/* Fans Prediction */}
-<div 
-  style={{
-    backgroundColor: match.status === 'FINISHED' 
-      ? (isPredictionCorrect(match.fanPrediction) ? '#2ECC40' : '#ff4136')
-      : 'white',
-    width: '49%',
-    marginRight: '2%'
-  }}
-  className="flex items-center px-2 sm:px-4 py-2 rounded-md"
->
-  <div className="flex items-center gap-1 sm:gap-2 w-full">
-    <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
-      style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
-      <FaPeopleGroup 
-        className="w-4 h-4 sm:w-5 sm:h-5" 
-        style={{ color: '#3B82F6' }} // This is the equivalent of bg-blue-500
-      />
-      Fans:
-    </span>
-      {match.fanPrediction && match.fanPrediction !== 'DRAW' && (
-        <img 
-          src={match.fanPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest} 
-          alt="" 
-          className="w-4 h-4 sm:w-6 sm:h-6" 
-        />
-      )}
-      <span className="text-xs sm:text-sm truncate" 
-        style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
-        {getTeamPrediction(match.fanPrediction)}
-      </span>
-    </div>
-  </div>
-
-  {/* Experts {/* Experts Prediction */}
+<div className="flex justify-center mb-3">
+  {/* Experts Prediction */}
   <div 
-  style={{
-    backgroundColor: match.status === 'FINISHED' 
-      ? (isPredictionCorrect(match.aiPrediction) ? '#2ECC40' : '#ff4136')
-      : 'white',
-    width: '49%',
-    marginRight: '2%'
-  }}
-  className="flex items-center px-2 sm:px-4 py-2 rounded-md"
->
-  <div className="flex items-center gap-1 sm:gap-2 w-full">
-    <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
-      style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
-      <FaBrain 
-        className="w-4 h-4 sm:w-5 sm:h-5" 
-        style={{ color: '#22C55E' }} // This is the equivalent of bg-green-500
-      />
-      Experts:
-    </span>
+    style={{
+      backgroundColor: match.status === 'FINISHED' 
+        ? (isPredictionCorrect(match.aiPrediction) ? '#2ECC40' : '#ff4136')
+        : 'white',
+      width: '100%'
+    }}
+    className={`
+      flex items-center px-2 sm:px-4 py-2 rounded-md
+      ${match.status === 'FINISHED' 
+        ? 'border border-transparent' // No visible border when finished
+        : 'border border-gray-200'   // Light gray border for non-finished matches
+      }
+      shadow-sm                      // Subtle shadow for depth
+    `}
+  >
+    <div className="flex items-center gap-1 sm:gap-2 w-full">
+      <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
+        style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
+        <HeaderLogo
+          className="w-4 h-4 sm:w-5 sm:h-5" 
+        />
+        Experts:
+      </span>
       {match.aiPrediction && match.aiPrediction !== 'DRAW' && (
         <img 
           src={match.aiPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest} 
@@ -327,60 +262,6 @@ const MatchBox = ({ match, onVote }) => {
   </div>
 </div>
 
-  
-        {/* Vote Percentages */}
-        {match.userVote && (
-          <div className="mb-3">
-            <div className="h-2 bg-gray-800 rounded-full overflow-hidden flex">
-              <div 
-                className="transition-all duration-500"
-                style={{ 
-                  width: `${(match.voteCounts.home / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0}%`,
-                  backgroundColor: websiteColors.primary 
-                }}
-              />
-              <div 
-                className="transition-all duration-500"
-                style={{ 
-                  width: `${(match.voteCounts.draw / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0}%`,
-                  backgroundColor: websiteColors.primaryDark
-                }}
-              />
-              <div 
-                className="transition-all duration-500"
-                style={{ 
-                  width: `${(match.voteCounts.away / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0}%`,
-                  backgroundColor: `${websiteColors.primary}99`
-                }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>{Math.round((match.voteCounts.home / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0)}%</span>
-              <span>{Math.round((match.voteCounts.draw / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0)}%</span>
-              <span>{Math.round((match.voteCounts.away / (match.voteCounts.home + match.voteCounts.draw + match.voteCounts.away) * 100) || 0)}%</span>
-            </div>
-          </div>
-        )}
-  
-        {/* User's Vote Display */}
-        {match.userVote && (
-          <div className="text-center text-sm">
-            <span className="px-3 py-1 rounded-full" style={{ 
-              backgroundColor: match.status === 'FINISHED' 
-                ? (isPredictionCorrect(match.userVote === 'home' ? 'HOME_TEAM' : match.userVote === 'away' ? 'AWAY_TEAM' : 'DRAW') 
-                  ? '#2ECC40' 
-                  : '#ff4136')
-                : websiteColors.primary,
-              color: websiteColors.text 
-            }}>
-              Your vote: {getTeamPrediction(
-                match.userVote === 'home' ? 'HOME_TEAM' :
-                match.userVote === 'away' ? 'AWAY_TEAM' :
-                'DRAW'
-              )}
-            </span>
-          </div>
-        )}
       </div>
   
       {/* Match Events Modal */}

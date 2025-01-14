@@ -1,18 +1,13 @@
 const cron = require('node-cron');
 const { startOfDay, endOfDay, parseISO, differenceInMinutes } = require('date-fns');
 const Match = require('./models/Match');
-const User = require('./models/User');
 const { processMatchesForDate, hasActiveMatches, getNextScheduledMatch, ACTIVE_STATUSES } = require('./fetchMatches');
-const FanPredictionStat = require('./models/FanPredictionStat');
 const AIPredictionStat = require('./models/AIPredictionStat');
 const AccuracyStats = require('./models/AccuracyStats');
-const { recalculateAllStats } = require('./utils/statsProcessor');
 const { fetchAndStoreEvents } = require('./fetchEvents');
 const { fetchAndStoreAllLiveEvents } = require('./fetchEvents');
 const { processStandings, ALLOWED_LEAGUE_IDS, getCurrentSeason, cleanup: mongoCleanup } = require('./fetchStandings');
 const { subHours, addHours } = require('date-fns');
-const Vote = require('./models/Vote');
-const UserStatsCache = require('./models/UserStatsCache');
 
 let matchFetchingJob = null;
 

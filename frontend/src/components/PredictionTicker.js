@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Calendar } from 'lucide-react';
 import api from '../api';
 
-const StatItem = ({ isToday, aiStats, fanStats }) => {
+const StatItem = ({ isToday, aiStats }) => {
   const calculatePercentage = (correct, total) => {
     if (!total) return 0;
     return ((correct / total) * 100).toFixed(1);
@@ -27,16 +27,6 @@ const StatItem = ({ isToday, aiStats, fanStats }) => {
             ({aiStats.correct}/{aiStats.total})
           </span>
         </div>
-
-        <div className="flex items-center gap-2 min-w-[180px]">
-          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-          <span className="text-blue-400 shrink-0 font-medium tracking-wider">
-            FANS {calculatePercentage(fanStats.correct, fanStats.total)}%
-          </span>
-          <span className="text-gray-400 text-sm shrink-0">
-            ({fanStats.correct}/{fanStats.total})
-          </span>
-        </div>
       </div>
     </div>
   );
@@ -45,19 +35,49 @@ const StatItem = ({ isToday, aiStats, fanStats }) => {
 const PredictionTicker = () => {
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
   const tickerRef = useRef(null);
   const animationRef = useRef(null);
 
-  useEffect(() => {
-    const animate = () => {
-      if (!isDragging && tickerRef.current) {
-        tickerRef.current.scrollLeft += 1;
-        if (tickerRef.current.scrollLeft >= tickerRef.current.scrollWidth / 2) {
-          tickerRef.current.scrollLeft = 0;
+  const fetchData = async () => {
+    try {
+      const response = await api.get('/api/accuracy/ai/two-days');
+      console.log('Two days stats response:', response.data); // Add this debug log
+      
+      setStats({
+        today: {
+          ai: response.data.today || { total: 0, correct: 0 }
+        },
+        yesterday: {
+          ai: response.data.yesterday || { total: 0, correct: 0 }
         }
+      });
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setStats({
+        today: { ai: { total: 0, correct: 0 } },
+        yesterday: { ai: { total: 0, correct: 0 } }
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 300000); // 5 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let startTime = performance.now();
+    const duration = 20000; // 20 seconds for one complete scroll
+
+    const animate = (currentTime) => {
+      if (tickerRef.current) {
+        const elapsed = currentTime - startTime;
+        const progress = (elapsed % duration) / duration;
+        const totalWidth = tickerRef.current.scrollWidth / 3;
+        tickerRef.current.scrollLeft = progress * totalWidth;
       }
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -68,55 +88,7 @@ const PredictionTicker = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isDragging]);
-
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    setStartX(e.pageX - tickerRef.current.offsetLeft);
-    setScrollLeft(tickerRef.current.scrollLeft);
-  };
-
-  const handleTouchStart = (e) => {
-    setIsDragging(true);
-    setStartX(e.touches[0].pageX - tickerRef.current.offsetLeft);
-    setScrollLeft(tickerRef.current.scrollLeft);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const x = e.pageX - tickerRef.current.offsetLeft;
-    const walk = (x - startX);
-    tickerRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isDragging) return;
-    const x = e.touches[0].pageX - tickerRef.current.offsetLeft;
-    const walk = (x - startX);
-    tickerRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const stopDragging = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const statsData = await api.fetchLastTwoDaysStats();
-        setStats(statsData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 300000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [stats]);
 
   if (isLoading) {
     return (
@@ -138,15 +110,13 @@ const PredictionTicker = () => {
       type: 'stats',
       key: 'today',
       isToday: true,
-      aiStats: stats.today.ai,
-      fanStats: stats.today.fans
+      aiStats: stats.today.ai
     },
     {
       type: 'stats',
       key: 'yesterday',
       isToday: false,
-      aiStats: stats.yesterday.ai,
-      fanStats: stats.yesterday.fans
+      aiStats: stats.yesterday.ai
     }
   ];
 
@@ -154,23 +124,15 @@ const PredictionTicker = () => {
     <div className="w-full bg-gray-900 mt-2 border-t border-b border-gray-700 overflow-hidden">      
       <div 
         ref={tickerRef}
-        className={`relative h-10 overflow-x-auto scrollbar-hide touch-pan-x ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onMouseMove={handleMouseMove}
-        onTouchMove={handleTouchMove}
-        onMouseUp={stopDragging}
-        onMouseLeave={stopDragging}
-        onTouchEnd={stopDragging}
+        className="relative h-10 overflow-x-hidden scrollbar-hide"
       >
         <div className="absolute inset-0 flex items-center">
           <div className="flex">
-            {[...items, ...items, ...items].map((item, index) => (
+            {[...items, ...items, ...items, ...items].map((item, index) => (
               <StatItem
                 key={`${item.key}-${index}`}
                 isToday={item.isToday}
                 aiStats={item.aiStats}
-                fanStats={item.fanStats}
               />
             ))}
           </div>
@@ -181,22 +143,6 @@ const PredictionTicker = () => {
 };
 
 const styles = `
-  @keyframes ticker {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-33.333%);
-    }
-  }
-
-  .animate-ticker {
-    animation: ticker 30s linear infinite;
-  }
-
-  .animate-ticker:hover {
-    animation-play-state: paused;
-  }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

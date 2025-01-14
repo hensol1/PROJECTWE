@@ -9,15 +9,15 @@ const AboutUs = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
           <p className="leading-relaxed">
-            "We Know Better" is a cutting-edge web application revolutionizing football match predictions. 
-            We combine the passion of football fans with advanced artificial intelligence to create a unique 
-            prediction platform that's accessible to everyone, whether you're a registered user or just 
-            browsing.
+            "We Know Better" is a state-of-the-art football prediction platform that showcases expert 
+            predictions powered by advanced artificial intelligence. Our mission is to provide accurate, 
+            data-driven match predictions while maintaining complete transparency about our performance 
+            and accuracy.
           </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4">What Sets Us Apart</h2>
+          <h2 className="text-2xl font-semibold mb-4">Our Technology</h2>
           <p className="leading-relaxed">
             Our platform stands out through its innovative combination of human insight and artificial 
             intelligence. Our expert system utilizes sophisticated algorithms, machine learning models, 
@@ -28,27 +28,37 @@ const AboutUs = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4">How It Works</h2>
+          <h2 className="text-2xl font-semibold mb-4">What We Offer</h2>
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
               <div className="flex-1">
-                <h3 className="font-semibold">For Fans</h3>
-                <p>Make predictions on upcoming matches, track your accuracy, and compete with others globally.</p>
+                <h3 className="font-semibold">Expert Predictions</h3>
+                <p>Advanced AI-powered predictions for football matches across major leagues worldwide.</p>
               </div>
             </div>
             <div className="flex items-start space-x-4">
               <div className="flex-1">
-                <h3 className="font-semibold">AI Predictions</h3>
-                <p>Our AI system analyzes vast amounts of data to generate highly accurate predictions.</p>
+                <h3 className="font-semibold">Real-Time Updates</h3>
+                <p>Live scores, match events, and instant updates for all covered matches.</p>
               </div>
             </div>
             <div className="flex items-start space-x-4">
               <div className="flex-1">
                 <h3 className="font-semibold">Performance Tracking</h3>
-                <p>Compare your prediction accuracy with both other users and our AI system.</p>
+                <p>Transparent accuracy tracking and detailed statistics of our prediction performance.</p>
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold mb-4">Our Commitment</h2>
+          <p className="leading-relaxed">
+            We are committed to providing the most accurate football predictions possible, backed by 
+            continuous monitoring and improvement of our AI system. Our platform offers complete 
+            transparency in our prediction accuracy, allowing users to track our performance over time 
+            and make informed decisions based on our proven track record.
+          </p>
         </div>
       </div>
     </div>

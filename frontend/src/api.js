@@ -82,7 +82,7 @@ api.fetchLiveMatches = () => {
 
 api.fetchAccuracy = async () => {
   try {
-    const response = await api.get('/api/accuracy');
+    const response = await api.get('/api/accuracy/ai');
     console.log('API accuracy response:', response);
     return response.data;
   } catch (error) {
@@ -107,23 +107,29 @@ api.fetchLatestSuccessfulPrediction = async () => {
 // Ticker
 api.fetchLastTwoDaysStats = async () => {
   try {
-    const response = await api.get('/api/accuracy/last-two-days');
+    console.log('Fetching last two days stats...'); // Add debug log
+    const response = await api.get('/api/accuracy/ai/two-days');
+    console.log('Last two days stats response:', response.data); // Add debug log
     return response.data;
   } catch (error) {
     console.error('Error fetching last two days stats:', error);
-    return null;
+    return {
+      today: { total: 0, correct: 0 },
+      yesterday: { total: 0, correct: 0 }
+    };
   }
 };
 
-api.fetchTopUsers = async () => {
+api.fetchAIHistory = async () => {
   try {
-    const response = await api.get('/api/accuracy/top-users');
+    const response = await api.get('/api/accuracy/ai/history');
     return response.data;
   } catch (error) {
-    console.error('Error fetching top users:', error);
-    return [];
+    console.error('Error fetching AI history:', error);
+    throw error;
   }
 };
+
 
 //Events
 api.fetchMatchEvents = (matchId) => {
@@ -155,123 +161,46 @@ api.fetchUserDailyAccuracy = async () => {
 // Modified to include user stats if available
 api.fetchDailyAccuracy = async () => {
   try {
-    const token = localStorage.getItem('token');
-    console.log('Token available:', !!token);
-
-    const [generalResponse, userResponse] = await Promise.all([
-      api.get('/api/accuracy/daily'),
-      token ? api.get('/api/accuracy/user/daily') : Promise.resolve({ data: { data: { total: 0, correct: 0 } } })
-    ]);
-
-    console.log('General response:', generalResponse.data);
-    console.log('User response:', userResponse.data);
-
+    const response = await api.get('/api/accuracy/ai/daily');
     return {
       data: {
-        ...generalResponse.data.data,
-        user: userResponse.data.data
+        ai: response.data
       }
     };
   } catch (error) {
     console.error('Error in fetchDailyAccuracy:', error);
-    // Return default data structure on error
     return {
       data: {
-        ai: { total: 0, correct: 0 },
-        fans: { total: 0, correct: 0 },
-        user: { total: 0, correct: 0 }
+        ai: { total: 0, correct: 0 }
       }
     };
   }
 };
 
-// Location rankings methods
-api.getLocationRankings = () => api.get('/api/user/rankings/locations');
-api.getMyLocationRankings = () => api.get('/api/user/rankings/my-location');
-
 // Match related endpoints
 api.voteForMatch = (matchId, vote) => api.post(`/api/matches/${matchId}/vote`, { vote });
-
-// User related endpoints
-api.getUserProfile = () => api.get('/api/user/profile');
-api.getUserStats = () => api.get('/api/user/stats');
-api.getLeaderboard = () => api.get('/api/user/leaderboard');
-api.deleteAccount = () => api.delete('/api/user/profile');
-
-// Auth related endpoints
-api.forgotPassword = (email) => api.post('/api/auth/forgot-password', { email });
-api.resetPassword = (token, newPassword) => 
-  api.post('/api/auth/reset-password', { token, newPassword });
 
 // Admin related endpoints
 api.makeAIPrediction = (matchId, prediction) => {
   console.log('Making AI prediction:', { matchId, prediction });
-  return api.post(`/api/admin/${matchId}/predict`, { prediction });
+  return api.post(`/api/admin/matches/${matchId}/prediction`, { prediction });
 };
-// Auto Votes
-api.autoVote = (date) => api.post('/api/matches/auto-vote', { date });
 
 // Admin routes
 api.triggerFetchMatches = (date) => {
-  // Ensure we send a properly formatted date string
   const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+  console.log('Triggering fetch with formatted date:', formattedDate);
   return api.post('/api/admin/fetch-matches', { 
-    date: formattedDate 
+    date: formattedDate,
+    debug: true  // Add this flag
   });
-};
-//NEWS
-const NEWS_API_CONFIG = {
-  headers: {
-    'X-RapidAPI-Key': 'b35a78699fmshf552a62224ff2e04p14fbejsn3bf2c8358a75',
-    'X-RapidAPI-Host': 'football-news-aggregator-live.p.rapidapi.com'
-  },
-  validateStatus: function (status) {
-    return status < 500; // Resolve only if status is less than 500
-  }
-};
-
-const NEWS_API_BASE_URL = 'https://football-news-aggregator-live.p.rapidapi.com';
-
-// Helper function for making API calls with better error handling
-const fetchWithDelay = async (url) => {
-  try {
-    console.log('Fetching:', url);
-    const response = await axios.get(url, NEWS_API_CONFIG);
-    console.log('Response:', response);
-    
-    if (response.status === 429) {
-      throw new Error('Rate limit exceeded. Please try again later.');
-    }
-    
-    if (response.status === 403) {
-      throw new Error('API access forbidden. Please check your API key.');
-    }
-    
-    if (!response.data) {
-      throw new Error('No data received from API');
-    }
-    
-    return response;
-  } catch (error) {
-    console.error(`Error fetching from ${url}:`, error);
-    if (error.response) {
-      console.log('Error response:', error.response.data);
-    }
-    throw error;
-  }
 };
 
 
 api.recalculateStats = () => api.post('/api/admin/recalculate-stats');
 api.resetStats = () => api.post('/api/accuracy/reset');
-api.resetAllStats = () => api.post('/api/accuracy/reset-all');
-api.resetAIStats = () => api.post('/api/accuracy/reset-ai');
-api.resetFanStats = () => api.post('/api/accuracy/reset-fans');
-api.getUserRankings = () => api.get('/api/user/rankings');
 api.getDailyPredictions = () => api.get('/api/stats/daily-predictions');
-api.resetAllStats = () => api.post('/api/admin/reset-all');
 api.resetAIStats = () => api.post('/api/admin/reset-ai');
-api.resetFanStats = () => api.post('/api/admin/reset-fans');
 api.updateAllResults = () => api.post('/api/matches/update-results');
 
 
