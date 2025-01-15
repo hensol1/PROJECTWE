@@ -3,50 +3,62 @@ import { Timer } from 'lucide-react';
 
 const NextMatchCountdown = ({ scheduledMatches }) => {
   const [countdown, setCountdown] = useState('');
-  const [nextMatch, setNextMatch] = useState(null);
+  const [nextMatches, setNextMatches] = useState([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   const truncateTeamName = (name) => {
-    return name.length > 10 ? `${name.substring(0, 10)}...` : name;
+    return name?.length > 10 ? `${name.substring(0, 10)}...` : name;
   };
 
   useEffect(() => {
-    const findNextMatch = () => {
+    const findNextMatches = () => {
       const now = new Date();
-      let soonestMatch = null;
       let soonestTime = Infinity;
+      let matches = [];
 
-      const allMatches = Object.values(scheduledMatches).reduce((matches, leagueMatches) => {
+      // Flatten all matches into a single array
+      const allMatches = Object.values(scheduledMatches).reduce((acc, leagueMatches) => {
         const flatLeagueMatches = Object.values(leagueMatches).flat();
-        return [...matches, ...flatLeagueMatches];
+        return [...acc, ...flatLeagueMatches];
       }, []);
 
+      // First pass: find the earliest future match time
       allMatches.forEach(match => {
         const matchTime = new Date(match.utcDate);
         const timeDiff = matchTime - now;
         if (timeDiff > 0 && timeDiff < soonestTime) {
           soonestTime = timeDiff;
-          soonestMatch = match;
         }
       });
 
-      return soonestMatch;
+      // Second pass: collect all matches at the soonest time (with 1-minute tolerance)
+      if (soonestTime !== Infinity) {
+        matches = allMatches.filter(match => {
+          const matchTime = new Date(match.utcDate);
+          const timeDiff = matchTime - now;
+          // Use a 1-minute tolerance to group matches
+          return Math.abs(timeDiff - soonestTime) <= 60000;
+        });
+      }
+
+      return matches;
     };
 
     const updateCountdown = () => {
-      const match = findNextMatch();
-      if (!match) {
+      const matches = findNextMatches();
+      if (matches.length === 0) {
         setCountdown('');
-        setNextMatch(null);
+        setNextMatches([]);
         return;
       }
 
       const now = new Date();
-      const matchTime = new Date(match.utcDate);
+      const matchTime = new Date(matches[0].utcDate);
       const diff = matchTime - now;
 
       if (diff <= 0) {
         setCountdown('');
-        setNextMatch(null);
+        setNextMatches([]);
         return;
       }
 
@@ -57,7 +69,7 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
       setCountdown(
         `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
       );
-      setNextMatch(match);
+      setNextMatches(matches);
     };
 
     updateCountdown();
@@ -65,9 +77,22 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
     return () => clearInterval(intervalId);
   }, [scheduledMatches]);
 
-  if (!nextMatch || !countdown) {
+  // Rotate through matches every 5 seconds if there are multiple matches
+  useEffect(() => {
+    if (nextMatches.length <= 1) return;
+
+    const rotationInterval = setInterval(() => {
+      setCurrentMatchIndex(current => (current + 1) % nextMatches.length);
+    }, 5000);
+
+    return () => clearInterval(rotationInterval);
+  }, [nextMatches.length]);
+
+  if (!nextMatches.length || !countdown) {
     return null;
   }
+
+  const currentMatch = nextMatches[currentMatchIndex];
 
   return (
     <div className="w-full bg-gray-900 border-t border-b border-gray-700">
@@ -78,23 +103,29 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
             <Timer className="w-4 h-4 text-[#40c456] shrink-0" />
             <span className="text-white text-sm whitespace-nowrap flex items-center gap-1.5">
               <span className="text-yellow-400 font-medium">GET READY!</span>
-              {' '}Next Match Starts in{' '}
+              {' '}Next Match{nextMatches.length > 1 ? 'es' : ''} Start{nextMatches.length === 1 ? 's' : ''} in{' '}
               <span className="font-mono text-[#40c456]">{countdown}</span>
-              {' '}<span className="flex items-center gap-1">
-                <span className="text-white">{truncateTeamName(nextMatch.homeTeam.name)}</span>
+              {' '}
+              <div className="flex items-center gap-1 transition-opacity duration-300">
+                <span className="text-white">{truncateTeamName(currentMatch.homeTeam.name)}</span>
                 <img 
-                  src={nextMatch.homeTeam.crest} 
-                  alt={nextMatch.homeTeam.name}
+                  src={currentMatch.homeTeam.crest} 
+                  alt={currentMatch.homeTeam.name}
                   className="w-4 h-4 inline-block"
                 />
                 <span className="mx-1 text-[#40c456]">vs</span>
                 <img 
-                  src={nextMatch.awayTeam.crest} 
-                  alt={nextMatch.awayTeam.name}
+                  src={currentMatch.awayTeam.crest} 
+                  alt={currentMatch.awayTeam.name}
                   className="w-4 h-4 inline-block"
                 />
-                <span className="text-white">{truncateTeamName(nextMatch.awayTeam.name)}</span>
-              </span>
+                <span className="text-white">{truncateTeamName(currentMatch.awayTeam.name)}</span>
+                {nextMatches.length > 1 && (
+                  <span className="ml-2 text-gray-400 text-xs">
+                    {currentMatchIndex + 1}/{nextMatches.length}
+                  </span>
+                )}
+              </div>
             </span>
           </div>
 
@@ -104,21 +135,26 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
               <span className="text-yellow-400 font-medium shrink-0">GET READY!</span>
               <span className="text-white shrink-0">in</span>
               <span className="font-mono text-[#40c456] shrink-0">{countdown}</span>
-              <span className="flex items-center gap-1 min-w-0 flex-shrink">
-                <span className="text-white truncate">{truncateTeamName(nextMatch.homeTeam.name)}</span>
+              <div className="flex items-center gap-1 min-w-0 flex-shrink transition-opacity duration-300">
+                <span className="text-white truncate">{truncateTeamName(currentMatch.homeTeam.name)}</span>
                 <img 
-                  src={nextMatch.homeTeam.crest} 
-                  alt={nextMatch.homeTeam.name}
+                  src={currentMatch.homeTeam.crest} 
+                  alt={currentMatch.homeTeam.name}
                   className="w-3 h-3 inline-block shrink-0"
                 />
                 <span className="mx-0.5 text-[#40c456] shrink-0">vs</span>
                 <img 
-                  src={nextMatch.awayTeam.crest} 
-                  alt={nextMatch.awayTeam.name}
+                  src={currentMatch.awayTeam.crest} 
+                  alt={currentMatch.awayTeam.name}
                   className="w-3 h-3 inline-block shrink-0"
                 />
-                <span className="text-white truncate">{truncateTeamName(nextMatch.awayTeam.name)}</span>
-              </span>
+                <span className="text-white truncate">{truncateTeamName(currentMatch.awayTeam.name)}</span>
+                {nextMatches.length > 1 && (
+                  <span className="ml-1 text-gray-400 text-xs shrink-0">
+                    {currentMatchIndex + 1}/{nextMatches.length}
+                  </span>
+                )}
+              </div>
             </span>
           </div>
         </div>

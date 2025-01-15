@@ -22,7 +22,7 @@ const RacingBarDisplay = ({ score }) => {
       {/* Top label */}
       <div className="absolute top-0 left-0 w-full px-3 py-1.5 flex items-center text-xs text-emerald-200 bg-emerald-900/20">
         <Activity size={12} className="mr-1" />
-        Expert Prediction System
+        Our chance to predict correctly is:
       </div>
 
       {/* Main racing bar */}
@@ -188,22 +188,18 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
 
   return (
     <div className="w-full max-w-xl mx-auto mt-4">
-      {/* Added top margin to the container */}
-      <div className="mb-3"> {/* Reduced space before PredictionTicker */}
+      <div className="mb-3">
         <RacingBarDisplay 
           score={animatedAiAccuracy || 0}
         />
       </div>
 
-      <div className="mb-2"> {/* Reduced space after PredictionTicker */}
+      <div className="mb-2">
         <PredictionTicker />
       </div>
       
-      {/* Added container for NextMatchCountdown with bottom margin */}
-      <div className="mb-6"> {/* Added space before the tabs */}
-        {(!allLiveMatches || Object.keys(allLiveMatches).length === 0) && (
-          <NextMatchCountdown scheduledMatches={scheduledMatches} />
-        )}
+      <div className="mb-6">
+        <NextMatchCountdown scheduledMatches={scheduledMatches} />
       </div>
     </div>
   );
