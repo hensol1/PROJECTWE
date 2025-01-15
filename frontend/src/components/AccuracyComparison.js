@@ -9,6 +9,9 @@ const RacingBarDisplay = ({ score }) => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   
+  // Calculate if it's 100% to apply special styling
+  const isFullScore = score >= 100;
+  
   return (
     <div 
       className="relative bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-lg cursor-pointer overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]"
@@ -25,8 +28,12 @@ const RacingBarDisplay = ({ score }) => {
       {/* Main racing bar */}
       <div className="mt-7 flex items-center h-12">
         <div 
-          className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 transition-all duration-700 flex items-center justify-end pr-3 relative group-hover:brightness-110"
-          style={{ width: `${score}%` }}
+          className={`h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 transition-all duration-700 flex items-center ${isFullScore ? 'justify-center' : 'justify-end pr-3'} relative group-hover:brightness-110`}
+          style={{ 
+            width: isFullScore ? '100%' : `${score}%`,
+            borderTopRightRadius: isFullScore ? '0' : '0.5rem',
+            borderBottomRightRadius: isFullScore ? '0' : '0.5rem'
+          }}
         >
           {/* Animated light effect */}
           <div className="absolute inset-0 overflow-hidden">
@@ -58,11 +65,13 @@ const RacingBarDisplay = ({ score }) => {
           </div>
         </div>
         
-        {/* View Stats indicator */}
-        <div className={`flex items-center ml-3 transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
-          <span className="text-emerald-400 text-sm mr-1">View Stats</span>
-          <ChevronRight size={16} className="text-emerald-400" />
-        </div>
+        {/* View Stats indicator - Only show when not 100% */}
+        {!isFullScore && (
+          <div className={`flex items-center ml-3 transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
+            <span className="text-emerald-400 text-sm mr-1">View Stats</span>
+            <ChevronRight size={16} className="text-emerald-400" />
+          </div>
+        )}
       </div>
 
       {/* Bottom progress markers */}
