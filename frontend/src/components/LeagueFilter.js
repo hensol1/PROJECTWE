@@ -23,7 +23,7 @@ const LeagueFilter = ({ leagues, selectedLeague, onLeagueSelect, isMobileOpen, o
         <div className="p-4">
           {/* Mobile close button */}
           <div className="flex justify-between items-center mb-4 md:hidden">
-            <h3 className="text-lg font-semibold text-gray-700">Leagues</h3>
+            <h3 className="text-lg font-semibold text-gray-700">Today's Events</h3>
             <button 
               onClick={onClose}
               className="p-1 hover:bg-gray-100 rounded-full"

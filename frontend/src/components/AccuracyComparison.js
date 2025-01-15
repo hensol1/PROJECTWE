@@ -1,119 +1,90 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Sparkle } from 'lucide-react';
-import { FaBrain } from "react-icons/fa";
+import React, { useState, useEffect } from 'react';
+import { Activity, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import PredictionTicker from './PredictionTicker';
 import NextMatchCountdown from './NextMatchCountdown';
 
-const StatsPopover = ({ stats, color, anchorRect }) => {
-  if (!anchorRect || !stats) return null;
-
-  const formattedStats = {
-    total: stats.total || 0,
-    correct: stats.correct || 0
-  };
-
-  const successRate = formattedStats.total === 0 ? 0 : 
-    (formattedStats.correct / formattedStats.total) * 100;
-
-  // Calculate tooltip position
-  const viewportWidth = window.innerWidth;
-  const tooltipWidth = 192;
-  let leftPosition = anchorRect.left + (anchorRect.width / 2);
-  let transformX = -50;
-
-  if (leftPosition + (tooltipWidth / 2) > viewportWidth) {
-    leftPosition = viewportWidth - 20;
-    transformX = -100;
-  }
+const RacingBarDisplay = ({ score }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
   
-  if (leftPosition - (tooltipWidth / 2) < 0) {
-    leftPosition = 20;
-    transformX = 0;
-  }
-
-  return createPortal(
-    <div 
-      className="bg-white rounded-xl shadow-lg p-4 w-48 absolute"
-      style={{
-        position: 'absolute',
-        left: `${leftPosition}px`,
-        top: `${anchorRect.bottom + 8}px`,
-        transform: `translateX(${transformX}%)`,
-        zIndex: 999999,
-      }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800">Today's Predictions</h3>
-        <Sparkle size={16} className="text-yellow-400" />
-      </div>
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Correct</span>
-          <span className="text-sm font-medium text-gray-800">
-            {formattedStats.correct}/{formattedStats.total}
-          </span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Success Rate</span>
-          <span className="text-sm font-medium text-green-500">
-            {successRate.toFixed(1)}%
-          </span>
-        </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-2">
-          <div 
-            className={`h-full ${color} transition-all duration-500`}
-            style={{ width: `${successRate}%` }}
-          />
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
-
-const ExpertScoreDisplay = ({ 
-  score,
-  color = 'bg-green-500',
-  onIconClick
-}) => {
-  const iconRef = useRef(null);
-
-  const handleClick = () => {
-    if (iconRef.current) {
-      const rect = iconRef.current.getBoundingClientRect();
-      onIconClick(rect);
-    }
-  };
-
   return (
-    <div className="flex flex-col items-center relative">
-      <div 
-        ref={iconRef}
-        onClick={handleClick}
-        className="w-16 h-16 sm:w-20 sm:h-20 mb-3 cursor-pointer"
-      >
-        <div className={`${color} rounded-full p-3 w-full h-full flex items-center justify-center`}>
-          <FaBrain className="w-full h-full text-white" />
+    <div 
+      className="relative bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-lg cursor-pointer overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]"
+      onClick={() => navigate('/stats')}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Top label */}
+      <div className="absolute top-0 left-0 w-full px-3 py-1.5 flex items-center text-xs text-emerald-200 bg-emerald-900/20">
+        <Activity size={12} className="mr-1" />
+        Expert Prediction System
+      </div>
+
+      {/* Main racing bar */}
+      <div className="mt-7 flex items-center h-12">
+        <div 
+          className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 transition-all duration-700 flex items-center justify-end pr-3 relative group-hover:brightness-110"
+          style={{ width: `${score}%` }}
+        >
+          {/* Animated light effect */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 -skew-x-45 animate-shine"
+              style={{
+                animationDuration: '2s',
+                animationIterationCount: 'infinite',
+              }}
+            />
+            {/* Pulsing dots */}
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute top-1/2 transform -translate-y-1/2 w-8 h-8 opacity-20 bg-white rounded-full animate-pulse"
+                style={{
+                  left: `${i * 25}%`,
+                  animationDelay: `${i * 0.2}s`
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Score */}
+          <div className="relative z-10 flex items-center">
+            <span className="text-gray-900 font-bold text-2xl tracking-tight" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+              {score.toFixed(1)}%
+            </span>
+          </div>
+        </div>
+        
+        {/* View Stats indicator */}
+        <div className={`flex items-center ml-3 transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
+          <span className="text-emerald-400 text-sm mr-1">View Stats</span>
+          <ChevronRight size={16} className="text-emerald-400" />
         </div>
       </div>
-      <span className="font-bold text-2xl sm:text-3xl text-gray-800">
-        {score.toFixed(1)}%
-      </span>
-      <span className="text-sm text-gray-500 mt-0.5">
-        Our Experts
-      </span>
+
+      {/* Bottom progress markers */}
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-800">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute top-0 h-full bg-emerald-400 transition-all duration-500"
+            style={{
+              left: `${i * 10}%`,
+              width: '2px',
+              opacity: score >= (i + 1) * 10 ? '1' : '0.1',
+              transform: score >= (i + 1) * 10 ? 'scaleY(1.5)' : 'scaleY(1)'
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 };
 
-export default function AccuracyComparison({ 
-  allLiveMatches,
-  scheduledMatches,
-}) {
-  const [tooltipAnchor, setTooltipAnchor] = useState(null);
-  const [showStats, setShowStats] = useState(false);
+export default function AccuracyComparison({ allLiveMatches, scheduledMatches }) {
   const [accuracyData, setAccuracyData] = useState({
     aiAccuracy: 0,
     lastUpdated: new Date()
@@ -130,13 +101,8 @@ export default function AccuracyComparison({
         api.fetchAccuracy(),
         api.fetchDailyAccuracy()
       ]);
-  
-      // Add console.log to debug the response
-      console.log('Accuracy Response:', accuracyResponse);
       
-      // Ensure we have a default value if the response is empty
       const aiAccuracy = accuracyResponse?.aiAccuracy || 0;
-      
       const aiStats = {
         ai: {
           total: dailyResponse?.data?.ai?.total || 0,
@@ -152,7 +118,6 @@ export default function AccuracyComparison({
       setError(null);
     } catch (error) {
       console.error('Error fetching accuracy data:', error);
-      // Set default values on error
       setAccuracyData({
         aiAccuracy: 0,
         lastUpdated: new Date()
@@ -189,23 +154,18 @@ export default function AccuracyComparison({
   
     return () => clearInterval(interval);
   }, [accuracyData?.aiAccuracy]);
-    
-  const handleIconClick = (rect) => {
-    setShowStats(!showStats);
-    setTooltipAnchor(rect);
-  };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-24">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="flex justify-center items-center h-24 mt-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center text-red-500 p-4">
+      <div className="text-center text-red-500 p-4 mt-4">
         <p>{error}</p>
         <button 
           onClick={fetchData}
@@ -218,27 +178,20 @@ export default function AccuracyComparison({
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto">
-      <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm py-3 px-4 mb-4">
-        <div className="flex justify-center">
-        <ExpertScoreDisplay
-  score={animatedAiAccuracy || 0}  // Add default value
-  color="bg-green-500"
-  onIconClick={handleIconClick}
-/>
-
-          {showStats && (
-            <StatsPopover 
-              stats={dailyStats?.ai}
-              color="bg-green-500"
-              anchorRect={tooltipAnchor}
-            />
-          )}
-        </div>
+    <div className="w-full max-w-xl mx-auto mt-4">
+      {/* Added top margin to the container */}
+      <div className="mb-3"> {/* Reduced space before PredictionTicker */}
+        <RacingBarDisplay 
+          score={animatedAiAccuracy || 0}
+        />
       </div>
 
-      <PredictionTicker />
-      <div className="mb-6">
+      <div className="mb-2"> {/* Reduced space after PredictionTicker */}
+        <PredictionTicker />
+      </div>
+      
+      {/* Added container for NextMatchCountdown with bottom margin */}
+      <div className="mb-6"> {/* Added space before the tabs */}
         {(!allLiveMatches || Object.keys(allLiveMatches).length === 0) && (
           <NextMatchCountdown scheduledMatches={scheduledMatches} />
         )}

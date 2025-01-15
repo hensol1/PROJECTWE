@@ -11,11 +11,6 @@ const { subHours, addHours } = require('date-fns');
 
 let matchFetchingJob = null;
 
-const cleanupStatsCache = async () => {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    await UserStatsCache.deleteMany({ lastUpdated: { $lt: thirtyDaysAgo } });
-};
-
 async function scheduleNextMatchCheck() {
     try {
         console.log('Starting scheduleNextMatchCheck...');
@@ -174,7 +169,6 @@ async function updateDailyPredictionStats() {
 
         const stats = {
             ai: { total: 0, correct: 0 },
-            fans: { total: 0, correct: 0 }
         };
 
         todayMatches.forEach(match => {
@@ -216,9 +210,8 @@ async function updateDailyPredictionStats() {
 
         console.log('Today\'s stats calculated:', stats);
 
-        const [aiStats, fanStats] = await Promise.all([
+        const [aiStats] = await Promise.all([
             AIPredictionStat.findOne(),
-            FanPredictionStat.findOne()
         ]);
 
         if (aiStats) {
@@ -239,122 +232,10 @@ async function updateDailyPredictionStats() {
             await aiStats.save();
         }
 
-        if (fanStats) {
-            let todayFanStats = fanStats.dailyStats.find(
-                stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
-            );
-
-            if (todayFanStats) {
-                todayFanStats.totalPredictions = stats.fans.total;
-                todayFanStats.correctPredictions = stats.fans.correct;
-            } else {
-                fanStats.dailyStats.push({
-                    date: today,
-                    totalPredictions: stats.fans.total,
-                    correctPredictions: stats.fans.correct
-                });
-            }
-            await fanStats.save();
-        }
-
-        const verifyStats = await FanPredictionStat.findOne();
-        const todayFanStats = verifyStats?.dailyStats?.find(
-            stat => startOfDay(new Date(stat.date)).getTime() === today.getTime()
-        );
-        
-        console.log('Verification - Today\'s stats in database:', {
-            date: today.toISOString(),
-            stats: todayFanStats
-        });
-
         return stats;
     } catch (error) {
         console.error('Error updating daily prediction stats:', error);
         throw error;
-    }
-}
-
-async function updateUserStats() {
-    try {
-        const matches = await Match.find({ 
-            status: 'FINISHED',
-            processed: false
-        });
-
-        if (matches.length === 0) {
-            console.log('No new matches to process for user stats');
-            return;
-        }
-
-        console.log(`Processing ${matches.length} new finished matches for user stats`);
-
-        for (const match of matches) {
-            const votes = await Vote.find({ matchId: match.id });
-            console.log(`Found ${votes.length} votes for match ${match.id}`);
-            
-            const actualResult = match.score.winner || (
-                match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' :
-                match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW'
-            );
-
-            for (const vote of votes) {
-                try {
-                    const votePrediction = 
-                        vote.vote === 'home' ? 'HOME_TEAM' :
-                        vote.vote === 'away' ? 'AWAY_TEAM' : 'DRAW';
-
-                    vote.isCorrect = votePrediction === actualResult;
-                    await vote.save();
-
-                    // Update user's stats
-                    const user = await User.findById(vote.userId);
-                    if (user) {
-                        // Get all finished votes for this user
-                        const userVotes = await Vote.find({
-                            userId: user._id,
-                            isCorrect: { $ne: null }
-                        });
-
-                        const finishedVotes = userVotes.length;
-                        const correctVotes = userVotes.filter(v => v.isCorrect).length;
-
-                        // Calculate Wilson score
-                        const n = finishedVotes;
-                        const p = n > 0 ? correctVotes / n : 0;
-                        const z = 1.96;
-                        const zsqr = z * z;
-                        const wilsonScore = n > 0 ? 
-                            (p + zsqr/(2*n) - z * Math.sqrt((p*(1-p) + zsqr/(4*n))/n))/(1 + zsqr/n) : 0;
-
-                        // Update user document
-                        await User.findByIdAndUpdate(user._id, {
-                            finishedVotes,
-                            correctVotes,
-                            accuracy: n > 0 ? (correctVotes / n * 100) : 0,
-                            wilsonScore
-                        });
-
-                        // Force stats cache update
-                        await UserStatsCache.findOneAndUpdate(
-                            { userId: user._id },
-                            { $set: { lastUpdated: new Date(0) } },
-                            { upsert: true }
-                        );
-
-                        console.log(`Updated stats for user ${user.username}: ${correctVotes}/${finishedVotes} correct`);
-                    }
-                } catch (error) {
-                    console.error(`Error processing vote ${vote._id} for match ${match.id}:`, error);
-                }
-            }
-
-            // Mark match as processed
-            match.processed = true;
-            await match.save();
-            console.log(`Marked match ${match.id} as processed`);
-        }
-    } catch (error) {
-        console.error('Error in updateUserStats:', error);
     }
 }
 
@@ -369,8 +250,6 @@ const statsUpdateJob = cron.schedule('*/2 * * * *', async () => {
             const stats = await updateDailyPredictionStats();
             console.log('Daily stats update completed:', stats);
             
-            await updateUserStats();
-            console.log('User stats update completed');
         }
     } catch (error) {
         console.error('Error in scheduled task:', error);
@@ -396,19 +275,6 @@ const dailyResetJob = cron.schedule('0 0 * * *', async () => {
                 },
                 { upsert: true }
             ),
-            FanPredictionStat.findOneAndUpdate(
-                {},
-                {
-                    $push: {
-                        dailyStats: {
-                            date: today,
-                            totalPredictions: 0,
-                            correctPredictions: 0
-                        }
-                    }
-                },
-                { upsert: true }
-            )
         ]);
         
         // After midnight reset, check for any active matches or schedule next check
@@ -432,16 +298,6 @@ const accuracyStatsJob = cron.schedule('*/10 * * * *', async () => {
         }
     } catch (error) {
         console.error('Error in scheduled accuracy recalculation:', error);
-    }
-});
-
-// New cron job for events (every 5 minutes)
-const eventsUpdateJob = cron.schedule('*/5 * * * *', async () => {
-    try {
-        console.log('Starting scheduled events update');
-        await fetchAndStoreAllLiveEvents();
-    } catch (error) {
-        console.error('Error in events update job:', error);
     }
 });
 
@@ -540,9 +396,7 @@ module.exports = {
     statsUpdateJob,
     dailyResetJob,
     accuracyStatsJob,
-    updateUserStats,
     updateDailyPredictionStats,
     handleMatchFetching,
-    eventsUpdateJob,
     standingsUpdateJob
 };
