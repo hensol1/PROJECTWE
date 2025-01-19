@@ -161,9 +161,11 @@ const MatchBox = ({ match, onVote }) => {
   
 {/* Score and Status */}
 <div className="flex flex-col items-center min-w-[60px]">
-  {(match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME') && (
+{(match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME') && (
     <div className="flex flex-col items-center">
-      <span className="text-sm font-medium animate-pulse" style={{ color: '#2ECC43' }}>{match.minute}'</span>
+      <span className="text-sm font-medium animate-pulse" style={{ color: '#2ECC43' }}>
+        {match.status === 'HALFTIME' ? 'HT' : `${match.minute}'`}
+      </span>
       <div className="flex items-center space-x-2">
         <span className="text-xl font-bold">{match.score.fullTime.home}</span>
         <span className="text-lg">:</span>
