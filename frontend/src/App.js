@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { HelmetProvider } from 'react-helmet-async'; // Add this import
+import { HelmetProvider } from 'react-helmet-async';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import HeaderLogo from './components/HeaderLogo';
 import LoadingLogo from './components/LoadingLogo';
 import Matches from './components/Matches';
@@ -66,12 +67,12 @@ function App() {
 
   return (
     <div className="App">
-    <HelmetProvider>
-      <GoogleOAuthProvider clientId={config.googleClientId}>
-        <Router>
-          <SEO />
-          <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
-          <div className="bg-gray-100 min-h-screen flex flex-col relative">
+      <HelmetProvider>
+        <GoogleOAuthProvider clientId={config.googleClientId}>
+          <Router>
+            <SEO />
+            <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
+            <div className="bg-gray-100 min-h-screen flex flex-col relative">
             <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
               <div className="container mx-auto">
                 <div className="grid grid-cols-3 items-center gap-2">
@@ -250,12 +251,13 @@ function App() {
             <CookieConsent />
             <Footer />
           </div>
-        </Router>
-      </GoogleOAuthProvider>
-    </HelmetProvider>
-    <InstallPrompt />
+          </Router>
+        </GoogleOAuthProvider>
+      </HelmetProvider>
+      <InstallPrompt />
+      <SpeedInsights /> 
     </div>
   );
-  }
+}
 
 export default App;
