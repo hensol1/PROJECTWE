@@ -68,7 +68,7 @@ const Footer = () => {
           <div className="hidden sm:flex flex-col items-end">
             <div className="text-sm font-medium mb-2">Connect With Us</div>
             <div className="flex items-center gap-4">
-              <a href="https://www.tiktok.com/@weknowbetter2024?_t=8s6MSbrXfNq&_r=1" 
+              <a href="https://www.tiktok.com/@we.know.better?_t=ZS-8tBy36ng05I&_r=1" 
                  className="text-gray-300 hover:text-white"
                  target="_blank"
                  rel="noopener noreferrer">
