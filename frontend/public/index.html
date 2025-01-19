@@ -14,7 +14,14 @@
     <meta charset="utf-8" />
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/logo.png">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    
+    <!-- PWA specific meta tags -->
+    <meta name="theme-color" content="#2ECC40" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="We Know Better">
     
     <!-- Primary Meta Tags -->
     <title>We Know Better - Football Match Predictions & Analysis</title>
@@ -134,23 +141,38 @@
       body {
         margin: 0;
         padding: 0;
-        min-height: 100vh;
       }
 
-      /* Make banners responsive */
-      @media (max-width: 1200px) {
-        .side-banner {
-          display: none;
-        }
-        #root {
-          margin: 0;
-        }
+      /* Add offline support styles */
+      .offline-notification {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #2ECC40;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        z-index: 1000;
+      }
+      
+      .offline-notification.show {
+        display: block;
       }
     </style>
 
-  </head>
+    <script type="text/javascript">
+      atOptions = {
+        'key' : '4a7c6acb67736598903f6b378cfe9700',
+        'format' : 'iframe',
+        'height' : 600,
+        'width' : 160,
+        'params' : {}
+      };
+    </script>
+    </head>
   <body>
-
     <script type="text/javascript">
       atOptions = {
         'key' : '79402d83d787731b6679487a2e2e46ae',
@@ -159,15 +181,47 @@
         'width' : 320,
         'params' : {}
       };
-    </script>
-
+    </script>      
     <noscript>
       <h1>We Know Better - Football Match Predictions & Analysis</h1>
       <p>Join We Know Better to make football predictions, compare with AI accuracy, and compete with fans worldwide. Get real-time match insights and track your prediction success.</p>
     </noscript>
 
+    <!-- Offline notification -->
+    <div class="offline-notification" id="offline-notification">
+      You are currently offline. Some features may be limited.
+    </div>
+
     <div id="initial-loading">
       <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Left Banner -->
+    <div id="left-banner">
+      <script type="text/javascript">
+        atOptions = {
+          'key': '4a7c6acb67736598903f6b378cfe9700',
+          'format': 'iframe',
+          'height': 600,
+          'width': 160,
+          'params': {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/4a7c6acb67736598903f6b378cfe9700/invoke.js"></script>
+    </div>
+
+    <!-- Right Banner -->
+    <div id="right-banner">
+      <script type="text/javascript">
+        atOptions = {
+          'key': '4a7c6acb67736598903f6b378cfe9700',
+          'format': 'iframe',
+          'height': 600,
+          'width': 160,
+          'params': {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/4a7c6acb67736598903f6b378cfe9700/invoke.js"></script>
     </div>
 
     <div id="root">
@@ -196,7 +250,19 @@
         </div>
       </div>
     </div>
-<script async="async" data-cfasync="false" src="//pl25492253.profitablecpmrate.com/0859cbe3eb70fcac10e1d21a1665dbe7/invoke.js"></script>
-<div id="container-0859cbe3eb70fcac10e1d21a1665dbe7"></div>
-    </body>
+
+    <script async="async" data-cfasync="false" src="//pl25492253.profitablecpmrate.com/0859cbe3eb70fcac10e1d21a1665dbe7/invoke.js"></script>
+    <div id="container-0859cbe3eb70fcac10e1d21a1665dbe7"></div>
+
+    <!-- Add offline detection script -->
+    <script>
+      window.addEventListener('online', function() {
+        document.getElementById('offline-notification').classList.remove('show');
+      });
+      
+      window.addEventListener('offline', function() {
+        document.getElementById('offline-notification').classList.add('show');
+      });
+    </script>
+  </body>
 </html>
