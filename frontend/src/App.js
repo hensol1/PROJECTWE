@@ -21,6 +21,7 @@ import WelcomeSlides from './components/WelcomeSlides';
 import SEO from './components/SEO';
 import StatsPage from './components/StatsPage';
 import { BookOpen, LineChart } from 'lucide-react'; // Add LineChart to imports
+import InstallPrompt from './components/InstallPrompt';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -64,6 +65,7 @@ function App() {
   }  
 
   return (
+    <div className="App">
     <HelmetProvider>
       <GoogleOAuthProvider clientId={config.googleClientId}>
         <Router>
@@ -251,6 +253,8 @@ function App() {
         </Router>
       </GoogleOAuthProvider>
     </HelmetProvider>
+    <InstallPrompt />
+    </div>
   );
   }
 
