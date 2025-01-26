@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend 
 } from 'recharts';
-import { format, startOfToday, subDays, isWithinInterval, isBefore } from 'date-fns';
+import { format, startOfToday, isBefore } from 'date-fns';
 import { InfoIcon } from 'lucide-react';
 import api from '../api';
 
@@ -106,32 +106,25 @@ const PerformanceGraph = () => {
         setIsLoading(true);
         const response = await api.fetchAIHistory();
         const today = startOfToday();
-        
-        console.log('Raw API response:', response.stats);
-        
-        // Format and store all data
+
+        // Filter out today's data and transform
         const formattedData = response.stats
-          .map(stat => {
-            const dateObj = new Date(stat.date);
-            const result = {
-              date: dateObj,
-              displayDate: format(dateObj, 'MMM dd'),
-              accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
-              predictions: stat.totalPredictions || 0,
-              correct: stat.correctPredictions || 0
-            };
-            console.log('Formatted stat:', result);
-            return result;
-          })
-          .filter(stat => {
-            const isBeforeToday = isBefore(stat.date, today);
-            console.log(`Date ${format(stat.date, 'MMM dd')} before today? ${isBeforeToday}`);
-            return isBeforeToday;
-          })
-          .sort((a, b) => a.date - b.date); // Sort ascending by date
-          
-        console.log('Final formatted data:', formattedData);
-        
+          .map(stat => ({
+            date: new Date(stat.date),
+            displayDate: format(new Date(stat.date), 'MMM dd'),
+            accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
+            predictions: stat.totalPredictions || 0,
+            correct: stat.correctPredictions || 0
+          }))
+          .filter(stat => isBefore(stat.date, today))
+          .sort((a, b) => b.date - a.date) // Sort descending (newest first)
+          .map(stat => ({
+            date: stat.displayDate, // Use display date for the chart
+            accuracy: stat.accuracy,
+            predictions: stat.predictions,
+            correct: stat.correct
+          }));
+
         setPerformanceData(formattedData);
         setOverallStats(response.overall);
         setError(null);
@@ -146,30 +139,8 @@ const PerformanceGraph = () => {
     fetchPerformanceData();
   }, []);
 
-  // Filter data based on selected time range
-  const getFilteredData = () => {
-    const today = startOfToday();
-    const startDate = subDays(today, timeRange); // Start from N days ago
-    const endDate = subDays(today, 1); // Yesterday, inclusive
-    
-    console.log('Date Range:', {
-      startDate: format(startDate, 'MMM dd'),
-      endDate: format(endDate, 'MMM dd'),
-      totalDataPoints: performanceData.length,
-    });
-
-    return performanceData
-      .filter(item => 
-        isWithinInterval(item.date, { start: startDate, end: endDate })
-      )
-      .sort((a, b) => a.date - b.date) // Sort ascending for display
-      .map(item => ({
-        ...item,
-        date: item.displayDate // Use formatted date for display
-      }));
-  };
-
-  const filteredData = getFilteredData();
+  // Get the most recent N days by taking first N items (since data is sorted newest first) and reversing
+  const filteredData = [...performanceData].slice(0, timeRange).reverse();
   const stats = calculateStats(filteredData, overallStats);
 
   if (isLoading) {
