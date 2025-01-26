@@ -117,7 +117,7 @@ const PerformanceGraph = () => {
             correct: stat.correctPredictions || 0
           }))
           .filter(stat => isBefore(stat.date, today)) // Filter out today's data
-          .sort((a, b) => b.date - a.date); // Sort descending by date
+          .sort((a, b) => a.date - b.date); // Sort ascending by date
         
         setPerformanceData(formattedData);
         setOverallStats(response.overall);
@@ -132,24 +132,30 @@ const PerformanceGraph = () => {
 
     fetchPerformanceData();
   }, []);
-  
+
   // Filter data based on selected time range
   const getFilteredData = () => {
     const today = startOfToday();
     const startDate = subDays(today, timeRange); // Start from N days ago
     const endDate = subDays(today, 1); // Yesterday, inclusive
-  
+    
+    console.log('Date Range:', {
+      startDate: format(startDate, 'MMM dd'),
+      endDate: format(endDate, 'MMM dd'),
+      totalDataPoints: performanceData.length,
+    });
+
     return performanceData
       .filter(item => 
         isWithinInterval(item.date, { start: startDate, end: endDate })
       )
-      .sort((a, b) => a.date - b.date)
+      .sort((a, b) => a.date - b.date) // Sort ascending for display
       .map(item => ({
         ...item,
-        date: item.displayDate
+        date: item.displayDate // Use formatted date for display
       }));
   };
-  
+
   const filteredData = getFilteredData();
   const stats = calculateStats(filteredData, overallStats);
 
