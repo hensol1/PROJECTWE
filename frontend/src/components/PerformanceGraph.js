@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend 
 } from 'recharts';
-import { format, startOfToday, isBefore } from 'date-fns';
+import { format, startOfToday, subDays, isWithinInterval, isBefore } from 'date-fns';
 import { InfoIcon } from 'lucide-react';
 import api from '../api';
 
@@ -106,20 +106,19 @@ const PerformanceGraph = () => {
         setIsLoading(true);
         const response = await api.fetchAIHistory();
         const today = startOfToday();
-
-        // Filter out today's data and transform
+        
+        // Format and store all data
         const formattedData = response.stats
-          .filter(stat => {
-            const statDate = new Date(stat.date);
-            return isBefore(statDate, today);
-          })
           .map(stat => ({
-            date: format(new Date(stat.date), 'MMM dd'),
+            date: new Date(stat.date), // Keep as Date object for filtering
+            displayDate: format(new Date(stat.date), 'MMM dd'),
             accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
             predictions: stat.totalPredictions || 0,
             correct: stat.correctPredictions || 0
-          }));
-  
+          }))
+          .filter(stat => isBefore(stat.date, today)) // Filter out today's data
+          .sort((a, b) => b.date - a.date); // Sort descending by date
+        
         setPerformanceData(formattedData);
         setOverallStats(response.overall);
         setError(null);
@@ -130,13 +129,30 @@ const PerformanceGraph = () => {
         setIsLoading(false);
       }
     };
-  
+
     fetchPerformanceData();
   }, []);
   
-  const filteredData = performanceData.slice(-timeRange);
+  // Filter data based on selected time range
+  const getFilteredData = () => {
+    const today = startOfToday();
+    const startDate = subDays(today, timeRange + 1); // +1 to include the start date
+    const endDate = subDays(today, 1); // Yesterday
+
+    return performanceData
+      .filter(item => 
+        isWithinInterval(item.date, { start: startDate, end: endDate })
+      )
+      .sort((a, b) => a.date - b.date) // Sort ascending for display
+      .map(item => ({
+        ...item,
+        date: item.displayDate // Use formatted date for display
+      }));
+  };
+
+  const filteredData = getFilteredData();
   const stats = calculateStats(filteredData, overallStats);
-    
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
