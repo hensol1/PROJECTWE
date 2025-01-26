@@ -30,12 +30,7 @@ const AffiliateProductBanner = () => {
   ];
 
   return (
-<div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-<div className="p-3 bg-[#40c456] text-white font-semibold flex items-center justify-between">
-        <span>Featured Deals</span>
-        <ExternalLink className="w-4 h-4" />
-      </div>
-      
+<div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">      
       <div className="p-3 space-y-4">
         {products.map((product) => (
           <a
