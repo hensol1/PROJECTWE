@@ -107,17 +107,30 @@ const PerformanceGraph = () => {
         const response = await api.fetchAIHistory();
         const today = startOfToday();
         
+        console.log('Raw API response:', response.stats);
+        
         // Format and store all data
         const formattedData = response.stats
-          .map(stat => ({
-            date: new Date(stat.date), // Keep as Date object for filtering
-            displayDate: format(new Date(stat.date), 'MMM dd'),
-            accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
-            predictions: stat.totalPredictions || 0,
-            correct: stat.correctPredictions || 0
-          }))
-          .filter(stat => isBefore(stat.date, today)) // Filter out today's data
+          .map(stat => {
+            const dateObj = new Date(stat.date);
+            const result = {
+              date: dateObj,
+              displayDate: format(dateObj, 'MMM dd'),
+              accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
+              predictions: stat.totalPredictions || 0,
+              correct: stat.correctPredictions || 0
+            };
+            console.log('Formatted stat:', result);
+            return result;
+          })
+          .filter(stat => {
+            const isBeforeToday = isBefore(stat.date, today);
+            console.log(`Date ${format(stat.date, 'MMM dd')} before today? ${isBeforeToday}`);
+            return isBeforeToday;
+          })
           .sort((a, b) => a.date - b.date); // Sort ascending by date
+          
+        console.log('Final formatted data:', formattedData);
         
         setPerformanceData(formattedData);
         setOverallStats(response.overall);
