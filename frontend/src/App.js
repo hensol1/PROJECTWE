@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { HelmetProvider } from 'react-helmet-async';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 import HeaderLogo from './components/HeaderLogo';
 import LoadingLogo from './components/LoadingLogo';
 import Matches from './components/Matches';
@@ -21,7 +20,7 @@ import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
 import SEO from './components/SEO';
 import StatsPage from './components/StatsPage';
-import { BookOpen, LineChart } from 'lucide-react'; // Add LineChart to imports
+import { BookOpen, LineChart } from 'lucide-react'; 
 import InstallPrompt from './components/InstallPrompt';
 
 function App() {
@@ -29,7 +28,7 @@ function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [welcomeSlidesOpen, setWelcomeSlidesOpen] = useState(false); // Add this state
+  const [welcomeSlidesOpen, setWelcomeSlidesOpen] = useState(false);
 
   useEffect(() => {
     const initialLoadingElement = document.getElementById('initial-loading');
@@ -249,13 +248,12 @@ function App() {
             </main>
 
             <CookieConsent />
-            <Footer />
-          </div>
+              <Footer />
+            </div>
           </Router>
         </GoogleOAuthProvider>
       </HelmetProvider>
       <InstallPrompt />
-      <SpeedInsights /> 
     </div>
   );
 }
