@@ -1,4 +1,5 @@
 // Part 1: Imports
+import React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import TabsSection from './TabsSection';
 import ModernAccuracyComparison from './AccuracyComparison';
@@ -14,6 +15,8 @@ import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
 import LeagueFilter from './LeagueFilter';
 import LeagueFilterButton from './LeagueFilterButton';
+import AffiliateProductBanner from './AffiliateProductBanner';
+import SingleProductBanner from './SingleProductBanner';
 
 // Constants
 
@@ -70,6 +73,34 @@ const getDateForSelection = useCallback((selection) => {
       return today;
   }
 }, []);
+
+const products = [
+  {
+    id: "1005006973916216",
+    title: "Baseus 65W Power Bank 20000mah",
+    description: "Fast Charging with Built-in Cable",
+    price: "61.28",
+    originalPrice: "107.13",
+    discount: "42%",
+    image: "https://ae-pic-a1.aliexpress-media.com/kf/Se0dee031a8cd41bca30045d144553c2fs.jpg",
+    affiliateLink: "https://s.click.aliexpress.com/e/_okQQDVR",
+    feedback: "95.4%",
+    sales: "2712"
+  },
+  {
+    id: "1005004932777511",
+    title: "Anmeilu Backpack",
+    description: "Waterproof Outdoor Sport Backpack",
+    price: "29.84",
+    originalPrice: "32.84",
+    discount: "9%",
+    image: "https://ae-pic-a1.aliexpress-media.com/kf/S2660540f6178466581612c2d9584977bz.jpg",
+    affiliateLink: "https://s.click.aliexpress.com/e/_oCQSUh7",
+    feedback: "97.5%",
+    sales: "35"
+  }
+];
+
 
 // Derived state
 const selectedDate = getDateForSelection(selectedDay);
@@ -752,53 +783,60 @@ const handleLeagueSelect = useCallback((leagueId) => {
         return leagueKeyA.localeCompare(leagueKeyB);
       })
       // Finally render each league's matches
-      .map(([leagueKey, competitionMatches]) => {
+      .map(([leagueKey, competitionMatches], index) => {
         const [leagueName] = leagueKey.split('_');
         return (
-          <div key={leagueKey} className="mb-4 last:mb-0 max-w-md mx-auto w-full">
-            <button 
-              className="w-full group relative overflow-hidden"
-              onClick={() => toggleLeague(leagueKey)}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 opacity-90" />
-              
-              <div className="relative flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 backdrop-blur-sm border border-indigo-100/50 rounded-lg group-hover:border-indigo-200/70 transition-all duration-300">
-                <LeagueHeader 
-                  leagueName={leagueName}
-                  leagueEmblem={competitionMatches[0].competition.emblem}
-                  country={competitionMatches[0].competition.country}
-                />
+          <React.Fragment key={leagueKey}>
+            <div className="mb-4 last:mb-0 max-w-md mx-auto w-full">
+              <button 
+                className="w-full group relative overflow-hidden"
+                onClick={() => toggleLeague(leagueKey)}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 opacity-90" />
                 
-                <div className={`
-                  transition-transform duration-300 text-indigo-500 scale-75 sm:scale-100
-                  ${collapsedLeagues[leagueKey] ? 'rotate-180' : 'rotate-0'}
-                `}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
+                <div className="relative flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2.5 backdrop-blur-sm border border-indigo-100/50 rounded-lg group-hover:border-indigo-200/70 transition-all duration-300">
+                  <LeagueHeader 
+                    leagueName={leagueName}
+                    leagueEmblem={competitionMatches[0].competition.emblem}
+                    country={competitionMatches[0].competition.country}
+                  />
+                  
+                  <div className={`
+                    transition-transform duration-300 text-indigo-500 scale-75 sm:scale-100
+                    ${collapsedLeagues[leagueKey] ? 'rotate-180' : 'rotate-0'}
+                  `}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                  </div>
                 </div>
-              </div>
-            </button>
-                
-            {!collapsedLeagues[leagueKey] && (
-              <div className="mt-1">
-                <AnimatedList delay={200} className="!overflow-visible gap-1">
-                  {competitionMatches.map(match => (
-                    <MatchBox 
-                      key={match.id} 
-                      match={match}
-                      onVote={handleVote}
-                      isLiveTab={activeTab === 'live'}
-                    />
-                  ))}
-                </AnimatedList>
-              </div>
+              </button>
+                  
+              {!collapsedLeagues[leagueKey] && (
+                <div className="mt-1">
+                  <AnimatedList delay={200} className="!overflow-visible gap-1">
+                    {competitionMatches.map(match => (
+                      <MatchBox 
+                        key={match.id} 
+                        match={match}
+                        onVote={handleVote}
+                        isLiveTab={activeTab === 'live'}
+                      />
+                    ))}
+                  </AnimatedList>
+                </div>
+              )}
+            </div>
+            
+            {/* Add banner after each league except the last one */}
+            {index < Object.entries(matches).length - 1 && (
+              <SingleProductBanner product={products[index % products.length]} />
             )}
-          </div>
+          </React.Fragment>
         );
       });
   };
-  
+    
   const renderStatusTabs = () => {
     if (selectedDay === 'yesterday') {
       return (
@@ -955,40 +993,45 @@ const handleLeagueSelect = useCallback((leagueId) => {
           hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
         />
         
-        <div className="flex mt-4 relative justify-center">
-          {/* Desktop League Filter - Now relative positioned */}
-          <div className="hidden md:block sticky top-4 h-fit w-64 mr-4">
-            <LeagueFilter
-              leagues={extractLeagues()}
-              selectedLeague={selectedLeague}
-              onLeagueSelect={handleLeagueSelect}
-              isMobileOpen={isMobileFilterOpen}
-              onClose={() => setIsMobileFilterOpen(false)}
-            />
-          </div>
+        <div className="flex mt-4 relative justify-between">
+  {/* Desktop League Filter */}
+  <div className="hidden md:block sticky top-4 h-fit w-64">
+    <LeagueFilter
+      leagues={extractLeagues()}
+      selectedLeague={selectedLeague}
+      onLeagueSelect={handleLeagueSelect}
+      isMobileOpen={isMobileFilterOpen}
+      onClose={() => setIsMobileFilterOpen(false)}
+    />
+  </div>
 
-          {/* Mobile League Filter */}
-          <div className="md:hidden">
-            <LeagueFilter
-              leagues={extractLeagues()}
-              selectedLeague={selectedLeague}
-              onLeagueSelect={handleLeagueSelect}
-              isMobileOpen={isMobileFilterOpen}
-              onClose={() => setIsMobileFilterOpen(false)}
-            />
-          </div>
+  {/* Mobile League Filter */}
+  <div className="md:hidden">
+    <LeagueFilter
+      leagues={extractLeagues()}
+      selectedLeague={selectedLeague}
+      onLeagueSelect={handleLeagueSelect}
+      isMobileOpen={isMobileFilterOpen}
+      onClose={() => setIsMobileFilterOpen(false)}
+    />
+  </div>
 
-          {/* Mobile Filter Button */}
-          <LeagueFilterButton
-            onClick={() => setIsMobileFilterOpen(true)}
-            selectedLeague={selectedLeague}
-          />
+  {/* Mobile Filter Button */}
+  <LeagueFilterButton
+    onClick={() => setIsMobileFilterOpen(true)}
+    selectedLeague={selectedLeague}
+  />
 
-          {/* Matches Content - Centered */}
-          <div className="w-full max-w-md">
-            {memoizedTabContent}
-          </div>
-        </div>
+{/* Matches Content - With proper mobile width */}
+<div className="w-full md:max-w-md md:mx-4 px-2 md:px-0">
+  {memoizedTabContent}
+</div>
+
+  {/* Desktop Affiliate Banner */}
+  <div className="hidden md:block sticky top-4 h-fit w-72">
+    <AffiliateProductBanner />
+  </div>
+</div>
 
         {isRefreshing && (
           <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
