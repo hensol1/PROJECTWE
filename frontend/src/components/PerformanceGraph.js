@@ -136,20 +136,20 @@ const PerformanceGraph = () => {
   // Filter data based on selected time range
   const getFilteredData = () => {
     const today = startOfToday();
-    const startDate = subDays(today, timeRange + 1); // +1 to include the start date
-    const endDate = subDays(today, 1); // Yesterday
-
+    const startDate = subDays(today, timeRange); // Start from N days ago
+    const endDate = subDays(today, 1); // Yesterday, inclusive
+  
     return performanceData
       .filter(item => 
         isWithinInterval(item.date, { start: startDate, end: endDate })
       )
-      .sort((a, b) => a.date - b.date) // Sort ascending for display
+      .sort((a, b) => a.date - b.date)
       .map(item => ({
         ...item,
-        date: item.displayDate // Use formatted date for display
+        date: item.displayDate
       }));
   };
-
+  
   const filteredData = getFilteredData();
   const stats = calculateStats(filteredData, overallStats);
 
