@@ -39,23 +39,21 @@ router.get('/ai/daily', async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Get today's matches
+    // Get ALL finished matches for today, not just ones with predictions
     const todayMatches = await Match.find({
       status: 'FINISHED',
       utcDate: {
         $gte: today.toISOString(),
         $lt: tomorrow.toISOString()
-      },
-      aiPrediction: { $exists: true }
+      }
     });
 
-    // Calculate today's stats
-    let total = 0;
+    // Calculate stats including matches without predictions
+    let total = todayMatches.length; // Count all finished matches
     let correct = 0;
 
     todayMatches.forEach(match => {
       if (match.aiPrediction) {
-        total++;
         const actualResult = match.score.winner || 
           (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
            match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
@@ -66,10 +64,9 @@ router.get('/ai/daily', async (req, res) => {
       }
     });
 
-    // Update or create today's stats in the database
+    // Update or create today's stats
     const aiStat = await AIPredictionStat.findOne() || new AIPredictionStat();
     
-    // Find today's stats in the dailyStats array
     const todayStats = aiStat.dailyStats.find(stat => 
       stat.date.toDateString() === today.toDateString()
     );
@@ -85,12 +82,25 @@ router.get('/ai/daily', async (req, res) => {
       });
     }
 
-    // Keep only last 30 days of stats
+    // Keep only last 30 days
     aiStat.dailyStats = aiStat.dailyStats
       .sort((a, b) => b.date - a.date)
       .slice(0, 30);
 
     await aiStat.save();
+
+    // Add debug logging
+    console.log('Daily stats calculated:', {
+      date: today,
+      total,
+      correct,
+      matches: todayMatches.map(m => ({
+        id: m._id,
+        aiPrediction: m.aiPrediction,
+        status: m.status,
+        score: m.score
+      }))
+    });
 
     res.json({
       total,
@@ -108,40 +118,90 @@ router.get('/ai/daily', async (req, res) => {
 // Get AI stats for the last two days
 router.get('/ai/two-days', async (req, res) => {
   try {
-    const aiStat = await AIPredictionStat.findOne();
-    if (!aiStat) {
-      return res.json({
-        today: { total: 0, correct: 0 },
-        yesterday: { total: 0, correct: 0 }
-      });
-    }
-
     // Get today's and yesterday's dates at midnight
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // Find today's and yesterday's stats from dailyStats array
-    const todayStats = aiStat.dailyStats.find(
-      stat => stat.date.toDateString() === today.toDateString()
-    ) || { totalPredictions: 0, correctPredictions: 0 };
+    // Debug log the date ranges we're querying
+    console.log('Querying date ranges:', {
+      today: today.toISOString(),
+      tomorrow: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      yesterday: yesterday.toISOString()
+    });
 
-    const yesterdayStats = aiStat.dailyStats.find(
-      stat => stat.date.toDateString() === yesterday.toDateString()
-    ) || { totalPredictions: 0, correctPredictions: 0 };
+    // Get matches for both days directly from Match model
+    const [todayMatches, yesterdayMatches] = await Promise.all([
+      Match.find({
+        status: 'FINISHED',
+        utcDate: {
+          $gte: today.toISOString(),
+          $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString()
+        }
+      }),
+      Match.find({
+        status: 'FINISHED',
+        utcDate: {
+          $gte: yesterday.toISOString(),
+          $lt: today.toISOString()
+        }
+      })
+    ]);
 
-    // Format response to match what PredictionTicker expects
-    res.json({
+    // Calculate stats directly from matches
+    const calculateDayStats = (matches) => {
+      let total = matches.length;
+      let correct = 0;
+
+      matches.forEach(match => {
+        if (match.aiPrediction) {
+          const actualResult = match.score.winner || 
+            (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+             match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+
+          if (match.aiPrediction === actualResult) {
+            correct++;
+          }
+        }
+      });
+
+      return { total, correct };
+    };
+
+    const todayStats = calculateDayStats(todayMatches);
+    const yesterdayStats = calculateDayStats(yesterdayMatches);
+
+    // Debug log the detailed stats calculation
+    console.log('Calculated stats:', {
       today: {
-        total: todayStats.totalPredictions,
-        correct: todayStats.correctPredictions
+        matches: todayMatches.map(m => ({
+          id: m._id,
+          prediction: m.aiPrediction,
+          score: m.score,
+          status: m.status
+        })),
+        stats: todayStats
       },
       yesterday: {
-        total: yesterdayStats.totalPredictions,
-        correct: yesterdayStats.correctPredictions
+        matches: yesterdayMatches.map(m => ({
+          id: m._id,
+          prediction: m.aiPrediction,
+          score: m.score,
+          status: m.status
+        })),
+        stats: yesterdayStats
       }
     });
+
+    // Return the calculated stats
+    const response = {
+      today: todayStats,
+      yesterday: yesterdayStats
+    };
+
+    console.log('Sending response:', response);
+    res.json(response);
 
   } catch (error) {
     console.error('Error fetching two days stats:', error);
