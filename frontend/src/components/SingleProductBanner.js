@@ -8,30 +8,6 @@ const SingleProductBanner = () => {
 
   const products = [
     {
-      id: "1005007881702130",
-      title: "Newell's Old Boys Cotton Hoodie",
-      description: "Football Soccer Argentina Napoli Ronaldo Legend Vintage Diego Maradona Retro",
-      price: "9.00",
-      originalPrice: "18.00",
-      discount: "50%",
-      image: "https://ae-pic-a1.aliexpress-media.com/kf/Sb49f4458e8d2478ea66a8b49c432aea3p.jpg",
-      affiliateLink: "https://s.click.aliexpress.com/e/_oFeXAqv",
-      feedback: "N/A",
-      sales: "1"
-    },
-    {
-      id: "1005007265250577",
-      title: "Inflatable Bumper Ball Zorb Ball",
-      description: "Bubble Football 1.2/1.5m Bubble Soccer Ball for kids adults",
-      price: "61.15",
-      originalPrice: "61.15",
-      discount: "0%",
-      image: "https://ae-pic-a1.aliexpress-media.com/kf/S806624eca395412088fb17b77cf9caadv.jpg",
-      affiliateLink: "https://s.click.aliexpress.com/e/_olVlVBP",
-      feedback: "100.0%",
-      sales: "1"
-    },
-    {
       id: "1005006756102491",
       title: "Professional Football Boots Soccer Shoes",
       description: "Mens Boys Professional Football Boots TF/FG Soccer Shoes High Ankle Kids Cleats",
@@ -44,77 +20,41 @@ const SingleProductBanner = () => {
       sales: "535"
     },
     {
-      id: "1005006955115860",
-      title: "Outdoor Sports Running Backpack",
-      description: "Lightweight Marathon Running Backpack with Water Bottle Holder",
-      price: "19.99",
-      originalPrice: "39.98",
-      discount: "50%",
-      image: "https://ae-pic-a1.aliexpress-media.com/kf/Sf4b9c696b929437caad7bff26a8c6b0eO.jpg",
-      affiliateLink: "https://s.click.aliexpress.com/e/_oktuR4Z",
-      feedback: "98.2%",
-      sales: "324"
-    },
-    {
       id: "1005006876485319",
-      title: "Sports Water Bottle 1L",
-      description: "Leakproof BPA Free Water Bottle with Time Marker",
-      price: "12.99",
-      originalPrice: "25.98",
-      discount: "50%",
+      title: "2pcs Tennis Rackets Included Tennis Bag",
+      description: "2pcs Tennis Rackets Included Tennis Bag And Tennis Sports Exercise 21'' Racquet Set Youth Games Outdoor,Suitable for Beginner",
+      price: "9.36",
+      originalPrice: "25.78",
+      discount: "63%",
       image: "https://ae-pic-a1.aliexpress-media.com/kf/Sbbc4795c36664a7daac8091c94fc7bb4T.jpg",
       affiliateLink: "https://s.click.aliexpress.com/e/_om2FDVF",
-      feedback: "97.9%",
-      sales: "1243"
-    },
-    {
-      id: "1005005945696436",
-      title: "Sports Gym Bag with Shoe Compartment",
-      description: "Waterproof Duffel Bag with Wet Pocket",
-      price: "24.99",
-      originalPrice: "49.98",
-      discount: "50%",
-      image: "https://ae-pic-a1.aliexpress-media.com/kf/S304ea43e4d2341b7a6875ae283076b04Y.jpg",
-      affiliateLink: "https://s.click.aliexpress.com/e/_oB7y4It",
-      feedback: "98.5%",
-      sales: "856"
+      feedback: "87.5%",
+      sales: "1286"
     },
     {
       id: "1005004932777511",
-      title: "Waterproof Outdoor Sport Backpack",
-      description: "Hiking Camping Travel Backpack with Laptop Compartment",
-      price: "29.84",
-      originalPrice: "32.84",
-      discount: "9%",
+      title: "Anmeilu Backpack Waterproof",
+      description: "Anmeilu Backpack Waterproof Bicycle Rucksack Outdoor Sport Knapsack for Climbing Hiking Running MTB Road Bike Hydration Backpack",
+      price: "32.80",
+      originalPrice: "30.30",
+      discount: "7%",
       image: "https://ae-pic-a1.aliexpress-media.com/kf/S2660540f6178466581612c2d9584977bz.jpg",
       affiliateLink: "https://s.click.aliexpress.com/e/_oE1zHh3",
-      feedback: "97.5%",
-      sales: "35"
+      feedback: "97.5%%",
+      sales: "32"
     },
     {
-      id: "1005006263838027",
-      title: "Compression Running Socks",
-      description: "Athletic Performance Socks for Marathon Running",
-      price: "8.99",
-      originalPrice: "17.98",
-      discount: "50%",
-      image: "https://ae-pic-a1.aliexpress-media.com/kf/S5ac725031c5c4fcbaf811060f19eee92Q.jpg",
-      affiliateLink: "https://s.click.aliexpress.com/e/_olMbJtL",
-      feedback: "98.8%",
-      sales: "2456"
-    },
-    {
-      id: "4000744514952",
-      title: "Sports Resistance Bands Set",
-      description: "Exercise Bands with Door Anchor and Handles",
-      price: "15.99",
-      originalPrice: "31.98",
-      discount: "50%",
+      id: "1005005945696436",
+      title: "KELME Kids Soccer Shoes",
+      description: "KELME Kids Soccer Shoes Authentic Cleats Football Shoes Match Training For Boys And Girls Breathable Outdoor Shoes",
+      price: "64.30",
+      originalPrice: "27.08",
+      discount: "57%",
       image: "https://ae-pic-a1.aliexpress-media.com/kf/H57856688aa764c6b8913bdc09a4a495dR.jpg",
       affiliateLink: "https://s.click.aliexpress.com/e/_onE0MUd",
-      feedback: "98.7%",
-      sales: "3254"
-    }
+      feedback: "96.7%%",
+      sales: "73"
+    },
   ];
 
   // Function to get a random product that's different from the previous one
