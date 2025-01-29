@@ -106,25 +106,51 @@ const PerformanceGraph = () => {
         setIsLoading(true);
         const response = await api.fetchAIHistory();
         const today = startOfToday();
-
-        // Filter out today's data and transform
+  
+        // Add debug logging
+        console.log('Raw stats from API:', response.stats);
+  
+        // Filter and transform the data
         const formattedData = response.stats
-          .map(stat => ({
-            date: new Date(stat.date),
-            displayDate: format(new Date(stat.date), 'MMM dd'),
-            accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
-            predictions: stat.totalPredictions || 0,
-            correct: stat.correctPredictions || 0
-          }))
-          .filter(stat => isBefore(stat.date, today))
+          .map(stat => {
+            const statDate = new Date(stat.date);
+            // Debug log for each stat
+            console.log('Processing stat:', {
+              originalDate: stat.date,
+              parsedDate: statDate,
+              accuracy: stat.accuracy,
+              totalPredictions: stat.totalPredictions,
+              correctPredictions: stat.correctPredictions
+            });
+  
+            return {
+              date: statDate,
+              displayDate: format(statDate, 'MMM dd'),
+              accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
+              predictions: stat.totalPredictions || 0,
+              correct: stat.correctPredictions || 0
+            };
+          })
+          // Only include completed days (before today)
+          .filter(stat => {
+            const isBeforeToday = isBefore(stat.date, today);
+            console.log('Filtering stat:', {
+              date: stat.date,
+              today: today,
+              isBeforeToday: isBeforeToday
+            });
+            return isBeforeToday;
+          })
           .sort((a, b) => b.date - a.date) // Sort descending (newest first)
           .map(stat => ({
-            date: stat.displayDate, // Use display date for the chart
+            date: stat.displayDate,
             accuracy: stat.accuracy,
             predictions: stat.predictions,
             correct: stat.correct
           }));
-
+  
+        console.log('Formatted data:', formattedData);
+  
         setPerformanceData(formattedData);
         setOverallStats(response.overall);
         setError(null);
@@ -135,10 +161,10 @@ const PerformanceGraph = () => {
         setIsLoading(false);
       }
     };
-
+  
     fetchPerformanceData();
   }, []);
-
+  
   // Get the most recent N days by taking first N items (since data is sorted newest first) and reversing
   const filteredData = [...performanceData].slice(0, timeRange).reverse();
   const stats = calculateStats(filteredData, overallStats);
