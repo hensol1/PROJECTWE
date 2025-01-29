@@ -72,14 +72,30 @@ const PerformanceGraph = () => {
       };
     }
   
+    // Only consider days with actual predictions
+    const daysWithPredictions = data.filter(day => day.predictions > 0);
+    
+    if (daysWithPredictions.length === 0) {
+      return {
+        avg: 0,
+        avgByMatches: 0,
+        best: 0,
+        worst: 0,
+        trend: 0,
+        totalPredictions: overallStats?.totalPredictions || 0,
+        totalCorrect: overallStats?.correctPredictions || 0,
+        overallAccuracy: overallStats?.overallAccuracy || 0
+      };
+    }
+  
     const avgByMatches = overallStats?.overallAccuracy || 0;
-    const avg = data.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / data.length;
+    const avg = daysWithPredictions.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / daysWithPredictions.length;
     
-    const best = Math.max(...data.map(d => d.accuracy || 0));
-    const worst = Math.min(...data.map(d => d.accuracy || 0));
+    const best = Math.max(...daysWithPredictions.map(d => d.accuracy || 0));
+    const worst = Math.min(...daysWithPredictions.map(d => d.accuracy || 0));
     
-    const last3 = data.slice(-3);
-    const prev3 = data.slice(-6, -3);
+    const last3 = daysWithPredictions.slice(-3);
+    const prev3 = daysWithPredictions.slice(-6, -3);
     const last3Avg = last3.length > 0 
       ? last3.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / last3.length 
       : 0;
@@ -99,7 +115,7 @@ const PerformanceGraph = () => {
       overallAccuracy: overallStats?.overallAccuracy || 0
     };
   };
-
+  
   useEffect(() => {
     const fetchPerformanceData = async () => {
       try {

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const AIPredictionStat = require('../models/AIPredictionStat');
 const Match = require('../models/Match');
+const PREDICTIONS_START_DATE = new Date('2024-01-15');
 
 // Helper function to get today's date at midnight
 const getTodayDate = () => {
@@ -215,15 +216,15 @@ router.get('/ai/two-days', async (req, res) => {
 // New route to get historical stats
 router.get('/ai/history', async (req, res) => {
   try {
-    // Get the current date at midnight for date comparisons
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Get all matches and group them by date
+    // Get matches only from our start date
     const matches = await Match.find({
       status: 'FINISHED',
       utcDate: {
-        $gte: new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000)) // Last 30 days
+        $gte: PREDICTIONS_START_DATE,
+        $lte: now
       }
     });
 
@@ -243,25 +244,27 @@ router.get('/ai/history', async (req, res) => {
       return acc;
     }, {});
 
-    // Calculate stats for each day
-    const stats = Object.entries(groupedMatches).map(([date, dayMatches]) => {
-      const total = dayMatches.length;
-      const correct = dayMatches.filter(match => {
-        const actualResult = match.score.winner || 
-          (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-           match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-        return match.aiPrediction === actualResult;
-      }).length;
+    // Calculate stats only for days with predictions
+    const stats = Object.entries(groupedMatches)
+      .filter(([date, matches]) => matches.length > 0) // Only include days with matches
+      .map(([date, dayMatches]) => {
+        const total = dayMatches.length;
+        const correct = dayMatches.filter(match => {
+          const actualResult = match.score.winner || 
+            (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+             match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+          return match.aiPrediction === actualResult;
+        }).length;
 
-      return {
-        date: new Date(date),
-        accuracy: total > 0 ? (correct / total * 100) : 0,
-        totalPredictions: total,
-        correctPredictions: correct
-      };
-    });
+        return {
+          date: new Date(date),
+          accuracy: total > 0 ? (correct / total * 100) : 0,
+          totalPredictions: total,
+          correctPredictions: correct
+        };
+      });
 
-    // Calculate overall stats
+    // Calculate overall stats only for valid prediction days
     const totalPredictions = matches.length;
     const correctPredictions = matches.filter(match => {
       const actualResult = match.score.winner || 
@@ -272,22 +275,39 @@ router.get('/ai/history', async (req, res) => {
 
     // Debug logging
     console.log('History stats calculation:', {
+      startDate: PREDICTIONS_START_DATE,
+      totalDays: stats.length,
       totalMatches: matches.length,
-      groupedMatches: Object.keys(groupedMatches).map(date => ({
-        date,
-        count: groupedMatches[date].length,
-        correct: groupedMatches[date].filter(m => {
-          const actualResult = m.score.winner || 
-            (m.score.fullTime.home > m.score.fullTime.away ? 'HOME_TEAM' : 
-             m.score.fullTime.away > m.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-          return m.aiPrediction === actualResult;
-        }).length
-      })),
-      calculatedStats: stats
+      correctPredictions,
+      overallAccuracy: totalPredictions > 0 ? (correctPredictions / totalPredictions * 100) : 0
     });
 
+    // Sort stats by date descending and fill in missing dates
+    const filledStats = [];
+    let currentDate = new Date(today);
+    
+    while (currentDate >= PREDICTIONS_START_DATE) {
+      const existingStat = stats.find(
+        stat => stat.date.toDateString() === currentDate.toDateString()
+      );
+
+      if (existingStat) {
+        filledStats.push(existingStat);
+      } else {
+        // For dates with no predictions, we'll include them but with 0 predictions
+        filledStats.push({
+          date: new Date(currentDate),
+          accuracy: 0,
+          totalPredictions: 0,
+          correctPredictions: 0
+        });
+      }
+
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
     res.json({
-      stats: stats.sort((a, b) => b.date - a.date),
+      stats: filledStats.sort((a, b) => b.date - a.date),
       overall: {
         totalPredictions,
         correctPredictions,
