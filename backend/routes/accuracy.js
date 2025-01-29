@@ -215,33 +215,86 @@ router.get('/ai/two-days', async (req, res) => {
 // New route to get historical stats
 router.get('/ai/history', async (req, res) => {
   try {
-    const aiStat = await AIPredictionStat.findOne();
-    if (!aiStat) {
-      return res.json({ stats: [] });
-    }
+    // Get the current date at midnight for date comparisons
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Add overall totals to the response
-    const stats = aiStat.dailyStats.map(stat => ({
-      date: stat.date,
-      accuracy: stat.totalPredictions > 0 
-        ? (stat.correctPredictions / stat.totalPredictions * 100)
-        : 0,
-      totalPredictions: stat.totalPredictions,
-      correctPredictions: stat.correctPredictions
-    }));
+    // Get all matches and group them by date
+    const matches = await Match.find({
+      status: 'FINISHED',
+      utcDate: {
+        $gte: new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000)) // Last 30 days
+      }
+    });
+
+    // Group matches by date
+    const groupedMatches = matches.reduce((acc, match) => {
+      const matchDate = new Date(match.utcDate);
+      const dateKey = new Date(
+        matchDate.getFullYear(), 
+        matchDate.getMonth(), 
+        matchDate.getDate()
+      ).toISOString();
+
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(match);
+      return acc;
+    }, {});
+
+    // Calculate stats for each day
+    const stats = Object.entries(groupedMatches).map(([date, dayMatches]) => {
+      const total = dayMatches.length;
+      const correct = dayMatches.filter(match => {
+        const actualResult = match.score.winner || 
+          (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+           match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+        return match.aiPrediction === actualResult;
+      }).length;
+
+      return {
+        date: new Date(date),
+        accuracy: total > 0 ? (correct / total * 100) : 0,
+        totalPredictions: total,
+        correctPredictions: correct
+      };
+    });
 
     // Calculate overall stats
-    const overallStats = {
-      totalPredictions: aiStat.totalPredictions,
-      correctPredictions: aiStat.correctPredictions,
-      overallAccuracy: aiStat.totalPredictions > 0 
-        ? (aiStat.correctPredictions / aiStat.totalPredictions * 100)
-        : 0
-    };
+    const totalPredictions = matches.length;
+    const correctPredictions = matches.filter(match => {
+      const actualResult = match.score.winner || 
+        (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+         match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+      return match.aiPrediction === actualResult;
+    }).length;
 
-    res.json({ 
-      stats,
-      overall: overallStats 
+    // Debug logging
+    console.log('History stats calculation:', {
+      totalMatches: matches.length,
+      groupedMatches: Object.keys(groupedMatches).map(date => ({
+        date,
+        count: groupedMatches[date].length,
+        correct: groupedMatches[date].filter(m => {
+          const actualResult = m.score.winner || 
+            (m.score.fullTime.home > m.score.fullTime.away ? 'HOME_TEAM' : 
+             m.score.fullTime.away > m.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+          return m.aiPrediction === actualResult;
+        }).length
+      })),
+      calculatedStats: stats
+    });
+
+    res.json({
+      stats: stats.sort((a, b) => b.date - a.date),
+      overall: {
+        totalPredictions,
+        correctPredictions,
+        overallAccuracy: totalPredictions > 0 
+          ? (correctPredictions / totalPredictions * 100)
+          : 0
+      }
     });
   } catch (error) {
     console.error('Error fetching historical stats:', error);
@@ -251,6 +304,5 @@ router.get('/ai/history', async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
