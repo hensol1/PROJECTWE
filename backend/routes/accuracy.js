@@ -219,14 +219,17 @@ router.get('/ai/history', async (req, res) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Get matches only from our start date
+    // Get only matches that have predictions
     const matches = await Match.find({
       status: 'FINISHED',
       utcDate: {
         $gte: PREDICTIONS_START_DATE,
         $lte: now
-      }
+      },
+      aiPrediction: { $exists: true } // Only get matches where we made predictions
     });
+
+    console.log('Fetched matches count:', matches.length);
 
     // Group matches by date
     const groupedMatches = matches.reduce((acc, match) => {
@@ -244,9 +247,8 @@ router.get('/ai/history', async (req, res) => {
       return acc;
     }, {});
 
-    // Calculate stats only for days with predictions
+    // Calculate stats for days with predictions
     const stats = Object.entries(groupedMatches)
-      .filter(([date, matches]) => matches.length > 0) // Only include days with matches
       .map(([date, dayMatches]) => {
         const total = dayMatches.length;
         const correct = dayMatches.filter(match => {
@@ -264,7 +266,7 @@ router.get('/ai/history', async (req, res) => {
         };
       });
 
-    // Calculate overall stats only for valid prediction days
+    // Calculate overall stats from matches with predictions
     const totalPredictions = matches.length;
     const correctPredictions = matches.filter(match => {
       const actualResult = match.score.winner || 
@@ -274,15 +276,14 @@ router.get('/ai/history', async (req, res) => {
     }).length;
 
     // Debug logging
-    console.log('History stats calculation:', {
+    console.log('Stats calculation:', {
       startDate: PREDICTIONS_START_DATE,
-      totalDays: stats.length,
-      totalMatches: matches.length,
+      totalMatchesWithPredictions: matches.length,
       correctPredictions,
-      overallAccuracy: totalPredictions > 0 ? (correctPredictions / totalPredictions * 100) : 0
+      overallAccuracy: (correctPredictions / totalPredictions * 100).toFixed(1)
     });
 
-    // Sort stats by date descending and fill in missing dates
+    // Fill in dates with no predictions
     const filledStats = [];
     let currentDate = new Date(today);
     
@@ -294,7 +295,6 @@ router.get('/ai/history', async (req, res) => {
       if (existingStat) {
         filledStats.push(existingStat);
       } else {
-        // For dates with no predictions, we'll include them but with 0 predictions
         filledStats.push({
           date: new Date(currentDate),
           accuracy: 0,
