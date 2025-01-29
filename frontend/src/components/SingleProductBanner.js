@@ -55,6 +55,18 @@ const SingleProductBanner = () => {
       feedback: "96.7%%",
       sales: "73"
     },
+    {
+      id: "1005006973916216",
+      title: "Baseus 65W Power Bank 20000mah",
+      description: "Fast Charging with Built-in Cable",
+      price: "61.28",
+      originalPrice: "107.13",
+      discount: "42%",
+      image: "https://ae-pic-a1.aliexpress-media.com/kf/Se0dee031a8cd41bca30045d144553c2fs.jpg",
+      affiliateLink: "https://s.click.aliexpress.com/e/_okQQDVR",
+      feedback: "95.4%",
+      sales: "2712"
+    },  
   ];
 
   // Function to get a random product that's different from the previous one
