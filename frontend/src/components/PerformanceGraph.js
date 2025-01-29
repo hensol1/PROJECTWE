@@ -122,42 +122,22 @@ const PerformanceGraph = () => {
         setIsLoading(true);
         const response = await api.fetchAIHistory();
         const today = startOfToday();
-  
-        // Add debug logging
-        console.log('Raw stats from API:', response.stats);
+        const PREDICTIONS_START = new Date('2025-01-15'); // Our start date
   
         // Filter and transform the data
         const formattedData = response.stats
-          .map(stat => {
-            const statDate = new Date(stat.date);
-            // Debug log for each stat
-            console.log('Processing stat:', {
-              originalDate: stat.date,
-              parsedDate: statDate,
-              accuracy: stat.accuracy,
-              totalPredictions: stat.totalPredictions,
-              correctPredictions: stat.correctPredictions
-            });
-  
-            return {
-              date: statDate,
-              displayDate: format(statDate, 'MMM dd'),
-              accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
-              predictions: stat.totalPredictions || 0,
-              correct: stat.correctPredictions || 0
-            };
-          })
-          // Only include completed days (before today)
+          .map(stat => ({
+            date: new Date(stat.date),
+            displayDate: format(new Date(stat.date), 'MMM dd'),
+            accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
+            predictions: stat.totalPredictions || 0,
+            correct: stat.correctPredictions || 0
+          }))
           .filter(stat => {
-            const isBeforeToday = isBefore(stat.date, today);
-            console.log('Filtering stat:', {
-              date: stat.date,
-              today: today,
-              isBeforeToday: isBeforeToday
-            });
-            return isBeforeToday;
+            const statDate = new Date(stat.date);
+            return statDate >= PREDICTIONS_START && isBefore(statDate, today);
           })
-          .sort((a, b) => b.date - a.date) // Sort descending (newest first)
+          .sort((a, b) => b.date - a.date)
           .map(stat => ({
             date: stat.displayDate,
             accuracy: stat.accuracy,
@@ -165,10 +145,24 @@ const PerformanceGraph = () => {
             correct: stat.correct
           }));
   
-        console.log('Formatted data:', formattedData);
+        // Calculate overall stats using only valid prediction data
+        const validPredictions = formattedData.reduce((acc, curr) => acc + curr.predictions, 0);
+        const validCorrect = formattedData.reduce((acc, curr) => acc + curr.correct, 0);
+        const overallAccuracy = validPredictions > 0 ? (validCorrect / validPredictions * 100) : 0;
+  
+        console.log('Processed performance data:', {
+          totalDays: formattedData.length,
+          validPredictions,
+          validCorrect,
+          overallAccuracy
+        });
   
         setPerformanceData(formattedData);
-        setOverallStats(response.overall);
+        setOverallStats({
+          totalPredictions: validPredictions,
+          correctPredictions: validCorrect,
+          overallAccuracy
+        });
         setError(null);
       } catch (err) {
         setError('Failed to load performance data');
@@ -180,7 +174,7 @@ const PerformanceGraph = () => {
   
     fetchPerformanceData();
   }, []);
-  
+    
   // Get the most recent N days by taking first N items (since data is sorted newest first) and reversing
   const filteredData = [...performanceData].slice(0, timeRange).reverse();
   const stats = calculateStats(filteredData, overallStats);

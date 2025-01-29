@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const AIPredictionStat = require('../models/AIPredictionStat');
 const Match = require('../models/Match');
-const PREDICTIONS_START_DATE = new Date('2024-01-15');
+const PREDICTIONS_START_DATE = new Date('2025-01-15T00:00:00Z');
 
 // Helper function to get today's date at midnight
 const getTodayDate = () => {
@@ -219,25 +219,32 @@ router.get('/ai/history', async (req, res) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Get only matches that have predictions
+    // Get only matches from our start date with predictions
     const matches = await Match.find({
       status: 'FINISHED',
       utcDate: {
         $gte: PREDICTIONS_START_DATE,
         $lte: now
       },
-      aiPrediction: { $exists: true } // Only get matches where we made predictions
+      aiPrediction: { $exists: true }
     });
 
-    console.log('Fetched matches count:', matches.length);
+    console.log('Found matches:', {
+      total: matches.length,
+      dateRange: {
+        from: PREDICTIONS_START_DATE,
+        to: now
+      }
+    });
 
     // Group matches by date
     const groupedMatches = matches.reduce((acc, match) => {
+      // Use UTC date for consistency
       const matchDate = new Date(match.utcDate);
       const dateKey = new Date(
-        matchDate.getFullYear(), 
-        matchDate.getMonth(), 
-        matchDate.getDate()
+        matchDate.getUTCFullYear(), 
+        matchDate.getUTCMonth(), 
+        matchDate.getUTCDate()
       ).toISOString();
 
       if (!acc[dateKey]) {
@@ -247,7 +254,7 @@ router.get('/ai/history', async (req, res) => {
       return acc;
     }, {});
 
-    // Calculate stats for days with predictions
+    // Calculate stats for each day
     const stats = Object.entries(groupedMatches)
       .map(([date, dayMatches]) => {
         const total = dayMatches.length;
@@ -266,7 +273,7 @@ router.get('/ai/history', async (req, res) => {
         };
       });
 
-    // Calculate overall stats from matches with predictions
+    // Calculate overall stats
     const totalPredictions = matches.length;
     const correctPredictions = matches.filter(match => {
       const actualResult = match.score.winner || 
@@ -275,39 +282,16 @@ router.get('/ai/history', async (req, res) => {
       return match.aiPrediction === actualResult;
     }).length;
 
-    // Debug logging
-    console.log('Stats calculation:', {
-      startDate: PREDICTIONS_START_DATE,
-      totalMatchesWithPredictions: matches.length,
+    // Debug log the stats
+    console.log('Calculated stats:', {
+      totalDays: stats.length,
+      totalPredictions,
       correctPredictions,
       overallAccuracy: (correctPredictions / totalPredictions * 100).toFixed(1)
     });
 
-    // Fill in dates with no predictions
-    const filledStats = [];
-    let currentDate = new Date(today);
-    
-    while (currentDate >= PREDICTIONS_START_DATE) {
-      const existingStat = stats.find(
-        stat => stat.date.toDateString() === currentDate.toDateString()
-      );
-
-      if (existingStat) {
-        filledStats.push(existingStat);
-      } else {
-        filledStats.push({
-          date: new Date(currentDate),
-          accuracy: 0,
-          totalPredictions: 0,
-          correctPredictions: 0
-        });
-      }
-
-      currentDate.setDate(currentDate.getDate() - 1);
-    }
-
     res.json({
-      stats: filledStats.sort((a, b) => b.date - a.date),
+      stats,
       overall: {
         totalPredictions,
         correctPredictions,
