@@ -120,48 +120,40 @@ const LeagueStats = () => {
         <table className="w-full min-w-full table-auto">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">
-                League
-              </th>
-              <th className="text-center px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">
-                Matches
-              </th>
-              <th className="text-center px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">
-                Correct
-              </th>
-              <th className="text-center px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">
-                Accuracy
-              </th>
+              {renderSortableHeader('League', 'League', 'name', 'text-left')}
+              {renderSortableHeader('M', 'Matches', 'totalPredictions', 'text-center')}
+              {renderSortableHeader('C', 'Correct', 'correctPredictions', 'text-center')}
+              {renderSortableHeader('Acc', 'Accuracy', 'accuracy', 'text-center')}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {sortedData.map((league) => (
               <tr key={league.id} className="hover:bg-gray-50">
-<td className="px-2 sm:px-4 py-2 sm:py-3">
-  <div className="flex items-center gap-2">
-    <div className="flex items-center gap-1.5">
-      {league.country?.flag && (
-        <img 
-          src={league.country.flag} 
-          alt={league.country.name || ''}
-          className="w-3 h-3 sm:w-3.5 sm:h-3.5 object-contain"
-          onError={(e) => {
-            e.target.style.display = 'none';
-          }}
-        />
-      )}
-      <img 
-        src={league.emblem} 
-        alt={league.name}
-        className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
-        onError={(e) => {
-          e.target.src = '/placeholder-emblem.png';
-        }}
-      />
-    </div>
-    <span className="text-sm text-gray-900">{league.name}</span>
-  </div>
-</td>
+                <td className="px-2 sm:px-4 py-2 sm:py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {league.country?.flag && (
+                        <img 
+                          src={league.country.flag} 
+                          alt={league.country.name || ''}
+                          className="w-3 h-3 sm:w-3.5 sm:h-3.5 object-contain"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <img 
+                        src={league.emblem} 
+                        alt={league.name}
+                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
+                        onError={(e) => {
+                          e.target.src = '/placeholder-emblem.png';
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm text-gray-900">{league.name}</span>
+                  </div>
+                </td>
                 <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-sm text-gray-600">
                   {league.totalPredictions}
                 </td>
