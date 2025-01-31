@@ -158,6 +158,22 @@ api.fetchUserDailyAccuracy = async () => {
   }
 };
 
+// League Accuracy stats
+api.fetchLeagueStats = async () => {
+  try {
+    console.log('Making league stats API request...');
+    return await api.get('/api/accuracy/ai/league-stats');
+  } catch (error) {
+    console.error('League stats API error:', {
+      message: error.message,
+      response: error.response,
+      data: error.response?.data
+    });
+    throw error;
+  }
+};
+
+
 // Modified to include user stats if available
 api.fetchDailyAccuracy = async () => {
   try {

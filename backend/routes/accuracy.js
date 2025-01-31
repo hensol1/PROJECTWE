@@ -309,4 +309,78 @@ router.get('/ai/history', async (req, res) => {
   }
 });
 
+router.get('/ai/league-stats', async (req, res) => {
+  try {
+    const matches = await Match.find({
+      status: 'FINISHED',
+      utcDate: {
+        $gte: PREDICTIONS_START_DATE
+      },
+      aiPrediction: { $exists: true }
+    });
+
+    // Group matches by competition and include country data
+    const leagueStats = matches.reduce((acc, match) => {
+      const competitionId = match.competition?.id;
+      
+      if (!competitionId) {
+        console.log('Match missing competition ID:', match._id);
+        return acc;
+      }
+      
+      if (!acc[competitionId]) {
+        acc[competitionId] = {
+          id: competitionId,
+          name: match.competition.name,
+          emblem: match.competition.emblem,
+          country: match.competition.country, // Add country data
+          totalPredictions: 0,
+          correctPredictions: 0,
+          matches: []
+        };
+      }
+
+      const actualResult = match.score.winner || 
+        (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+         match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+
+      acc[competitionId].totalPredictions++;
+      if (match.aiPrediction === actualResult) {
+        acc[competitionId].correctPredictions++;
+      }
+      acc[competitionId].matches.push(match._id);
+
+      return acc;
+    }, {});
+
+    // Transform to array and calculate percentages
+    const leagueStatsArray = Object.values(leagueStats)
+      .map(league => ({
+        id: league.id,
+        name: league.name,
+        emblem: league.emblem,
+        country: league.country, // Include country in the response
+        totalPredictions: league.totalPredictions,
+        correctPredictions: league.correctPredictions,
+        accuracy: league.totalPredictions > 0 
+          ? (league.correctPredictions / league.totalPredictions * 100).toFixed(1)
+          : 0,
+        matchCount: league.matches.length
+      }))
+      .sort((a, b) => b.totalPredictions - a.totalPredictions);
+
+    // Debug log to verify country data
+    console.log('League stats sample:', leagueStatsArray[0]);
+
+    res.json(leagueStatsArray);
+  } catch (error) {
+    console.error('Error fetching league stats:', error);
+    res.status(500).json({ 
+      message: 'Error fetching league stats',
+      error: error.message 
+    });
+  }
+});
+
+
 module.exports = router;
