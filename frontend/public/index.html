@@ -1,19 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C2NY7HB3B6"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'G-C2MY7MB3B6');
-    </script>
-
     <meta charset="utf-8" />
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/logo.png">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    
+    <!-- Performance Optimization: Preconnect to critical domains -->
+    <link rel="preconnect" href="https://weknowbetter.app">
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="%PUBLIC_URL%/logo.png" as="image">
     
     <!-- PWA specific meta tags -->
     <meta name="theme-color" content="#2ECC40" />
@@ -109,7 +107,9 @@
       }
     </script>
   
+    <!-- Critical CSS -->
     <style>
+      /* Performance optimized loading styles */
       #initial-loading {
         position: fixed;
         top: 0;
@@ -121,7 +121,8 @@
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        transition: opacity 0.5s;
+        opacity: 1;
+        transition: opacity 0.3s ease-out;
       }
 
       .loading-spinner {
@@ -131,6 +132,7 @@
         border-top: 5px solid #3498db;
         border-radius: 50%;
         animation: spin 1s linear infinite;
+        will-change: transform;
       }
 
       @keyframes spin {
@@ -138,12 +140,16 @@
         100% { transform: rotate(360deg); }
       }
 
+      /* Base styles with performance considerations */
       body {
         margin: 0;
         padding: 0;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Add offline support styles */
+      /* Optimized offline notification */
       .offline-notification {
         display: none;
         position: fixed;
@@ -155,13 +161,32 @@
         padding: 12px 24px;
         border-radius: 8px;
         z-index: 1000;
+        will-change: transform, opacity;
+        transition: opacity 0.3s ease-out;
       }
       
       .offline-notification.show {
         display: block;
+        animation: slideUp 0.3s ease-out;
+      }
+
+      @keyframes slideUp {
+        from { transform: translate(-50%, 100%); }
+        to { transform: translate(-50%, 0); }
+      }
+
+      /* Content fade-in animation */
+      #root {
+        opacity: 0;
+        animation: fadeIn 0.3s ease-out forwards;
+        animation-delay: 0.1s;
+      }
+
+      @keyframes fadeIn {
+        to { opacity: 1; }
       }
     </style>
-    </head>
+  </head>
   <body>
     <noscript>
       <h1>We Know Better - Football Match Predictions & Analysis</h1>
@@ -173,12 +198,13 @@
       You are currently offline. Some features may be limited.
     </div>
 
+    <!-- Initial loading state -->
     <div id="initial-loading">
       <div class="loading-spinner"></div>
     </div>
 
     <div id="root">
-      <!-- Add this content for crawlers -->
+      <!-- SEO content for crawlers -->
       <div style="display:none">
         <h1>We Know Better - Football Match Predictions & Analysis</h1>
         <h2>Make Better Football Predictions with AI</h2>
@@ -204,14 +230,54 @@
       </div>
     </div>
 
-    <!-- Add offline detection script -->
+    <!-- Performance optimized scripts -->
     <script>
+      // Remove loading screen once content is loaded
+      window.addEventListener('load', function() {
+        const loadingScreen = document.getElementById('initial-loading');
+        if (loadingScreen) {
+          loadingScreen.style.opacity = '0';
+          setTimeout(() => {
+            loadingScreen.style.display = 'none';
+          }, 300);
+        }
+      });
+
+      // Offline detection
       window.addEventListener('online', function() {
         document.getElementById('offline-notification').classList.remove('show');
       });
       
       window.addEventListener('offline', function() {
         document.getElementById('offline-notification').classList.add('show');
+      });
+
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful');
+            })
+            .catch(error => {
+              console.log('ServiceWorker registration failed:', error);
+            });
+        });
+      }
+    </script>
+
+    <!-- Deferred Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C2NY7HB3B6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-C2MY7MB3B6', {
+        send_page_view: false // Defer page view tracking
+      });
+      // Send page view after content loads
+      window.addEventListener('load', function() {
+        gtag('event', 'page_view');
       });
     </script>
   </body>
