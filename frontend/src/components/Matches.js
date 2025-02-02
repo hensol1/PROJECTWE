@@ -160,27 +160,46 @@ const allMatchesForCurrentDate = matches[currentDateKey] || {};
     return { liveMatches, regularMatches };
   };
   
-  const filterMatchesByStatus = (matches, statuses) => {
-    return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
-      const filteredMatches = leagueMatches.filter(match => {
-        const statusMatches = statuses.includes(match.status);
+const filterMatchesByStatus = (matches, statuses) => {
+  if (!matches || typeof matches !== 'object') {
+    console.warn('Invalid matches object provided to filterMatchesByStatus');
+    return {};
+  }
+
+  return Object.entries(matches).reduce((acc, [leagueKey, leagueMatches]) => {
+    // Ensure leagueMatches is valid
+    if (!Array.isArray(leagueMatches)) {
+      return acc;
+    }
+
+    const filteredMatches = leagueMatches.filter(match => {
+      if (!match?.status) return false;
+      
+      const statusMatches = statuses.includes(match.status);
+      
+      if (statusMatches && match.status === 'TIMED') {
+        if (!match.utcDate) return false;
         
-        if (statusMatches && match.status === 'TIMED') {
+        try {
           const matchDate = utcToZonedTime(parseISO(match.utcDate), userTimeZone);
           const startOfToday = startOfDay(selectedDate);
           const endOfToday = endOfDay(selectedDate);
-                    return matchDate >= startOfToday && matchDate <= endOfToday;
+          return matchDate >= startOfToday && matchDate <= endOfToday;
+        } catch (error) {
+          console.warn('Error processing match date:', error);
+          return false;
         }
-        
-        return statusMatches;
-      });
-
-      if (filteredMatches.length > 0) {
-        acc[leagueKey] = filteredMatches;
       }
-      return acc;
-    }, {});
-  };
+      
+      return statusMatches;
+    });
+
+    if (filteredMatches.length > 0) {
+      acc[leagueKey] = filteredMatches;
+    }
+    return acc;
+  }, {});
+};
   
     // Filter matches based on continent
     const filteredMatches = matchesForCurrentDate;

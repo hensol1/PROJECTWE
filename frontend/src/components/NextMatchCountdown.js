@@ -11,28 +11,40 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
   };
 
   useEffect(() => {
-    const findNextMatches = () => {
-      // Guard clause for undefined scheduledMatches
-      if (!scheduledMatches || typeof scheduledMatches !== 'object') {
-        console.warn('Invalid scheduledMatches:', scheduledMatches);
-        return [];
-      }
+    // Immediate return if scheduledMatches is invalid
+    if (!scheduledMatches || typeof scheduledMatches !== 'object') {
+      console.warn('Invalid scheduledMatches:', scheduledMatches);
+      setNextMatches([]);
+      setCountdown('');
+      return;
+    }
 
+    const findNextMatches = () => {
       const now = new Date();
       let soonestTime = Infinity;
       let matches = [];
 
       try {
-        // Flatten all matches into a single array with error handling
-        const allMatches = Object.values(scheduledMatches).reduce((acc, leagueMatches) => {
+        // Safely extract and flatten matches
+        const allMatches = Object.entries(scheduledMatches).reduce((acc, [_, leagueMatches]) => {
           if (!leagueMatches || typeof leagueMatches !== 'object') return acc;
-          const flatLeagueMatches = Object.values(leagueMatches).flat();
-          return [...acc, ...flatLeagueMatches];
+          
+          // Ensure we're dealing with an array of matches
+          const matchesArray = Array.isArray(leagueMatches) 
+            ? leagueMatches 
+            : Object.values(leagueMatches).flat();
+          
+          return [...acc, ...matchesArray.filter(match => 
+            match?.homeTeam?.name && 
+            match?.awayTeam?.name && 
+            match?.utcDate
+          )];
         }, []);
 
-        // First pass: find the earliest future match time
+        if (allMatches.length === 0) return [];
+
+        // Find earliest future match time
         allMatches.forEach(match => {
-          if (!match?.utcDate) return;
           const matchTime = new Date(match.utcDate);
           const timeDiff = matchTime - now;
           if (timeDiff > 0 && timeDiff < soonestTime) {
@@ -40,10 +52,9 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
           }
         });
 
-        // Second pass: collect all matches at the soonest time (with 1-minute tolerance)
+        // Get all matches at the earliest time
         if (soonestTime !== Infinity) {
           matches = allMatches.filter(match => {
-            if (!match?.utcDate) return false;
             const matchTime = new Date(match.utcDate);
             const timeDiff = matchTime - now;
             return Math.abs(timeDiff - soonestTime) <= 60000;
@@ -100,16 +111,33 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
     return () => clearInterval(rotationInterval);
   }, [nextMatches.length]);
 
+  // Return null if no valid matches or countdown
   if (!nextMatches.length || !countdown) {
     return null;
   }
 
   const currentMatch = nextMatches[currentMatchIndex];
   
-  // Guard clause for invalid currentMatch
+  // Additional safety check for currentMatch
   if (!currentMatch?.homeTeam?.name || !currentMatch?.awayTeam?.name) {
     return null;
   }
+
+  const renderTeamInfo = (team, isHome) => (
+    <>
+      <span className="text-white truncate">
+        {truncateTeamName(team.name)}
+      </span>
+      {team.crest && (
+        <img 
+          src={team.crest} 
+          alt={team.name}
+          className={`${isHome ? 'w-4 h-4' : 'w-3 h-3'} inline-block shrink-0`}
+          onError={(e) => e.target.style.display = 'none'}
+        />
+      )}
+    </>
+  );
 
   return (
     <div className="w-full bg-gray-900 border-t border-b border-gray-700">
@@ -124,23 +152,9 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
               <span className="font-mono text-[#40c456]">{countdown}</span>
               {' '}
               <div className="flex items-center gap-1 transition-opacity duration-300">
-                <span className="text-white">{truncateTeamName(currentMatch.homeTeam.name)}</span>
-                {currentMatch.homeTeam.crest && (
-                  <img 
-                    src={currentMatch.homeTeam.crest} 
-                    alt={currentMatch.homeTeam.name}
-                    className="w-4 h-4 inline-block"
-                  />
-                )}
+                {renderTeamInfo(currentMatch.homeTeam, true)}
                 <span className="mx-1 text-[#40c456]">vs</span>
-                {currentMatch.awayTeam.crest && (
-                  <img 
-                    src={currentMatch.awayTeam.crest} 
-                    alt={currentMatch.awayTeam.name}
-                    className="w-4 h-4 inline-block"
-                  />
-                )}
-                <span className="text-white">{truncateTeamName(currentMatch.awayTeam.name)}</span>
+                {renderTeamInfo(currentMatch.awayTeam, false)}
                 {nextMatches.length > 1 && (
                   <span className="ml-2 text-gray-400 text-xs">
                     {currentMatchIndex + 1}/{nextMatches.length}
@@ -157,23 +171,9 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
               <span className="text-white shrink-0">in</span>
               <span className="font-mono text-[#40c456] shrink-0">{countdown}</span>
               <div className="flex items-center gap-1 min-w-0 flex-shrink transition-opacity duration-300">
-                <span className="text-white truncate">{truncateTeamName(currentMatch.homeTeam.name)}</span>
-                {currentMatch.homeTeam.crest && (
-                  <img 
-                    src={currentMatch.homeTeam.crest} 
-                    alt={currentMatch.homeTeam.name}
-                    className="w-3 h-3 inline-block shrink-0"
-                  />
-                )}
+                {renderTeamInfo(currentMatch.homeTeam, true)}
                 <span className="mx-0.5 text-[#40c456] shrink-0">vs</span>
-                {currentMatch.awayTeam.crest && (
-                  <img 
-                    src={currentMatch.awayTeam.crest} 
-                    alt={currentMatch.awayTeam.name}
-                    className="w-3 h-3 inline-block shrink-0"
-                  />
-                )}
-                <span className="text-white truncate">{truncateTeamName(currentMatch.awayTeam.name)}</span>
+                {renderTeamInfo(currentMatch.awayTeam, false)}
                 {nextMatches.length > 1 && (
                   <span className="ml-1 text-gray-400 text-xs shrink-0">
                     {currentMatchIndex + 1}/{nextMatches.length}
