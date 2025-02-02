@@ -43,7 +43,7 @@ const [selectedLeague, setSelectedLeague] = useState(null);
 const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 const handleSetSelectedDay = useCallback((day) => {
   setSelectedDay(day);
-  setIsManualTabSelect(true); // Set manual flag when changing days
+}, []);
 
 const handleTabChange = useCallback((newTab) => {
   setIsManualTabSelect(true);
