@@ -44,33 +44,6 @@ const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 const handleSetSelectedDay = useCallback((day) => {
   setSelectedDay(day);
   setIsManualTabSelect(true); // Set manual flag when changing days
-  
-  // Set appropriate tab based on selected day
-  switch (day) {
-    case 'yesterday':
-      setActiveTab('finished');
-      break;
-    case 'tomorrow':
-      setActiveTab('scheduled');
-      break;
-    case 'today':
-      // For today, we can either keep current tab or determine best tab
-      const hasLive = Object.keys(allLiveMatches).length > 0;
-      if (hasLive) {
-        setActiveTab('live');
-      } else {
-        setActiveTab('scheduled');
-      }
-      setIsManualTabSelect(false); // Allow auto-switching for today
-      break;
-    default:
-      break;
-  }
-    
-      const newDate = getDateForSelection(day);
-  memoizedFetchMatches(newDate);
-}, [allLiveMatches, getDateForSelection, memoizedFetchMatches]);
-
 
 const handleTabChange = useCallback((newTab) => {
   setIsManualTabSelect(true);
@@ -995,58 +968,18 @@ const renderStatusTabs = () => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
 
-useEffect(() => {
-  if (userTimeZone && isInitialLoad) {
-    const initializeData = async () => {
-      // Set initial tab and manual flag based on selected day
-      switch (selectedDay) {
-        case 'yesterday':
-          setActiveTab('finished');
-          setIsManualTabSelect(true);
-          break;
-        case 'tomorrow':
-          setActiveTab('scheduled');
-          setIsManualTabSelect(true);
-          break;
-        case 'today':
-          // Today we'll determine the best tab after fetching data
-          setIsManualTabSelect(false);
-          break;
-      }
-
-      try {
-        // Always fetch live matches to know if they exist
-        await fetchLiveMatches();
-        
-        // Fetch matches for the selected day
-        await memoizedFetchMatches(getDateForSelection(selectedDay));
-        
-        // Fetch accuracy data
-        await fetchAccuracyData();
-
-        // For today only, determine the best tab based on available matches
-        if (selectedDay === 'today') {
-          setActiveTab(determineActiveTab());
-        }
-      } catch (error) {
-        console.error('Error initializing data:', error);
-      } finally {
+  useEffect(() => {
+    if (userTimeZone && isInitialLoad) {
+      Promise.all([
+        fetchLiveMatches(),
+        memoizedFetchMatches(getDateForSelection('today')),  // Use it here
+        fetchAccuracyData()
+      ]).then(() => {
+        setActiveTab(determineActiveTab());
         setIsInitialLoad(false);
-      }
-    };
-
-    initializeData();
-  }
-}, [
-  userTimeZone, 
-  isInitialLoad, 
-  selectedDay,
-  memoizedFetchMatches,
-  fetchLiveMatches,
-  fetchAccuracyData,
-  determineActiveTab,
-  getDateForSelection
-]);
+      });
+    }
+  }, [userTimeZone, memoizedFetchMatches, fetchAccuracyData, isInitialLoad, fetchLiveMatches, determineActiveTab, getDateForSelection]);
       
   useEffect(() => {
     const pollInterval = setInterval(() => {
@@ -1084,17 +1017,17 @@ useEffect(() => {
       </div>
     ) : (
       <div className="relative">
-<TabsSection 
-  selectedDay={selectedDay}
-  setSelectedDay={handleSetSelectedDay} // Use the new handler
-  activeTab={activeTab}
-  handleTabChange={handleTabChange}
-  hasAnyLiveMatches={hasAnyLiveMatches}
-  getDateForSelection={memoizedGetDateForSelection}
-  fetchMatches={memoizedFetchMatches}
-  hasFinishedMatches={Object.keys(finishedMatches).length > 0}
-  hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
-/>
+        <TabsSection 
+          selectedDay={selectedDay}
+          setSelectedDay={handleSetSelectedDay}
+          activeTab={activeTab}
+          handleTabChange={handleTabChange}
+          hasAnyLiveMatches={hasAnyLiveMatches}
+          getDateForSelection={memoizedGetDateForSelection}
+          fetchMatches={memoizedFetchMatches}
+          hasFinishedMatches={Object.keys(finishedMatches).length > 0}
+          hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
+        />
         
         <div className="flex mt-4 relative justify-between">
   {/* Desktop League Filter */}
