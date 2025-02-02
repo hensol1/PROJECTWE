@@ -616,7 +616,7 @@ const softUpdateMatches = useCallback(async () => {
   if (!userTimeZone) return;
   
   setIsRefreshing(true);
-try {
+  try {
     // Store previous state for goal checking
     const prevState = {
       ...matches,
@@ -626,18 +626,15 @@ try {
     // Fetch live matches first
     const liveResponse = await api.fetchLiveMatches();
     
-    // Then fetch current date matches, but only if we're not in live tab
+    // Then fetch current date matches
     const formattedDate = format(zonedTimeToUtc(selectedDate, userTimeZone), 'yyyy-MM-dd');
-    const matchesResponse = activeTab !== 'live' 
-      ? await api.fetchMatches(formattedDate)
-      : { data: { matches: [] } };
+    const matchesResponse = await api.fetchMatches(formattedDate);
     
     // Combine and process all matches, removing duplicates
     const { liveMatches, regularMatches } = processMatchesResponse(
       [
         ...(liveResponse.data.matches || []),
-        // Only include regular matches if not in live tab
-        ...(activeTab !== 'live' ? (matchesResponse.data.matches || []) : [])
+        ...(matchesResponse.data.matches || [])
       ],
       userTimeZone,
       user
@@ -651,26 +648,50 @@ try {
 
     // Update states
     setAllLiveMatches(liveMatches);
-    if (activeTab !== 'live') {
-      setMatches(prevMatches => ({
-        ...prevMatches,
-        [formattedDate]: regularMatches[formattedDate] || {}
-      }));
-    }
+    setMatches(prevMatches => ({
+      ...prevMatches,
+      [formattedDate]: regularMatches[formattedDate] || {}
+    }));
 
-      // After updating the matches, check if we need to change the active tab
-      if (!isManualTabSelect) {
-        const appropriateTab = determineActiveTab();
-        if (activeTab !== appropriateTab) {
-          setActiveTab(appropriateTab);
-        }
-      }
-    } catch (error) {
-      console.error('Error in soft update:', error);
-    } finally {
-      setIsRefreshing(false);
+    // Only auto-switch to live tab if:
+    // 1. User hasn't manually selected a tab
+    // 2. There are actually live matches
+    if (!isManualTabSelect && Object.keys(liveMatches).length > 0) {
+      setActiveTab('live');
     }
-  }, [userTimeZone, selectedDate, matches, allLiveMatches, user, checkForGoals, activeTab, isManualTabSelect, determineActiveTab]);
+    // If user manually selected a tab but there are no matches in that category,
+    // suggest switching to a tab with content
+    else if (isManualTabSelect) {
+      const hasMatchesInCurrentTab = (() => {
+        switch (activeTab) {
+          case 'live':
+            return Object.keys(liveMatches).length > 0;
+          case 'finished':
+            return Object.keys(finishedMatches).length > 0;
+          case 'scheduled':
+            return Object.keys(scheduledMatches).length > 0;
+          default:
+            return false;
+        }
+      })();
+
+      if (!hasMatchesInCurrentTab) {
+        // Find the first tab with matches
+        const appropriateTab = determineActiveTab();
+        // Optional: Show a notification to user about tab switch
+        console.log(`No matches in ${activeTab} tab, suggested tab: ${appropriateTab}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error in soft update:', error);
+  } finally {
+    setIsRefreshing(false);
+  }
+}, [
+  userTimeZone, selectedDate, matches, allLiveMatches, user, 
+  checkForGoals, activeTab, isManualTabSelect, determineActiveTab,
+  finishedMatches, scheduledMatches
+]);
         
   const handleNotificationDismiss = useCallback((notification) => {
     if (notification === 'all') {
@@ -844,32 +865,40 @@ const handleLeagueSelect = useCallback((leagueId) => {
       });
   };
     
-  const renderStatusTabs = () => {
-    if (selectedDay === 'yesterday') {
-      return (
-        <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
-          <button
-            className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm flex items-center justify-center"
-          >
-            <BiAlarmOff className="mr-1 sm:mr-2" />
-            Finished
-          </button>
-        </div>
-      );
-    }
-  
-    if (selectedDay === 'tomorrow') {
-      return (
-        <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
-          <button
-            className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm flex items-center justify-center"
-          >
-            <BiAlarm className="mr-1 sm:mr-2" />
-            Scheduled
-          </button>
-        </div>
-      );
-    }
+const renderStatusTabs = () => {
+  if (selectedDay === 'yesterday') {
+    return (
+      <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
+        <button
+          className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm flex items-center justify-center"
+          onClick={() => {
+            setIsManualTabSelect(true);
+            setActiveTab('finished');
+          }}
+        >
+          <BiAlarmOff className="mr-1 sm:mr-2" />
+          Finished
+        </button>
+      </div>
+    );
+  }
+
+  if (selectedDay === 'tomorrow') {
+    return (
+      <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
+        <button
+          className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm flex items-center justify-center"
+          onClick={() => {
+            setIsManualTabSelect(true);
+            setActiveTab('scheduled');
+          }}
+        >
+          <BiAlarm className="mr-1 sm:mr-2" />
+          Scheduled
+        </button>
+      </div>
+    );
+  }
   
     if (selectedDay === 'today') {
       return (
