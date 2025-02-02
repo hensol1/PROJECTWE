@@ -1,45 +1,39 @@
 const { whenProd } = require('@craco/craco');
 const CompressionPlugin = require('compression-webpack-plugin');
-const WorkboxWebpackPlugin = require('workbox-webpack-plugin');
 
 module.exports = {
-  style: {
-    postcss: {
-      plugins: [require('tailwindcss'), require('autoprefixer')],
-    },
-  },
   webpack: {
-    configure: (webpackConfig, { env, paths }) => {
-      // Split chunks optimization
-      webpackConfig.optimization = {
-        ...webpackConfig.optimization,
-        splitChunks: {
-          chunks: 'all',
-          minSize: 20000,
-          maxSize: 244000,
-          minChunks: 1,
-          maxAsyncRequests: 30,
-          maxInitialRequests: 30,
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name(module) {
-                const packageName = module.context.match(
-                  /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-                )[1];
-                return `vendor.${packageName.replace('@', '')}`;
-              },
-              priority: -10,
-              reuseExistingChunk: true,
+    configure: (webpackConfig) => {
+      // Optimize splitting specifically for mobile
+      webpackConfig.optimization.splitChunks = {
+        chunks: 'all',
+        minSize: 10000,
+        maxSize: 244000,
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name(module) {
+              const packageName = module.context.match(
+                /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+              )[1];
+              return `vendor.${packageName.replace('@', '')}`;
             },
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
-            },
+            priority: -10,
+            reuseExistingChunk: true,
           },
-        },
+          common: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          }
+        }
       };
+
+      // Add module concatenation for better mobile performance
+      webpackConfig.optimization.concatenateModules = true;
+
+      // Enable module ids hash for better mobile caching
+      webpackConfig.optimization.moduleIds = 'deterministic';
 
       return webpackConfig;
     },
@@ -48,13 +42,9 @@ module.exports = {
         new CompressionPlugin({
           test: /\.(js|css|html|svg)$/,
           algorithm: 'gzip',
-        }),
-        new WorkboxWebpackPlugin.GenerateSW({
-          clientsClaim: true,
-          skipWaiting: true,
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        }),
-      ], []),
-    ],
-  },
+          threshold: 10240,
+        })
+      ], [])
+    ]
+  }
 };

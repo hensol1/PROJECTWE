@@ -2,8 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    
+    <!-- Mobile viewport optimization -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="We Know Better" />
+    <meta name="theme-color" content="#1a1f2b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    
+    <!-- Icons -->
     <link rel="icon" type="image/png" href="%PUBLIC_URL%/logo.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
     
     <!-- Performance Optimization: Preconnect to critical domains -->
     <link rel="preconnect" href="https://weknowbetter.app">
@@ -14,12 +27,8 @@
     <link rel="preload" href="%PUBLIC_URL%/logo.png" as="image">
     
     <!-- PWA specific meta tags -->
-    <meta name="theme-color" content="#2ECC40" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="We Know Better">
     
     <!-- Primary Meta Tags -->
     <title>We Know Better - Football Match Predictions & Analysis</title>
@@ -46,7 +55,7 @@
     <meta name="author" content="We Know Better" />
     <link rel="canonical" href="https://weknowbetter.app/" />
     
-    <!-- Basic Schema -->
+    <!-- Schema.org Markup -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -54,7 +63,7 @@
         "@id": "https://weknowbetter.app/#organization",
         "name": "We Know Better",
         "url": "https://weknowbetter.app",
-        "logo": {
+        "logo":"logo": {
           "@type": "ImageObject",
           "@id": "https://weknowbetter.app/#logo",
           "url": "https://weknowbetter.app/logo.png",
@@ -147,6 +156,36 @@
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Mobile-specific optimizations */
+      @media (max-width: 768px) {
+        * {
+          -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+          touch-action: manipulation;
+          -webkit-text-size-adjust: 100%;
+          overscroll-behavior-y: contain;
+        }
+
+        .smooth-scroll {
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+        }
+
+        button, a {
+          min-height: 44px;
+          min-width: 44px;
+          padding: 8px;
+        }
+
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border-width: 3px;
+        }
       }
 
       /* Optimized offline notification */
