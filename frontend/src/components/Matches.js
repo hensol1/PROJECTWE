@@ -15,8 +15,7 @@ import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
 import LeagueFilter from './LeagueFilter';
 import LeagueFilterButton from './LeagueFilterButton';
-//import AffiliateProductBanner from './AffiliateProductBanner';
-//import SingleProductBanner from './SingleProductBanner';
+import TopLeaguesPerformance from './TopLeaguesPerformance';
 
 // Constants
 
@@ -1030,8 +1029,9 @@ const renderStatusTabs = () => {
           
           {/* Content Area */}
           <div className="w-full max-w-5xl relative">
-            {/* League Filter - Desktop */}
-            <div className="absolute left-0 top-0 hidden md:block w-64">
+            {/* Left Side Components Container */}
+            <div className="hidden md:flex flex-col absolute -left-36 top-0 w-[280px] gap-4">
+              {/* League Filter */}
               <div className="sticky top-4">
                 <LeagueFilter
                   leagues={extractLeagues()}
@@ -1079,7 +1079,7 @@ const renderStatusTabs = () => {
         </div>
       )}
     </div>
-  );
-    };
+  );  
+      };
 
 export default Matches;

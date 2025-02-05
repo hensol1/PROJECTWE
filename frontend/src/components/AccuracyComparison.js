@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import PredictionTicker from './PredictionTicker';
 import NextMatchCountdown from './NextMatchCountdown';
+import TopLeaguesPerformance from './TopLeaguesPerformance';
 
 const RacingBarDisplay = ({ score }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -186,21 +187,38 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
     );
   }
 
-  return (
-    <div className="w-full max-w-xl mx-auto mt-4">
-      <div className="mb-3">
-        <RacingBarDisplay 
-          score={animatedAiAccuracy || 0}
-        />
+// Update the return statement in AccuracyComparison.js
+
+return (
+  <div className="max-w-6xl mx-auto mt-4">
+    <div className="flex justify-center relative">
+      {/* Desktop Top Leagues Table */}
+      <div className="hidden md:block absolute -left-20 top-0 w-[280px]">
+        <TopLeaguesPerformance displayMode="desktop" />
       </div>
 
-      <div className="mb-2">
-        <PredictionTicker />
-      </div>
-      
-      <div className="mb-6">
-        <NextMatchCountdown scheduledMatches={scheduledMatches} />
+      <div className="w-full max-w-xl">
+        {/* Mobile Layout: Stacked */}
+        <div className="mb-3">
+          <RacingBarDisplay 
+            score={animatedAiAccuracy || 0}
+          />
+        </div>
+
+        {/* Mobile Top Leagues */}
+        <div className="md:hidden mb-3">
+          <TopLeaguesPerformance displayMode="mobile" />
+        </div>
+
+        <div className="mb-2">
+          <PredictionTicker />
+        </div>
+        
+        <div className="mb-6">
+          <NextMatchCountdown scheduledMatches={scheduledMatches} />
+        </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
