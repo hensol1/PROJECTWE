@@ -15,8 +15,8 @@ import MatchBox from './MatchBox';
 import AnimatedList from './AnimatedList';
 import LeagueFilter from './LeagueFilter';
 import LeagueFilterButton from './LeagueFilterButton';
-import AffiliateProductBanner from './AffiliateProductBanner';
-import SingleProductBanner from './SingleProductBanner';
+//import AffiliateProductBanner from './AffiliateProductBanner';
+//import SingleProductBanner from './SingleProductBanner';
 
 // Constants
 
@@ -856,10 +856,6 @@ const handleLeagueSelect = useCallback((leagueId) => {
               )}
             </div>
             
-            {/* Add banner after each league except the last one */}
-            {index < Object.entries(matches).length - 1 && (
-              <SingleProductBanner product={products[index % products.length]} />
-            )}
           </React.Fragment>
         );
       });
@@ -1009,75 +1005,81 @@ const renderStatusTabs = () => {
         setMatches={setMatches}
       />
   
-  {isLoading ? (
-      <LoadingLogo />
-    ) : !imagesLoaded ? (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-pulse text-gray-600">Loading images...</div>
-      </div>
-    ) : (
-      <div className="relative">
-        <TabsSection 
-          selectedDay={selectedDay}
-          setSelectedDay={handleSetSelectedDay}
-          activeTab={activeTab}
-          handleTabChange={handleTabChange}
-          hasAnyLiveMatches={hasAnyLiveMatches}
-          getDateForSelection={memoizedGetDateForSelection}
-          fetchMatches={memoizedFetchMatches}
-          hasFinishedMatches={Object.keys(finishedMatches).length > 0}
-          hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
-        />
-        
-        <div className="flex mt-4 relative justify-between">
-  {/* Desktop League Filter */}
-  <div className="hidden md:block sticky top-4 h-fit w-64">
-    <LeagueFilter
-      leagues={extractLeagues()}
-      selectedLeague={selectedLeague}
-      onLeagueSelect={handleLeagueSelect}
-      isMobileOpen={isMobileFilterOpen}
-      onClose={() => setIsMobileFilterOpen(false)}
-    />
-  </div>
-
-  {/* Mobile League Filter */}
-  <div className="md:hidden">
-    <LeagueFilter
-      leagues={extractLeagues()}
-      selectedLeague={selectedLeague}
-      onLeagueSelect={handleLeagueSelect}
-      isMobileOpen={isMobileFilterOpen}
-      onClose={() => setIsMobileFilterOpen(false)}
-    />
-  </div>
-
-  {/* Mobile Filter Button */}
-  <LeagueFilterButton
-    onClick={() => setIsMobileFilterOpen(true)}
-    selectedLeague={selectedLeague}
-  />
-
-{/* Matches Content - With proper mobile width */}
-<div className="w-full md:max-w-md md:mx-4 px-2 md:px-0">
-  {memoizedTabContent}
-</div>
-
-  {/* Desktop Affiliate Banner */}
-  <div className="hidden md:block sticky top-4 h-fit w-72">
-    <AffiliateProductBanner />
-  </div>
-</div>
-
-        {isRefreshing && (
-          <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
-            Updating...
+      {isLoading ? (
+        <LoadingLogo />
+      ) : !imagesLoaded ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-pulse text-gray-600">Loading images...</div>
+        </div>
+      ) : (
+        <div className="relative flex flex-col items-center">
+          {/* Tabs Section - Centered */}
+          <div className="w-full flex justify-center mb-4">
+            <TabsSection 
+              selectedDay={selectedDay}
+              setSelectedDay={handleSetSelectedDay}
+              activeTab={activeTab}
+              handleTabChange={handleTabChange}
+              hasAnyLiveMatches={hasAnyLiveMatches}
+              getDateForSelection={memoizedGetDateForSelection}
+              fetchMatches={memoizedFetchMatches}
+              hasFinishedMatches={Object.keys(finishedMatches).length > 0}
+              hasScheduledMatches={Object.keys(scheduledMatches).length > 0}
+            />
           </div>
-        )}
-      </div>
-    )}
-  </div>
-);
-};
+          
+          {/* Content Area */}
+          <div className="w-full max-w-5xl relative">
+            {/* League Filter - Desktop */}
+            <div className="absolute left-0 top-0 hidden md:block w-64">
+              <div className="sticky top-4">
+                <LeagueFilter
+                  leagues={extractLeagues()}
+                  selectedLeague={selectedLeague}
+                  onLeagueSelect={handleLeagueSelect}
+                  isMobileOpen={isMobileFilterOpen}
+                  onClose={() => setIsMobileFilterOpen(false)}
+                />
+              </div>
+            </div>
+  
+            {/* Matches Container - Centered */}
+            <div className="flex justify-center">
+              <div className="w-full max-w-md">
+                {/* Mobile League Filter Button */}
+                <div className="md:hidden flex justify-end mb-4">
+                  <LeagueFilterButton
+                    onClick={() => setIsMobileFilterOpen(true)}
+                    selectedLeague={selectedLeague}
+                  />
+                </div>
+  
+                {/* Matches */}
+                {memoizedTabContent}
+              </div>
+            </div>
+          </div>
+  
+          {/* Mobile League Filter Modal */}
+          <div className="md:hidden">
+            <LeagueFilter
+              leagues={extractLeagues()}
+              selectedLeague={selectedLeague}
+              onLeagueSelect={handleLeagueSelect}
+              isMobileOpen={isMobileFilterOpen}
+              onClose={() => setIsMobileFilterOpen(false)}
+            />
+          </div>
+  
+          {isRefreshing && (
+            <div className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm shadow-lg opacity-75 transition-opacity duration-300">
+              Updating...
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+    };
 
 export default Matches;
