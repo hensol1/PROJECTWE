@@ -4,9 +4,8 @@ import { Clock } from 'lucide-react';
 import MatchEvents from './MatchEvents';
 import StandingsButton from './StandingsButton';
 import { shouldShowStandings } from '../constants/leagueConfig';
-import { FaBrain } from "react-icons/fa";
-import HeaderLogo from './/HeaderLogo';
-
+import HeaderLogo from './HeaderLogo';
+import OptimizedImage from './OptimizedImage';
 
 const websiteColors = {
   primary: '#2ECC40',
@@ -42,10 +41,13 @@ const TeamLogo = ({ team }) => {
 
   return (
     <div className="relative bg-white bg-opacity-10 rounded-full p-2" ref={logoRef}>
-      <img 
-        src={team.crest} 
+      <OptimizedImage 
+        src={team.crest}
         alt={team.name}
-        className="w-16 h-16 object-contain"
+        className="w-16 h-16"
+        width="w-16"
+        height="h-16"
+        fallbackSrc="/fallback-team-logo.png"
       />
       <div 
         className={`absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded transition-opacity duration-300 ${
@@ -57,7 +59,6 @@ const TeamLogo = ({ team }) => {
     </div>
   );
 };
-
 
 const MatchBox = ({ match, onVote }) => {
   const [showEvents, setShowEvents] = useState(false);
@@ -77,7 +78,6 @@ const MatchBox = ({ match, onVote }) => {
   
   const getTeamPrediction = (prediction) => {
     if (prediction === 'HOME_TEAM') {
-      // Use full name if it's relatively short (less than 15 characters is typically safe for one line)
       const fullName = match.homeTeam.name;
       return fullName.length < 15 ? fullName : fullName.split(' ')[0];
     } else if (prediction === 'AWAY_TEAM') {
@@ -123,15 +123,13 @@ const MatchBox = ({ match, onVote }) => {
 
   return (
     <div className="w-full max-w-md mx-auto overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl">
-{/* Dark Background Section */}
-<div 
-  className="relative p-4"
-  style={{
-    background: `radial-gradient(circle at top, ${websiteColors.background} 40%, transparent 90%), linear-gradient(200deg, ${websiteColors.background} 40%, ${websiteColors.backgroundGradient} 90%)`,
-    color: websiteColors.text
-  }}
->
-        {/* Standings Button */}
+      <div 
+        className="relative p-4"
+        style={{
+          background: `radial-gradient(circle at top, ${websiteColors.background} 40%, transparent 90%), linear-gradient(200deg, ${websiteColors.background} 40%, ${websiteColors.backgroundGradient} 90%)`,
+          color: websiteColors.text
+        }}
+      >
         {shouldShowStandings(match.competition.id) && (
           <div className="absolute top-4 right-4">
             <button 
@@ -150,68 +148,64 @@ const MatchBox = ({ match, onVote }) => {
           </div>
         )}
   
-        {/* Teams and Score Section */}
         <div className="flex justify-center items-center gap-12">
-          {/* Home Team */}
           <TeamLogo 
             team={match.homeTeam}
             onClick={() => (match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && onVote(match.id, 'home')}
             isInteractive={(match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote}
           />
   
-{/* Score and Status */}
-<div className="flex flex-col items-center min-w-[60px]">
-{(match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME') && (
-    <div className="flex flex-col items-center">
-      <span className="text-sm font-medium animate-pulse" style={{ color: '#2ECC43' }}>
-        {match.status === 'HALFTIME' ? 'HT' : `${match.minute}'`}
-      </span>
-      <div className="flex items-center space-x-2">
-        <span className="text-xl font-bold">{match.score.fullTime.home}</span>
-        <span className="text-lg">:</span>
-        <span className="text-xl font-bold">{match.score.fullTime.away}</span>
-      </div>
-      <button
-        onClick={() => setShowEvents(true)}
-        className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
-      >
-        <Clock className="w-3 h-3" />
-        Events
-      </button>
-    </div>
-  )}
-  
-  {match.status === 'FINISHED' && (
-    <div className="flex flex-col items-center">
-      <span className="text-lg font-medium">FT</span>
-      <div className="flex items-center space-x-2 mb-2">
-        <span className="text-xl font-bold">{match.score.fullTime.home}</span>
-        <span className="text-lg">:</span>
-        <span className="text-xl font-bold">{match.score.fullTime.away}</span>
-      </div>
-      <button
-        onClick={() => setShowEvents(true)}
-        className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
-      >
-        <Clock className="w-3 h-3" />
-        Events
-      </button>
-    </div>
-  )}
+          <div className="flex flex-col items-center min-w-[60px]">
+            {(match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME') && (
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-medium animate-pulse" style={{ color: '#2ECC43' }}>
+                  {match.status === 'HALFTIME' ? 'HT' : `${match.minute}'`}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl font-bold">{match.score.fullTime.home}</span>
+                  <span className="text-lg">:</span>
+                  <span className="text-xl font-bold">{match.score.fullTime.away}</span>
+                </div>
+                <button
+                  onClick={() => setShowEvents(true)}
+                  className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
+                >
+                  <Clock className="w-3 h-3" />
+                  Events
+                </button>
+              </div>
+            )}
+            
+            {match.status === 'FINISHED' && (
+              <div className="flex flex-col items-center">
+                <span className="text-lg font-medium">FT</span>
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-xl font-bold">{match.score.fullTime.home}</span>
+                  <span className="text-lg">:</span>
+                  <span className="text-xl font-bold">{match.score.fullTime.away}</span>
+                </div>
+                <button
+                  onClick={() => setShowEvents(true)}
+                  className="flex items-center gap-1 text-xs bg-gray-50 bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-1.5 rounded-full transition-colors mt-2"
+                >
+                  <Clock className="w-3 h-3" />
+                  Events
+                </button>
+              </div>
+            )}
 
-  {(match.status === 'SCHEDULED' || match.status === 'TIMED') && (
-    <div className="flex flex-col items-center">
-      <span className="text-sm font-medium">
-        {format(new Date(match.localDate), 'HH:mm')}
-      </span>
-      <span className="text-xs opacity-75 mt-1">
-        {timeUntilMatch}
-      </span>
-    </div>
-  )}
-</div>
+            {(match.status === 'SCHEDULED' || match.status === 'TIMED') && (
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-medium">
+                  {format(new Date(match.localDate), 'HH:mm')}
+                </span>
+                <span className="text-xs opacity-75 mt-1">
+                  {timeUntilMatch}
+                </span>
+              </div>
+            )}
+          </div>
   
-          {/* Away Team */}
           <TeamLogo 
             team={match.awayTeam}
             onClick={() => (match.status === 'SCHEDULED' || match.status === 'TIMED') && !match.userVote && onVote(match.id, 'away')}
@@ -220,53 +214,49 @@ const MatchBox = ({ match, onVote }) => {
         </div>
       </div>
   
-      {/* White Background Section */}
       <div className="bg-white p-4">
-{/* Predictions */}
-<div className="flex justify-center mb-3">
-  {/* Experts Prediction */}
-  <div 
-    style={{
-      backgroundColor: match.status === 'FINISHED' 
-        ? (isPredictionCorrect(match.aiPrediction) ? '#2ECC40' : '#ff4136')
-        : 'white',
-      width: '100%'
-    }}
-    className={`
-      flex items-center px-2 sm:px-4 py-2 rounded-md
-      ${match.status === 'FINISHED' 
-        ? 'border border-transparent' // No visible border when finished
-        : 'border border-gray-200'   // Light gray border for non-finished matches
-      }
-      shadow-sm                      // Subtle shadow for depth
-    `}
-  >
-    <div className="flex items-center gap-1 sm:gap-2 w-full">
-      <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
-        style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
-        <HeaderLogo
-          className="w-4 h-4 sm:w-5 sm:h-5" 
-        />
-        Experts:
-      </span>
-      {match.aiPrediction && match.aiPrediction !== 'DRAW' && (
-        <img 
-          src={match.aiPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest} 
-          alt="" 
-          className="w-4 h-4 sm:w-6 sm:h-6" 
-        />
-      )}
-      <span className="text-xs sm:text-sm truncate" 
-        style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
-        {getTeamPrediction(match.aiPrediction)}
-      </span>
-    </div>
-  </div>
-</div>
-
+        <div className="flex justify-center mb-3">
+          <div 
+            style={{
+              backgroundColor: match.status === 'FINISHED' 
+                ? (isPredictionCorrect(match.aiPrediction) ? '#2ECC40' : '#ff4136')
+                : 'white',
+              width: '100%'
+            }}
+            className={`
+              flex items-center px-2 sm:px-4 py-2 rounded-md
+              ${match.status === 'FINISHED' 
+                ? 'border border-transparent'
+                : 'border border-gray-200'
+              }
+              shadow-sm
+            `}
+          >
+            <div className="flex items-center gap-1 sm:gap-2 w-full">
+              <span className="flex items-center gap-1 text-xs sm:text-sm whitespace-nowrap" 
+                style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
+                <HeaderLogo className="w-4 h-4 sm:w-5 sm:h-5" />
+                Experts:
+              </span>
+              {match.aiPrediction && match.aiPrediction !== 'DRAW' && (
+                <OptimizedImage 
+                  src={match.aiPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest}
+                  alt=""
+                  className="rounded-full"
+                  width="w-4 sm:w-6"
+                  height="h-4 sm:h-6"
+                  fallbackSrc="/fallback-team-logo.png"
+                />
+              )}
+              <span className="text-xs sm:text-sm truncate" 
+                style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
+                {getTeamPrediction(match.aiPrediction)}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
   
-      {/* Match Events Modal */}
       <MatchEvents
         matchId={match.id}
         isOpen={showEvents}

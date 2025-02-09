@@ -1,67 +1,35 @@
-import React, { useEffect, useRef, useState } from 'react';
+// frontend/src/components/OptimizedImage.js
+import React from 'react';
+import { useOptimizedImage } from '../lib/imageLoader';
+import { cn } from '../lib/utils';
 
 const OptimizedImage = ({
   src,
   alt,
-  className,
-  width,
-  height,
-  loading = 'lazy',
-  placeholder = 'blur'
+  className = '',
+  fallbackSrc = '/fallback-team-logo.png',
+  width = 'w-8',
+  height = 'h-8'
 }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const imgRef = useRef(null);
-  
-  useEffect(() => {
-    if (imgRef.current && imgRef.current.complete) {
-      setIsLoaded(true);
-    }
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = src;
-            observer.unobserve(img);
-          }
-        });
-      },
-      {
-        rootMargin: '50px',
-      }
-    );
-    
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
-    
-    return () => {
-      if (imgRef.current) {
-        observer.unobserve(imgRef.current);
-      }
-    };
-  }, [src]);
+  const { imageUrl, loading } = useOptimizedImage(src, fallbackSrc);
 
   return (
-    <div className={`relative ${className}`} style={{ width, height }}>
+    <div className={cn(
+      'relative overflow-hidden',
+      width,
+      height,
+      className
+    )}>
       <img
-        ref={imgRef}
+        src={imageUrl}
         alt={alt}
-        className={`transition-opacity duration-300 ${
-          isLoaded ? 'opacity-100' : 'opacity-0'
-        }`}
-        width={width}
-        height={height}
-        loading={loading}
-        onLoad={() => setIsLoaded(true)}
-        decoding="async"
+        className="w-full h-full object-contain"
+        onError={(e) => {
+          e.target.src = fallbackSrc;
+        }}
       />
-      {placeholder === 'blur' && !isLoaded && (
-        <div 
-          className="absolute inset-0 bg-gray-200 animate-pulse"
-          style={{ width, height }}
-        />
+      {loading && (
+        <div className="absolute inset-0 animate-pulse bg-gray-200 rounded-full" />
       )}
     </div>
   );

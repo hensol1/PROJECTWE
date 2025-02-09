@@ -16,6 +16,9 @@ import AnimatedList from './AnimatedList';
 import LeagueFilter from './LeagueFilter';
 import LeagueFilterButton from './LeagueFilterButton';
 import TopLeaguesPerformance from './TopLeaguesPerformance';
+import OptimizedImage from './OptimizedImage';
+import imageLoader from '../lib/imageLoader';
+
 
 // Constants
 const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
@@ -242,7 +245,6 @@ const toggleLeague = useCallback((leagueKey) => {
 
 const preloadImages = useCallback(async (matchesData) => {
   const imageUrls = new Set();
-  const failedImages = new Set();
   
   Object.values(matchesData).forEach(dateMatches => {
     Object.values(dateMatches).forEach(leagueMatches => {
@@ -254,71 +256,15 @@ const preloadImages = useCallback(async (matchesData) => {
     });
   });
 
-  const loadImageWithRetry = async (url, retries = 3, delay = 1000) => {
-    for (let i = 0; i < retries; i++) {
-      try {
-        await new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve();
-          img.onerror = () => reject();
-          img.src = url;
-        });
-        return;
-      } catch (error) {
-        if (i === retries - 1) {
-          failedImages.add(url);
-          console.warn(`Failed to load image after ${retries} retries:`, url);
-        } else {
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-    }
-  };
-
   try {
-    await Promise.all([...imageUrls].map(url => loadImageWithRetry(url)));
-
-    if (failedImages.size > 0) {
-      setMatches(prevMatches => {
-        const newMatches = { ...prevMatches };
-        Object.keys(newMatches).forEach(date => {
-          Object.keys(newMatches[date]).forEach(league => {
-            newMatches[date][league] = newMatches[date][league].map(match => {
-              const updatedMatch = { ...match };
-              
-              if (match.homeTeam?.crest && failedImages.has(match.homeTeam.crest)) {
-                updatedMatch.homeTeam = {
-                  ...match.homeTeam,
-                  crest: '/fallback-team-logo.png'
-                };
-              }
-              if (match.awayTeam?.crest && failedImages.has(match.awayTeam.crest)) {
-                updatedMatch.awayTeam = {
-                  ...match.awayTeam,
-                  crest: '/fallback-team-logo.png'
-                };
-              }
-              
-              if (match.competition?.emblem && failedImages.has(match.competition.emblem)) {
-                updatedMatch.competition = {
-                  ...match.competition,
-                  emblem: '/fallback-league-logo.png'
-                };
-              }
-              
-              return updatedMatch;
-            });
-          });
-        });
-        return newMatches;
-      });
-    }
+    await imageLoader.preloadImages([...imageUrls]);
   } catch (error) {
     console.error('Error in image preloading:', error);
   } finally {
     setImagesLoaded(true);
   }
 }, []);
+
 
 const findDateWithLiveMatches = useCallback(() => {
   return Object.keys(allLiveMatches).length > 0;

@@ -10,7 +10,6 @@ const RacingBarDisplay = ({ score }) => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   
-  // Calculate if it's 100% to apply special styling
   const isFullScore = score >= 100;
   
   return (
@@ -20,13 +19,11 @@ const RacingBarDisplay = ({ score }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Top label */}
       <div className="absolute top-0 left-0 w-full px-3 py-1.5 flex items-center text-xs text-emerald-200 bg-emerald-900/20">
         <Activity size={12} className="mr-1" />
         Our chance to predict correctly is:
       </div>
 
-      {/* Main racing bar */}
       <div className="mt-7 flex items-center h-12">
         <div 
           className={`h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 transition-all duration-700 flex items-center ${isFullScore ? 'justify-center' : 'justify-end pr-3'} relative group-hover:brightness-110`}
@@ -36,7 +33,6 @@ const RacingBarDisplay = ({ score }) => {
             borderBottomRightRadius: isFullScore ? '0' : '0.5rem'
           }}
         >
-          {/* Animated light effect */}
           <div className="absolute inset-0 overflow-hidden">
             <div 
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 -skew-x-45 animate-shine"
@@ -45,7 +41,6 @@ const RacingBarDisplay = ({ score }) => {
                 animationIterationCount: 'infinite',
               }}
             />
-            {/* Pulsing dots */}
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
@@ -58,7 +53,6 @@ const RacingBarDisplay = ({ score }) => {
             ))}
           </div>
 
-          {/* Score */}
           <div className="relative z-10 flex items-center">
             <span className="text-gray-900 font-bold text-2xl tracking-tight" style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
               {score.toFixed(1)}%
@@ -66,7 +60,6 @@ const RacingBarDisplay = ({ score }) => {
           </div>
         </div>
         
-        {/* View Stats indicator - Only show when not 100% */}
         {!isFullScore && (
           <div className={`flex items-center ml-3 transition-all duration-300 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
             <span className="text-emerald-400 text-sm mr-1">View Stats</span>
@@ -75,7 +68,6 @@ const RacingBarDisplay = ({ score }) => {
         )}
       </div>
 
-      {/* Bottom progress markers */}
       <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-800">
         {Array.from({ length: 10 }).map((_, i) => (
           <div
@@ -95,6 +87,7 @@ const RacingBarDisplay = ({ score }) => {
 };
 
 export default function AccuracyComparison({ allLiveMatches, scheduledMatches }) {
+  const [isInitialized, setIsInitialized] = useState(false);
   const [accuracyData, setAccuracyData] = useState({
     aiAccuracy: 0,
     lastUpdated: new Date()
@@ -143,12 +136,43 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
       setIsLoading(false);
     }
   };
-            
+
   useEffect(() => {
-    fetchData();
-    const refreshInterval = setInterval(fetchData, 15 * 60 * 1000);
-    return () => clearInterval(refreshInterval);
-  }, []);
+    const initialize = async () => {
+      if (isInitialized) return;
+      
+      try {
+        setIsLoading(true);
+        await fetchData();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error during initialization:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initialize();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isInitialized) {
+        fetchData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    }, 15 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(pollInterval);
+    };
+  }, [isInitialized]);
 
   useEffect(() => {
     const targetAi = accuracyData?.aiAccuracy || 0;
@@ -187,38 +211,33 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
     );
   }
 
-// Update the return statement in AccuracyComparison.js
-
-return (
-  <div className="max-w-6xl mx-auto mt-4">
-    <div className="flex justify-center relative">
-      {/* Desktop Top Leagues Table */}
-      <div className="hidden md:block absolute -left-20 top-0 w-[280px]">
-        <TopLeaguesPerformance displayMode="desktop" />
-      </div>
-
-      <div className="w-full max-w-xl">
-        {/* Mobile Layout: Stacked */}
-        <div className="mb-3">
-          <RacingBarDisplay 
-            score={animatedAiAccuracy || 0}
-          />
+  return (
+    <div className="max-w-6xl mx-auto mt-4">
+      <div className="flex justify-center relative">
+        <div className="hidden md:block absolute -left-20 top-0 w-[280px]">
+          <TopLeaguesPerformance displayMode="desktop" />
         </div>
 
-        {/* Mobile Top Leagues */}
-        <div className="md:hidden mb-3">
-          <TopLeaguesPerformance displayMode="mobile" />
-        </div>
+        <div className="w-full max-w-xl">
+          <div className="mb-3">
+            <RacingBarDisplay 
+              score={animatedAiAccuracy || 0}
+            />
+          </div>
 
-        <div className="mb-2">
-          <PredictionTicker />
-        </div>
-        
-        <div className="mb-6">
-          <NextMatchCountdown scheduledMatches={scheduledMatches} />
+          <div className="md:hidden mb-3">
+            <TopLeaguesPerformance displayMode="mobile" />
+          </div>
+
+          <div className="mb-2">
+            <PredictionTicker />
+          </div>
+          
+          <div className="mb-6">
+            <NextMatchCountdown scheduledMatches={scheduledMatches} />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 }

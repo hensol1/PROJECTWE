@@ -33,6 +33,7 @@ const StatItem = ({ isToday, aiStats }) => {
 };
 
 const PredictionTicker = () => {
+  const [isInitialized, setIsInitialized] = useState(false);
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const tickerRef = useRef(null);
@@ -41,7 +42,7 @@ const PredictionTicker = () => {
   const fetchData = async () => {
     try {
       const response = await api.get('/api/accuracy/ai/two-days');
-      console.log('Two days stats response:', response.data); // Add this debug log
+      console.log('Two days stats response:', response.data);
       
       setStats({
         today: {
@@ -61,12 +62,43 @@ const PredictionTicker = () => {
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 300000); // 5 minutes
-    return () => clearInterval(interval);
-  }, []);
+    const initialize = async () => {
+      if (isInitialized) return;
+      
+      try {
+        setIsLoading(true);
+        await fetchData();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error during initialization:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initialize();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isInitialized) {
+        fetchData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    }, 300000); // 5 minutes
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(pollInterval);
+    };
+  }, [isInitialized]);
 
   useEffect(() => {
     let startTime = performance.now();
