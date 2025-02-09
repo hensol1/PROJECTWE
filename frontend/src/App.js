@@ -65,14 +65,14 @@ function App() {
   }  
 
   return (
-    <div className="App">
-      <HelmetProvider>
-        <GoogleOAuthProvider clientId={config.googleClientId}>
-          <Router>
-            <SEO />
-            <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
-            <div className="bg-gray-100 min-h-screen flex flex-col relative">
-            <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
+<div className="App">
+  <HelmetProvider>
+    <GoogleOAuthProvider clientId={config.googleClientId}>
+      <Router>
+        <SEO />
+        <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
+        <div className="min-h-screen flex flex-col bg-gray-100">
+          <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
               <div className="container mx-auto">
                 <div className="grid grid-cols-3 items-center gap-2">
                   <div className="flex items-center">
@@ -128,8 +128,8 @@ function App() {
               </div>
             </header>
 
-            <main className="flex-grow container mx-auto relative">
-                <Routes>
+            <main className="flex-1">
+            <Routes>
                   <Route 
                     path="/" 
                     element={
@@ -247,8 +247,10 @@ function App() {
                 </Routes>
             </main>
 
-            <CookieConsent />
-              <Footer />
+            <footer className="bg-gray-800">
+                <CookieConsent />
+                <Footer />
+              </footer>
             </div>
           </Router>
         </GoogleOAuthProvider>

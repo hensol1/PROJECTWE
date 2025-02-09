@@ -5,7 +5,7 @@ import { Facebook, Instagram } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white">
+    <footer className="bg-gray-800 text-white w-full mt-auto"> {/* Added mt-auto to push to bottom when content is short */}
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4 sm:gap-8">
           {/* Mobile Layout: Logo and Social Icons in same row */}
@@ -57,7 +57,7 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Navigation Links - Now in row for desktop */}
+          {/* Navigation Links */}
           <div className="flex justify-center gap-4">
             <Link to="/" className="text-gray-300 hover:text-white text-sm">Home</Link>
             <Link to="/about" className="text-gray-300 hover:text-white text-sm">About Us</Link>
@@ -68,7 +68,7 @@ const Footer = () => {
           <div className="hidden sm:flex flex-col items-end">
             <div className="text-sm font-medium mb-2">Connect With Us</div>
             <div className="flex items-center gap-4">
-              <a href="https://www.tiktok.com/@we.know.better?_t=ZS-8tCDtMD0M9n&_r=1" 
+              <a href="https://www.tiktok.com/@weknowbetter2024?_t=8s6MSbrXfNq&_r=1" 
                  className="text-gray-300 hover:text-white"
                  target="_blank"
                  rel="noopener noreferrer">

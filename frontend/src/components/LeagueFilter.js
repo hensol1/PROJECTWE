@@ -1,28 +1,43 @@
-import React from 'react';
+// LeagueFilter.js
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 const LeagueFilter = ({ leagues, selectedLeague, onLeagueSelect, isMobileOpen, onClose }) => {
+  // Prevent body scroll when mobile filter is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileOpen]);
+
   return (
     <>
       {/* Mobile overlay */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-50 md:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar content */}
       <div className={`
-        fixed md:relative top-0 bottom-0 left-0 w-72 md:w-auto
+        fixed md:relative top-0 left-0 h-full w-72 md:w-auto
         bg-white/90 backdrop-blur-sm shadow-lg md:shadow-sm rounded-r-lg md:rounded-lg
-        z-50 md:z-auto
+        z-[51] md:z-auto
         transform transition-transform duration-300 ease-in-out
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="p-4">
-          {/* Mobile close button */}
-          <div className="flex justify-between items-center mb-4 md:hidden">
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-100">
+          {/* Mobile header */}
+          <div className="md:hidden flex justify-between items-center p-4">
             <h3 className="text-lg font-semibold text-gray-700">Today's Events</h3>
             <button 
               onClick={onClose}
@@ -32,13 +47,15 @@ const LeagueFilter = ({ leagues, selectedLeague, onLeagueSelect, isMobileOpen, o
             </button>
           </div>
 
-          {/* Desktop title */}
-          <h3 className="hidden md:block text-sm font-semibold text-gray-700 mb-3 px-2">
+          {/* Desktop header */}
+          <h3 className="hidden md:block text-sm font-semibold text-gray-700 p-4">
             Today's Events
           </h3>
+        </div>
 
-          {/* League buttons */}
-          <div className="space-y-1">
+        {/* Scrollable content */}
+        <div className="overflow-y-auto h-[calc(100%-3.5rem)]">
+          <div className="p-4 space-y-1">
             <button
               onClick={() => {
                 onLeagueSelect(null);

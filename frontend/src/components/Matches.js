@@ -1037,8 +1037,8 @@ return (
         <div className="animate-pulse text-gray-600">Loading images...</div>
       </div>
     ) : (
-      <div className="relative flex flex-col items-center">
-        {/* Tabs Section - Centered */}
+      <div className="relative flex flex-col items-center mb-24"> {/* Added margin bottom */}
+        {/* Tabs Section */}
         <div className="w-full flex justify-center mb-4">
           <TabsSection 
             selectedDay={selectedDay}
@@ -1053,35 +1053,41 @@ return (
           />
         </div>
         
-        {/* Content Area */}
+        {/* Main Content Area with League Filter */}
         <div className="w-full max-w-5xl relative">
-          {/* Left Side Components Container */}
-          <div className="hidden md:flex flex-col absolute -left-36 top-0 w-[280px] gap-4">
-            {/* League Filter */}
-            <div className="sticky top-4">
-              <LeagueFilter
-                leagues={extractLeagues()}
-                selectedLeague={selectedLeague}
-                onLeagueSelect={handleLeagueSelect}
-                isMobileOpen={isMobileFilterOpen}
-                onClose={() => setIsMobileFilterOpen(false)}
-              />
-            </div>
-          </div>
-
-          {/* Matches Container - Centered */}
-          <div className="flex justify-center">
-            <div className="w-full max-w-md">
-              {/* Mobile League Filter Button */}
-              <div className="md:hidden flex justify-end mb-4">
-                <LeagueFilterButton
-                  onClick={() => setIsMobileFilterOpen(true)}
-                  selectedLeague={selectedLeague}
-                />
+          <div className="flex relative pb-8">
+            {/* League Filter Column */}
+            <div className="hidden md:block absolute -left-36 top-0 w-[280px]">
+              <div className="sticky top-4 pb-24"> {/* Added padding bottom */}
+                <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 16rem)' }}>
+                  <LeagueFilter
+                    leagues={extractLeagues()}
+                    selectedLeague={selectedLeague}
+                    onLeagueSelect={handleLeagueSelect}
+                    isMobileOpen={isMobileFilterOpen}
+                    onClose={() => setIsMobileFilterOpen(false)}
+                  />
+                </div>
               </div>
+            </div>
 
-              {/* Matches */}
-              {memoizedTabContent}
+            {/* Matches Content */}
+            <div className="w-full min-h-[500px]"> {/* Added minimum height */}
+              <div className="max-w-md mx-auto">
+                {/* Mobile League Filter Button */}
+                <div className="md:hidden flex justify-end mb-4">
+                  <LeagueFilterButton
+                    onClick={() => setIsMobileFilterOpen(true)}
+                    selectedLeague={selectedLeague}
+                  />
+                </div>
+
+                {/* Matches */}
+                {memoizedTabContent}
+
+                {/* Add extra padding at the bottom to ensure content clears the league filter */}
+                <div className="h-16 md:hidden"></div>
+              </div>
             </div>
           </div>
         </div>
