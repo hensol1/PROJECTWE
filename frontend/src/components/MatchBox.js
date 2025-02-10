@@ -38,6 +38,7 @@ const TeamLogo = ({ team }) => {
       }
     };
   }, []);
+  
 
   return (
     <div className="relative bg-white bg-opacity-10 rounded-full p-2" ref={logoRef}>

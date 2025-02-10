@@ -20,6 +20,7 @@ import OptimizedImage from './OptimizedImage';
 import imageLoader from '../lib/imageLoader';
 
 
+
 // Constants
 const priorityLeagues = [2, 3, 39, 140, 78, 135, 61];
 
@@ -373,7 +374,6 @@ const checkForGoals = useCallback((newMatches, prevMatches) => {
   });
 
   if (newNotifications.length > 0) {
-    console.log('New goal notifications:', newNotifications);
     setGoalNotifications(prev => [...prev, ...newNotifications]);
   }
 }, [processedScoreUpdates]);
@@ -585,7 +585,6 @@ const softUpdateMatches = useCallback(async () => {
 
       if (!hasMatchesInCurrentTab) {
         const appropriateTab = determineActiveTab();
-        console.log(`No matches in ${activeTab} tab, suggested tab: ${appropriateTab}`);
       }
     }
   } catch (error) {
