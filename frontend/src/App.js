@@ -5,7 +5,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { HelmetProvider } from 'react-helmet-async';
 import HeaderLogo from './components/HeaderLogo';
 import LoadingLogo from './components/LoadingLogo';
-import Matches from './components/Matches';
+import Matches from './components/matches/Matches';
 import AdminPage from './components/AdminPage';
 import IconMenu from './components/IconMenu';
 import LoadingScreen from './components/LoadingScreen';
