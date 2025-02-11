@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
+// hooks/useMatchData.js
+import { useState, useCallback } from 'react';
+import { format, parseISO } from 'date-fns';
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import api from '../api';
 
@@ -10,7 +11,7 @@ export const useMatchData = (userTimeZone) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false);
 
-  const processMatchesResponse = useCallback((matchesData, userTimeZone, user) => {
+  const processMatchesResponse = useCallback((matchesData) => {
     const liveMatches = {};
     const regularMatches = {};
 
@@ -23,21 +24,35 @@ export const useMatchData = (userTimeZone) => {
         const leagueKey = `${match.competition.name}_${match.competition.id}`;
         
         const voteCounts = match.voteCounts || match.votes || { home: 0, away: 0, draw: 0 };
-        const totalVotes = voteCounts.home + voteCounts.draw + voteCounts.away;
+        const transformedVoteCounts = {
+          home: voteCounts.home || voteCounts.HOME_TEAM || 0,
+          away: voteCounts.away || voteCounts.AWAY_TEAM || 0,
+          draw: voteCounts.draw || voteCounts.DRAW || 0
+        };
+        
+        const totalVotes = transformedVoteCounts.home + transformedVoteCounts.draw + transformedVoteCounts.away;
         let fanPrediction = null;
         
         if (totalVotes > 0) {
-          const maxVotes = Math.max(voteCounts.home, voteCounts.draw, voteCounts.away);
-          if (voteCounts.home === maxVotes) fanPrediction = 'HOME_TEAM';
-          else if (voteCounts.away === maxVotes) fanPrediction = 'AWAY_TEAM';
-          else fanPrediction = 'DRAW';
+          const maxVotes = Math.max(
+            transformedVoteCounts.home, 
+            transformedVoteCounts.draw, 
+            transformedVoteCounts.away
+          );
+          if (transformedVoteCounts.home === maxVotes) {
+            fanPrediction = 'HOME_TEAM';
+          } else if (transformedVoteCounts.away === maxVotes) {
+            fanPrediction = 'AWAY_TEAM';
+          } else {
+            fanPrediction = 'DRAW';
+          }
         }
 
         const updatedMatch = {
           ...match,
           localDate: matchLocalDate,
           userVote: match.userVote,
-          voteCounts,
+          voteCounts: transformedVoteCounts,
           fanPrediction,
           score: match.score || { 
             fullTime: { home: 0, away: 0 },
@@ -59,7 +74,7 @@ export const useMatchData = (userTimeZone) => {
     });
 
     return { liveMatches, regularMatches };
-  }, []);
+  }, [userTimeZone]);
 
   const fetchMatches = useCallback(async (date) => {
     setIsLoading(true);
@@ -69,7 +84,7 @@ export const useMatchData = (userTimeZone) => {
       const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
       const response = await api.fetchMatches(formattedDate);
       
-      const { regularMatches } = processMatchesResponse(response.data.matches, userTimeZone);
+      const { regularMatches } = processMatchesResponse(response.data.matches);
       
       setMatches(prev => ({
         ...prev,
@@ -88,6 +103,22 @@ export const useMatchData = (userTimeZone) => {
     }
   }, [userTimeZone, processMatchesResponse]);
 
+  const fetchMatchesSoft = useCallback(async (date) => {
+    try {
+      const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
+      const response = await api.fetchMatches(formattedDate);
+      
+      if (response?.data?.matches) {
+        const { regularMatches } = processMatchesResponse(response.data.matches);
+        return regularMatches[formattedDate];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error in soft fetch matches:', error);
+      return null;
+    }
+  }, [userTimeZone, processMatchesResponse]);
+
   const fetchLiveMatches = useCallback(async () => {
     try {
       const response = await api.fetchLiveMatches();
@@ -96,13 +127,27 @@ export const useMatchData = (userTimeZone) => {
         return;
       }
       
-      const { liveMatches } = processMatchesResponse(response.data.matches, userTimeZone);
+      const { liveMatches } = processMatchesResponse(response.data.matches);
       setAllLiveMatches(liveMatches);
     } catch (error) {
       console.error('Error fetching live matches:', error);
       setAllLiveMatches({});
     }
-  }, [userTimeZone, processMatchesResponse]);
+  }, [processMatchesResponse]);
+
+  const fetchLiveMatchesSoft = useCallback(async () => {
+    try {
+      const response = await api.fetchLiveMatches();
+      if (response?.data?.matches) {
+        const { liveMatches } = processMatchesResponse(response.data.matches);
+        return liveMatches;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error in soft fetch live matches:', error);
+      return null;
+    }
+  }, [processMatchesResponse]);
 
   return {
     matches,
@@ -111,7 +156,9 @@ export const useMatchData = (userTimeZone) => {
     isRefreshing,
     imagesLoaded,
     fetchMatches,
+    fetchMatchesSoft,
     fetchLiveMatches,
+    fetchLiveMatchesSoft,
     setMatches,
     setAllLiveMatches,
     setIsRefreshing

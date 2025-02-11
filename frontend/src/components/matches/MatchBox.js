@@ -5,9 +5,7 @@ import MatchEvents from '../MatchEvents';
 import StandingsButton from '../StandingsButton'; 
 import { shouldShowStandings } from '../../constants/leagueConfig'; 
 import HeaderLogo from '../HeaderLogo';  
-import OptimizedImage from '../OptimizedImage'; 
-
-
+import { ImagePreloader } from '../../services/imagePreloader';
 
 const websiteColors = {
   primary: '#2ECC40',
@@ -19,44 +17,21 @@ const websiteColors = {
 };
 
 const TeamLogo = ({ team }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const logoRef = useRef(null);
+  const [imgSrc, setImgSrc] = useState(team.crest);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0.5 }
-    );
-
-    if (logoRef.current) {
-      observer.observe(logoRef.current);
-    }
-
-    return () => {
-      if (logoRef.current) {
-        observer.unobserve(logoRef.current);
-      }
-    };
-  }, []);
-  
+  const handleError = () => {
+    setImgSrc('/fallback-team-logo.png');
+  };
 
   return (
-    <div className="relative bg-white bg-opacity-10 rounded-full p-2" ref={logoRef}>
-      <OptimizedImage 
-        src={team.crest}
+    <div className="relative">
+      <img
+        src={imgSrc}
         alt={team.name}
-        className="w-16 h-16"
-        width="w-16"
-        height="h-16"
-        fallbackSrc="/fallback-team-logo.png"
+        className="w-16 h-16 object-contain"
+        onError={handleError}
       />
-      <div 
-        className={`absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded transition-opacity duration-300 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
+      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded">
         {team.name}
       </div>
     </div>
@@ -242,15 +217,12 @@ const MatchBox = ({ match, onVote }) => {
                 Experts:
               </span>
               {match.aiPrediction && match.aiPrediction !== 'DRAW' && (
-                <OptimizedImage 
-                  src={match.aiPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest}
-                  alt=""
-                  className="rounded-full"
-                  width="w-4 sm:w-6"
-                  height="h-4 sm:h-6"
-                  fallbackSrc="/fallback-team-logo.png"
-                />
-              )}
+  <img 
+    src={match.aiPrediction === 'HOME_TEAM' ? match.homeTeam.crest : match.awayTeam.crest}
+    alt=""
+    className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-contain"
+  />
+)}
               <span className="text-xs sm:text-sm truncate" 
                 style={{ color: match.status === 'FINISHED' ? 'white' : 'gray' }}>
                 {getTeamPrediction(match.aiPrediction)}

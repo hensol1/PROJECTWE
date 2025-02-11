@@ -11,22 +11,25 @@ import ModernAccuracyComparison from '../AccuracyComparison';
 import LoadingLogo from '../LoadingLogo';
 import LeagueFilter from '../LeagueFilter';
 import api from '../../api';
+import { ImagePreloader } from '../../services/imagePreloader';
+import _ from 'lodash';
 
 const Matches = ({ user, onOpenAuthModal }) => {
-  // Time zone setup
-  const userTimeZone = useMemo(() => 
-    Intl.DateTimeFormat().resolvedOptions().timeZone, 
-    []
-  );
-
-  // State
+  // First, declare ALL state and hooks at the top
+  const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [selectedDay, setSelectedDay] = useState('today');
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Custom hooks
+  // Time zone setup
+  const userTimeZone = useMemo(() => 
+    Intl.DateTimeFormat().resolvedOptions().timeZone, 
+    []
+  );
+
+  // Custom hooks must be before any conditional returns
   const {
     matches,
     allLiveMatches,
@@ -34,9 +37,12 @@ const Matches = ({ user, onOpenAuthModal }) => {
     imagesLoaded,
     fetchMatches,
     fetchLiveMatches,
-    setMatches
+    fetchMatchesSoft,
+    fetchLiveMatchesSoft,
+    setMatches,
+    setAllLiveMatches
   } = useMatchData(userTimeZone);
-
+  
   const {
     goalNotifications,
     checkForGoals,
@@ -58,10 +64,32 @@ const Matches = ({ user, onOpenAuthModal }) => {
     handleTabChange,
     determineAppropriateTab,
     setActiveTab,
-    isManualTabSelect,     // Add this
-    setIsManualTabSelect   // Add this
+    isManualTabSelect,
+    setIsManualTabSelect
   } = useMatchTabManagement(allLiveMatches, scheduledMatches, finishedMatches);
+
+  // Image preloading effect
+  useEffect(() => {
+    const preloadImages = async () => {
+      if (!matches || Object.keys(matches).length === 0) return;
       
+      try {
+        setImagesPreloaded(false);
+        await ImagePreloader.preloadImages(matches);
+        setImagesPreloaded(true);
+      } catch (error) {
+        console.error('Error preloading images:', error);
+        setImagesPreloaded(true); // Continue anyway
+      }
+    };
+
+    preloadImages();
+
+    return () => {
+      ImagePreloader.clearCache();
+    };
+  }, [matches]);
+
   // Callbacks
   const handleLeagueSelect = useCallback((leagueId) => {
     setSelectedLeague(leagueId);
@@ -161,26 +189,104 @@ const Matches = ({ user, onOpenAuthModal }) => {
   
   useEffect(() => {
     if (!isInitialized) return;
-
-    const updateTimer = setInterval(() => {
-      if (!isLoading) {
-        fetchLiveMatches();
-        fetchMatches(selectedDate);
-      }
-    }, activeTab === 'live' ? 15000 : 30000);
-
-    return () => clearInterval(updateTimer);
-  }, [isInitialized, isLoading, activeTab, selectedDate, fetchLiveMatches, fetchMatches]);
-
-  useEffect(() => {
-    if (!isInitialized || !userTimeZone) return;
-    
-    const date = getDateForSelection(selectedDay);
-    fetchMatches(date);
-  }, [selectedDay, isInitialized, userTimeZone, fetchMatches]);
   
-
-  // Get current matches based on active tab
+    const softUpdateMatches = async () => {
+      if (isLoading) return;
+  
+      try {
+        // Fetch new data without setting loading state
+        const [newLiveMatches, newMatchesData] = await Promise.all([
+          fetchLiveMatchesSoft(),
+          fetchMatchesSoft(selectedDate)
+        ]);
+  
+        // Helper function to compare match data
+        const hasRelevantChanges = (oldMatch, newMatch) => {
+          const relevantFields = [
+            'score.home',
+            'score.away',
+            'status',
+            'minute',
+            'events',
+            'voteCounts'
+          ];
+          
+          return relevantFields.some(field => {
+            const oldValue = _.get(oldMatch, field);
+            const newValue = _.get(newMatch, field);
+            return !_.isEqual(oldValue, newValue);
+          });
+        };
+  
+        // Update live matches only if there are meaningful changes
+        if (newLiveMatches) {
+          setAllLiveMatches(prev => {
+            const updates = {};
+            let hasChanges = false;
+  
+            Object.entries(newLiveMatches).forEach(([leagueId, matches]) => {
+              matches.forEach(newMatch => {
+                const oldMatch = prev[leagueId]?.find(m => m.id === newMatch.id);
+                if (!oldMatch || hasRelevantChanges(oldMatch, newMatch)) {
+                  if (!updates[leagueId]) updates[leagueId] = [];
+                  updates[leagueId] = [...(updates[leagueId] || []), newMatch];
+                  hasChanges = true;
+                }
+              });
+            });
+  
+            return hasChanges ? { ...prev, ...updates } : prev;
+          });
+        }
+  
+        // Update regular matches with the same approach
+        if (newMatchesData) {
+          setMatches(prev => {
+            const updatedMatches = { ...prev };
+            let hasChanges = false;
+  
+            Object.entries(newMatchesData).forEach(([leagueId, matches]) => {
+              matches.forEach(newMatch => {
+                const oldMatch = prev[currentDateKey]?.[leagueId]?.find(m => m.id === newMatch.id);
+                if (!oldMatch || hasRelevantChanges(oldMatch, newMatch)) {
+                  if (!updatedMatches[currentDateKey]) updatedMatches[currentDateKey] = {};
+                  if (!updatedMatches[currentDateKey][leagueId]) updatedMatches[currentDateKey][leagueId] = [];
+                  
+                  const leagueMatches = [...(updatedMatches[currentDateKey][leagueId] || [])];
+                  const matchIndex = leagueMatches.findIndex(m => m.id === newMatch.id);
+                  
+                  if (matchIndex === -1) {
+                    leagueMatches.push(newMatch);
+                  } else {
+                    leagueMatches[matchIndex] = newMatch;
+                  }
+                  
+                  updatedMatches[currentDateKey][leagueId] = leagueMatches;
+                  hasChanges = true;
+                }
+              });
+            });
+  
+            return hasChanges ? updatedMatches : prev;
+          });
+        }
+      } catch (error) {
+        console.error('Error in soft update:', error);
+      }
+    };
+  
+    const updateTimer = setInterval(softUpdateMatches, activeTab === 'live' ? 15000 : 30000);
+    return () => clearInterval(updateTimer);
+  }, [
+    isInitialized,
+    isLoading,
+    activeTab,
+    selectedDate,
+    currentDateKey,
+    fetchLiveMatchesSoft,
+    fetchMatchesSoft
+  ]);
+  
   const getCurrentMatches = useCallback(() => {
     switch (activeTab) {
       case 'live':
@@ -193,7 +299,30 @@ const Matches = ({ user, onOpenAuthModal }) => {
         return {};
     }
   }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches]);
+  
+  useEffect(() => {
+    const loadAllImages = async () => {
+      if (!matches || Object.keys(matches).length === 0) return;
+      
+      try {
+        await ImagePreloader.preloadImages(matches);
+      } catch (error) {
+        console.error('Error preloading images:', error);
+      }
+    };
+  
+    loadAllImages();
+  }, [matches]); // Run when matches data changes
 
+  if (isLoading || !imagesPreloaded) {
+    return (
+      <div className="max-w-6xl mx-auto px-2">
+        <LoadingLogo />
+      </div>
+    );
+  }
+
+    
   // Render
   return (
     <div className="max-w-6xl mx-auto px-2">

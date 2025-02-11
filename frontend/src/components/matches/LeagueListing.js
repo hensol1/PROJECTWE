@@ -54,12 +54,14 @@ export const LeagueListing = ({
                 <div className="mt-1">
                   <AnimatedList delay={200} className="!overflow-visible gap-1">
                     {competitionMatches.map(match => (
-                      <MatchBox 
-                        key={match.id} 
-                        match={match}
-                        onVote={onVote}
-                        isLiveTab={activeTab === 'live'}
-                      />
+                        <div className="transition-all duration-300 ease-in-out">
+  <MatchBox 
+    key={match.id} 
+    match={match}
+    onVote={onVote}
+    isLiveTab={activeTab === 'live'}
+  />
+</div>
                     ))}
                   </AnimatedList>
                 </div>
