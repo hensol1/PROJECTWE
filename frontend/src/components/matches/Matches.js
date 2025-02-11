@@ -11,12 +11,10 @@ import ModernAccuracyComparison from '../AccuracyComparison';
 import LoadingLogo from '../LoadingLogo';
 import LeagueFilter from '../LeagueFilter';
 import api from '../../api';
-import { ImagePreloader } from '../../services/imagePreloader';
 import _ from 'lodash';
 
 const Matches = ({ user, onOpenAuthModal }) => {
   // State declarations
-  const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [selectedDay, setSelectedDay] = useState('today');
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -34,7 +32,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
     matches,
     allLiveMatches,
     isLoading,
-    imagesLoaded,
     fetchMatches,
     fetchLiveMatches,
     fetchMatchesSoft,
@@ -67,28 +64,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
     isManualTabSelect,
     setIsManualTabSelect
   } = useMatchTabManagement(allLiveMatches, scheduledMatches, finishedMatches);
-
-  // Image preloading effect
-  useEffect(() => {
-    const preloadImages = async () => {
-      if (!matches || Object.keys(matches).length === 0) return;
-      
-      try {
-        setImagesPreloaded(false);
-        await ImagePreloader.preloadImages(matches);
-        setImagesPreloaded(true);
-      } catch (error) {
-        console.error('Error preloading images:', error);
-        setImagesPreloaded(true); // Continue anyway
-      }
-    };
-
-    preloadImages();
-
-    return () => {
-      ImagePreloader.clearCache();
-    };
-  }, [matches]);
 
   // Optimized soft update logic
   const softUpdateMatches = useCallback(async () => {
@@ -302,14 +277,14 @@ const Matches = ({ user, onOpenAuthModal }) => {
     }
   }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches]);
 
-  if (isLoading || !imagesPreloaded) {
+  if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-2">
         <LoadingLogo />
       </div>
     );
   }
-
+      
   return (
     <div className="max-w-6xl mx-auto px-2">
       <NotificationQueue 
@@ -327,11 +302,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
         setMatches={setMatches}
       />
 
-      {!imagesLoaded ? (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-pulse text-gray-600">Loading images...</div>
-        </div>
-      ) : (
         <div className="relative flex flex-col items-center mb-24">
           <MatchFilters
             selectedDay={selectedDay}
@@ -404,7 +374,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
             />
           </div>
         </div>
-      )}
+      
     </div>
   );
 };

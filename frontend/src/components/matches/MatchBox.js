@@ -5,7 +5,7 @@ import MatchEvents from '../MatchEvents';
 import StandingsButton from '../StandingsButton'; 
 import { shouldShowStandings } from '../../constants/leagueConfig'; 
 import HeaderLogo from '../HeaderLogo';  
-import { ImagePreloader } from '../../services/imagePreloader';
+import { LogoService } from '../../services/logoService';
 
 const websiteColors = {
   primary: '#2ECC40',
@@ -17,19 +17,43 @@ const websiteColors = {
 };
 
 const TeamLogo = ({ team }) => {
-  const [imgSrc, setImgSrc] = useState(team.crest);
-
-  const handleError = () => {
-    setImgSrc('/fallback-team-logo.png');
-  };
+  const [imgSrc, setImgSrc] = useState('');
+  
+  useEffect(() => {
+    if (!team.crest) return;
+    
+    // Extract team ID from the API URL
+    const teamId = LogoService.extractIdFromUrl(team.crest);
+    if (teamId) {
+      const { localPath, apiPath } = LogoService.getTeamLogoPath(teamId);
+      
+      // Try to load local image first
+      fetch(localPath)
+        .then(response => {
+          if (response.ok) {
+            setImgSrc(localPath);
+          } else {
+            // If local image doesn't exist, use API URL
+            setImgSrc(apiPath);
+          }
+        })
+        .catch(() => {
+          setImgSrc(apiPath);
+        });
+    } else {
+      setImgSrc(team.crest);
+    }
+  }, [team.crest]);
 
   return (
     <div className="relative">
       <img
-        src={imgSrc}
+        src={imgSrc || '/fallback-team-logo.png'}
         alt={team.name}
         className="w-16 h-16 object-contain"
-        onError={handleError}
+        onError={(e) => {
+          e.target.src = '/fallback-team-logo.png';
+        }}
       />
       <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-sm bg-black bg-opacity-75 text-white px-2 py-1 rounded">
         {team.name}
