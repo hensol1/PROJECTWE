@@ -15,7 +15,7 @@ import { ImagePreloader } from '../../services/imagePreloader';
 import _ from 'lodash';
 
 const Matches = ({ user, onOpenAuthModal }) => {
-  // First, declare ALL state and hooks at the top
+  // State declarations
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [selectedDay, setSelectedDay] = useState('today');
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
@@ -29,7 +29,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
     []
   );
 
-  // Custom hooks must be before any conditional returns
+  // Custom hooks
   const {
     matches,
     allLiveMatches,
@@ -53,8 +53,8 @@ const Matches = ({ user, onOpenAuthModal }) => {
   const selectedDate = getDateForSelection(selectedDay);
   const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = matches[currentDateKey] || {};
-
   const filteredMatches = matchesForCurrentDate;
+  
   const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'], userTimeZone, selectedDate);
   const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED'], userTimeZone, selectedDate);
   const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED'], userTimeZone, selectedDate);
@@ -90,11 +90,156 @@ const Matches = ({ user, onOpenAuthModal }) => {
     };
   }, [matches]);
 
+  // Optimized soft update logic
+  const softUpdateMatches = useCallback(async () => {
+    if (isLoading) return;
+
+    try {
+      const [newLiveMatches, newMatchesData] = await Promise.all([
+        fetchLiveMatchesSoft(),
+        fetchMatchesSoft(selectedDate)
+      ]);
+
+      // Optimized match comparison function
+      const hasMatchChanged = (newMatch, oldMatch) => {
+        if (!oldMatch) return true;
+        
+        const fieldsToCompare = [
+          'status',
+          'score.fullTime.home',
+          'score.fullTime.away',
+          'minute',
+          'voteCounts.home',
+          'voteCounts.away',
+          'voteCounts.draw'
+        ];
+
+        return fieldsToCompare.some(field => 
+          !_.isEqual(_.get(newMatch, field), _.get(oldMatch, field))
+        );
+      };
+
+      // Handle live matches update
+      if (newLiveMatches) {
+        setAllLiveMatches(prev => {
+          const updatedMatches = {};
+          let hasAnyChanges = false;
+
+          Object.entries(newLiveMatches).forEach(([leagueId, matches]) => {
+            updatedMatches[leagueId] = matches.map(newMatch => {
+              const oldMatch = prev[leagueId]?.find(m => m.id === newMatch.id);
+              if (!hasMatchChanged(newMatch, oldMatch)) {
+                return oldMatch; // Keep reference if unchanged
+              }
+              hasAnyChanges = true;
+              return {
+                ...oldMatch,
+                ...newMatch,
+                // Preserve certain fields from old match if they exist
+                localDate: oldMatch?.localDate || newMatch.localDate,
+                userVote: oldMatch?.userVote || newMatch.userVote
+              };
+            });
+          });
+
+          return hasAnyChanges ? updatedMatches : prev;
+        });
+      }
+
+      // Handle regular matches update
+      if (newMatchesData) {
+        setMatches(prev => {
+          const updatedMatches = { ...prev };
+          let hasChanges = false;
+
+          Object.entries(newMatchesData).forEach(([leagueId, matches]) => {
+            if (!updatedMatches[currentDateKey]) {
+              updatedMatches[currentDateKey] = {};
+            }
+            if (!updatedMatches[currentDateKey][leagueId]) {
+              updatedMatches[currentDateKey][leagueId] = [];
+            }
+
+            updatedMatches[currentDateKey][leagueId] = matches.map(newMatch => {
+              const oldMatch = prev[currentDateKey]?.[leagueId]?.find(m => m.id === newMatch.id);
+              if (!hasMatchChanged(newMatch, oldMatch)) {
+                return oldMatch;
+              }
+              hasChanges = true;
+              return {
+                ...oldMatch,
+                ...newMatch,
+                localDate: oldMatch?.localDate || newMatch.localDate,
+                userVote: oldMatch?.userVote || newMatch.userVote
+              };
+            });
+          });
+
+          return hasChanges ? updatedMatches : prev;
+        });
+      }
+
+      // Check for goals after updates
+      const prevState = {
+        ...matches,
+        live: allLiveMatches
+      };
+
+      const newState = {
+        ...matches,
+        [currentDateKey]: newMatchesData,
+        live: newLiveMatches
+      };
+
+      checkForGoals(newState, prevState);
+
+    } catch (error) {
+      console.error('Error in soft update:', error);
+    }
+  }, [
+    isLoading,
+    fetchLiveMatchesSoft,
+    fetchMatchesSoft,
+    selectedDate,
+    currentDateKey,
+    matches,
+    allLiveMatches,
+    checkForGoals
+  ]);
+
+  // Effects
+  useEffect(() => {
+    const initialize = async () => {
+      if (!userTimeZone || isInitialized) return;
+      
+      try {
+        await Promise.all([
+          fetchLiveMatches(),
+          fetchMatches(getDateForSelection('today')),
+          fetchMatches(getDateForSelection('yesterday')),
+          fetchMatches(getDateForSelection('tomorrow'))
+        ]);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error during initialization:', error);
+      }
+    };
+  
+    initialize();
+  }, [userTimeZone, isInitialized, fetchLiveMatches, fetchMatches]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const updateTimer = setInterval(softUpdateMatches, activeTab === 'live' ? 15000 : 30000);
+    return () => clearInterval(updateTimer);
+  }, [isInitialized, softUpdateMatches, activeTab]);
+
   // Callbacks
   const handleLeagueSelect = useCallback((leagueId) => {
     setSelectedLeague(leagueId);
     setActiveTab(determineAppropriateTab(leagueId));
-  }, [determineAppropriateTab]);
+  }, [determineAppropriateTab, setActiveTab]);
 
   const toggleLeague = useCallback((leagueKey) => {
     setCollapsedLeagues(prev => ({
@@ -102,6 +247,13 @@ const Matches = ({ user, onOpenAuthModal }) => {
       [leagueKey]: !prev[leagueKey]
     }));
   }, []);
+
+  const handleDayChange = useCallback((newDay) => {
+    setSelectedDay(newDay);
+    const appropriateTab = determineAppropriateTab(newDay);
+    setActiveTab(appropriateTab);
+    setIsManualTabSelect(false);
+  }, [determineAppropriateTab, setActiveTab, setIsManualTabSelect]);
 
   const handleVote = async (matchId, vote) => {
     try {
@@ -137,156 +289,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
     }
   };
 
-  const handleDayChange = useCallback((newDay) => {
-    setSelectedDay(newDay);
-    // Automatically set the appropriate tab based on the selected day
-    const appropriateTab = determineAppropriateTab(newDay);
-    setActiveTab(appropriateTab);
-    setIsManualTabSelect(false); // Reset manual selection when changing days
-  }, [determineAppropriateTab]);
-  
-  // Update the useEffect that handles initial data loading and tab selection
-  useEffect(() => {
-    if (!isInitialized || isLoading) return;
-  
-    // Set appropriate tab based on current day and available matches
-    if (!isManualTabSelect) {
-      const appropriateTab = determineAppropriateTab(selectedDay);
-      setActiveTab(appropriateTab);
-    }
-  }, [
-    isInitialized,
-    isLoading,
-    isManualTabSelect,
-    selectedDay,
-    determineAppropriateTab,
-    allLiveMatches,
-    scheduledMatches,
-    finishedMatches
-  ]);
-  
-
-  // Effects
-  useEffect(() => {
-    const initialize = async () => {
-      if (!userTimeZone || isInitialized) return;
-      
-      try {
-        await Promise.all([
-          fetchLiveMatches(),
-          fetchMatches(getDateForSelection('today')),
-          fetchMatches(getDateForSelection('yesterday')),
-          fetchMatches(getDateForSelection('tomorrow'))
-        ]);
-        setIsInitialized(true);
-      } catch (error) {
-        console.error('Error during initialization:', error);
-      }
-    };
-  
-    initialize();
-  }, [userTimeZone, isInitialized, fetchLiveMatches, fetchMatches]);
-  
-  useEffect(() => {
-    if (!isInitialized) return;
-  
-    const softUpdateMatches = async () => {
-      if (isLoading) return;
-  
-      try {
-        // Fetch new data without setting loading state
-        const [newLiveMatches, newMatchesData] = await Promise.all([
-          fetchLiveMatchesSoft(),
-          fetchMatchesSoft(selectedDate)
-        ]);
-  
-        // Helper function to compare match data
-        const hasRelevantChanges = (oldMatch, newMatch) => {
-          const relevantFields = [
-            'score.home',
-            'score.away',
-            'status',
-            'minute',
-            'events',
-            'voteCounts'
-          ];
-          
-          return relevantFields.some(field => {
-            const oldValue = _.get(oldMatch, field);
-            const newValue = _.get(newMatch, field);
-            return !_.isEqual(oldValue, newValue);
-          });
-        };
-  
-        // Update live matches only if there are meaningful changes
-        if (newLiveMatches) {
-          setAllLiveMatches(prev => {
-            const updates = {};
-            let hasChanges = false;
-  
-            Object.entries(newLiveMatches).forEach(([leagueId, matches]) => {
-              matches.forEach(newMatch => {
-                const oldMatch = prev[leagueId]?.find(m => m.id === newMatch.id);
-                if (!oldMatch || hasRelevantChanges(oldMatch, newMatch)) {
-                  if (!updates[leagueId]) updates[leagueId] = [];
-                  updates[leagueId] = [...(updates[leagueId] || []), newMatch];
-                  hasChanges = true;
-                }
-              });
-            });
-  
-            return hasChanges ? { ...prev, ...updates } : prev;
-          });
-        }
-  
-        // Update regular matches with the same approach
-        if (newMatchesData) {
-          setMatches(prev => {
-            const updatedMatches = { ...prev };
-            let hasChanges = false;
-  
-            Object.entries(newMatchesData).forEach(([leagueId, matches]) => {
-              matches.forEach(newMatch => {
-                const oldMatch = prev[currentDateKey]?.[leagueId]?.find(m => m.id === newMatch.id);
-                if (!oldMatch || hasRelevantChanges(oldMatch, newMatch)) {
-                  if (!updatedMatches[currentDateKey]) updatedMatches[currentDateKey] = {};
-                  if (!updatedMatches[currentDateKey][leagueId]) updatedMatches[currentDateKey][leagueId] = [];
-                  
-                  const leagueMatches = [...(updatedMatches[currentDateKey][leagueId] || [])];
-                  const matchIndex = leagueMatches.findIndex(m => m.id === newMatch.id);
-                  
-                  if (matchIndex === -1) {
-                    leagueMatches.push(newMatch);
-                  } else {
-                    leagueMatches[matchIndex] = newMatch;
-                  }
-                  
-                  updatedMatches[currentDateKey][leagueId] = leagueMatches;
-                  hasChanges = true;
-                }
-              });
-            });
-  
-            return hasChanges ? updatedMatches : prev;
-          });
-        }
-      } catch (error) {
-        console.error('Error in soft update:', error);
-      }
-    };
-  
-    const updateTimer = setInterval(softUpdateMatches, activeTab === 'live' ? 15000 : 30000);
-    return () => clearInterval(updateTimer);
-  }, [
-    isInitialized,
-    isLoading,
-    activeTab,
-    selectedDate,
-    currentDateKey,
-    fetchLiveMatchesSoft,
-    fetchMatchesSoft
-  ]);
-  
   const getCurrentMatches = useCallback(() => {
     switch (activeTab) {
       case 'live':
@@ -299,20 +301,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
         return {};
     }
   }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches]);
-  
-  useEffect(() => {
-    const loadAllImages = async () => {
-      if (!matches || Object.keys(matches).length === 0) return;
-      
-      try {
-        await ImagePreloader.preloadImages(matches);
-      } catch (error) {
-        console.error('Error preloading images:', error);
-      }
-    };
-  
-    loadAllImages();
-  }, [matches]); // Run when matches data changes
 
   if (isLoading || !imagesPreloaded) {
     return (
@@ -322,8 +310,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
     );
   }
 
-    
-  // Render
   return (
     <div className="max-w-6xl mx-auto px-2">
       <NotificationQueue 
@@ -341,22 +327,20 @@ const Matches = ({ user, onOpenAuthModal }) => {
         setMatches={setMatches}
       />
 
-      {isLoading ? (
-        <LoadingLogo />
-      ) : !imagesLoaded ? (
+      {!imagesLoaded ? (
         <div className="flex justify-center items-center py-8">
           <div className="animate-pulse text-gray-600">Loading images...</div>
         </div>
       ) : (
         <div className="relative flex flex-col items-center mb-24">
-<MatchFilters
-  selectedDay={selectedDay}
-  setSelectedDay={handleDayChange}  // Use the new handler here
-  activeTab={activeTab}
-  onTabChange={handleTabChange}
-  hasAnyLiveMatches={Object.keys(allLiveMatches).length > 0}
-  getDateForSelection={getDateForSelection}
-/>
+          <MatchFilters
+            selectedDay={selectedDay}
+            setSelectedDay={handleDayChange}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            hasAnyLiveMatches={Object.keys(allLiveMatches).length > 0}
+            getDateForSelection={getDateForSelection}
+          />
 
           <div className="w-full max-w-5xl relative">
             <div className="flex relative pb-8">
@@ -370,34 +354,32 @@ const Matches = ({ user, onOpenAuthModal }) => {
                     onClose={() => setIsMobileFilterOpen(false)}
                   />
                 </div>
-                </div>
+              </div>
             </div>
 
-            {/* Matches Content */}
             <div className="w-full min-h-[500px]">
               <div className="max-w-md mx-auto">
-              <div className="md:hidden">
-  <button
-    onClick={() => setIsMobileFilterOpen(true)}
-    className="fixed left-4 bottom-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 z-50"
-    aria-label="Filter Leagues"
-  >
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className="w-5 h-5"
-    >
-      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
-    </svg>
-  </button>
-</div>
+                <div className="md:hidden">
+                  <button
+                    onClick={() => setIsMobileFilterOpen(true)}
+                    className="fixed left-4 bottom-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 z-50"
+                    aria-label="Filter Leagues"
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      className="w-5 h-5"
+                    >
+                      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                    </svg>
+                  </button>
+                </div>
 
-                {/* League Listing */}
                 <LeagueListing
                   matches={getCurrentMatches()}
                   collapsedLeagues={collapsedLeagues}
@@ -407,13 +389,11 @@ const Matches = ({ user, onOpenAuthModal }) => {
                   activeTab={activeTab}
                 />
 
-                {/* Mobile padding */}
                 <div className="h-16 md:hidden"></div>
               </div>
             </div>
           </div>
 
-          {/* Mobile League Filter Modal */}
           <div className="md:hidden">
             <LeagueFilter
               leagues={extractLeagues(matchesForCurrentDate, allLiveMatches)}
