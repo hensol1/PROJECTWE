@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LineChart, 
   Line, 
@@ -9,11 +9,13 @@ import {
   ResponsiveContainer,
   Legend 
 } from 'recharts';
+import LoadingSpinner from './LoadingSpinner';
 import { format, startOfToday, isBefore } from 'date-fns';
 import { InfoIcon } from 'lucide-react';
 import api from '../api';
 
-const StatCard = ({ title, value, subtitle, color = 'green', tooltipText }) => (
+// Memoized components for better performance
+const StatCard = React.memo(({ title, value, subtitle, color = 'green', tooltipText }) => (
   <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm relative group">
     <div className="flex items-center gap-1 mb-0.5">
       <h3 className="text-xs sm:text-sm font-semibold text-gray-600">{title}</h3>
@@ -37,9 +39,9 @@ const StatCard = ({ title, value, subtitle, color = 'green', tooltipText }) => (
       )}
     </div>
   </div>
-);
+));
 
-const TimeRangeButton = ({ active, children, onClick }) => (
+const TimeRangeButton = React.memo(({ active, children, onClick }) => (
   <button
     onClick={onClick}
     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors
@@ -49,82 +51,22 @@ const TimeRangeButton = ({ active, children, onClick }) => (
   >
     {children}
   </button>
-);
+));
 
-const PerformanceGraph = () => {
-  const [performanceData, setPerformanceData] = useState([]);
+// Custom hook for data fetching
+const usePerformanceData = () => {
+  const [data, setData] = useState({ performanceData: [], overallStats: null });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState(7);
-  const [overallStats, setOverallStats] = useState(null);
 
-  const calculateStats = (data, overallStats) => {
-    if (!data || data.length === 0) {
-      return {
-        avg: 0,
-        avgByMatches: 0,
-        best: 0,
-        worst: 0,
-        trend: 0,
-        totalPredictions: overallStats?.totalPredictions || 0,
-        totalCorrect: overallStats?.correctPredictions || 0,
-        overallAccuracy: overallStats?.overallAccuracy || 0
-      };
-    }
-  
-    // Only consider days with actual predictions
-    const daysWithPredictions = data.filter(day => day.predictions > 0);
-    
-    if (daysWithPredictions.length === 0) {
-      return {
-        avg: 0,
-        avgByMatches: 0,
-        best: 0,
-        worst: 0,
-        trend: 0,
-        totalPredictions: overallStats?.totalPredictions || 0,
-        totalCorrect: overallStats?.correctPredictions || 0,
-        overallAccuracy: overallStats?.overallAccuracy || 0
-      };
-    }
-  
-    const avgByMatches = overallStats?.overallAccuracy || 0;
-    const avg = daysWithPredictions.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / daysWithPredictions.length;
-    
-    const best = Math.max(...daysWithPredictions.map(d => d.accuracy || 0));
-    const worst = Math.min(...daysWithPredictions.map(d => d.accuracy || 0));
-    
-    const last3 = daysWithPredictions.slice(-3);
-    const prev3 = daysWithPredictions.slice(-6, -3);
-    const last3Avg = last3.length > 0 
-      ? last3.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / last3.length 
-      : 0;
-    const prev3Avg = prev3.length > 0 
-      ? prev3.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / prev3.length 
-      : 0;
-    const trend = last3Avg - prev3Avg;
-  
-    return {
-      avg,
-      avgByMatches,
-      best,
-      worst,
-      trend,
-      totalPredictions: overallStats?.totalPredictions || 0,
-      totalCorrect: overallStats?.correctPredictions || 0,
-      overallAccuracy: overallStats?.overallAccuracy || 0
-    };
-  };
-  
   useEffect(() => {
-    const fetchPerformanceData = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         const response = await api.fetchAIHistory();
         const today = startOfToday();
-        const PREDICTIONS_START = new Date('2025-01-15'); // Our start date
-  
-        // Filter and transform the data
+        const PREDICTIONS_START = new Date('2025-01-15');
+
         const formattedData = response.stats
           .map(stat => ({
             date: new Date(stat.date),
@@ -137,33 +79,20 @@ const PerformanceGraph = () => {
             const statDate = new Date(stat.date);
             return statDate >= PREDICTIONS_START && isBefore(statDate, today);
           })
-          .sort((a, b) => b.date - a.date)
-          .map(stat => ({
-            date: stat.displayDate,
-            accuracy: stat.accuracy,
-            predictions: stat.predictions,
-            correct: stat.correct
-          }));
-  
-        // Calculate overall stats using only valid prediction data
+          .sort((a, b) => b.date - a.date);
+
         const validPredictions = formattedData.reduce((acc, curr) => acc + curr.predictions, 0);
         const validCorrect = formattedData.reduce((acc, curr) => acc + curr.correct, 0);
         const overallAccuracy = validPredictions > 0 ? (validCorrect / validPredictions * 100) : 0;
-  
-        console.log('Processed performance data:', {
-          totalDays: formattedData.length,
-          validPredictions,
-          validCorrect,
-          overallAccuracy
+
+        setData({
+          performanceData: formattedData,
+          overallStats: {
+            totalPredictions: validPredictions,
+            correctPredictions: validCorrect,
+            overallAccuracy
+          }
         });
-  
-        setPerformanceData(formattedData);
-        setOverallStats({
-          totalPredictions: validPredictions,
-          correctPredictions: validCorrect,
-          overallAccuracy
-        });
-        setError(null);
       } catch (err) {
         setError('Failed to load performance data');
         console.error('Error fetching performance data:', err);
@@ -171,20 +100,48 @@ const PerformanceGraph = () => {
         setIsLoading(false);
       }
     };
-  
-    fetchPerformanceData();
+
+    fetchData();
   }, []);
-    
-  // Get the most recent N days by taking first N items (since data is sorted newest first) and reversing
-  const filteredData = [...performanceData].slice(0, timeRange).reverse();
-  const stats = calculateStats(filteredData, overallStats);
+
+  return { ...data, isLoading, error };
+};
+
+const PerformanceGraph = () => {
+  const [timeRange, setTimeRange] = useState(7);
+  const { performanceData, overallStats, isLoading, error } = usePerformanceData();
+
+  // Memoize filtered data and stats calculations
+  const { filteredData, stats } = useMemo(() => {
+    if (!performanceData.length) {
+      return { filteredData: [], stats: {} };
+    }
+
+    const filtered = [...performanceData]
+      .slice(0, timeRange)
+      .reverse()
+      .map(item => ({
+        date: item.displayDate,
+        accuracy: item.accuracy,
+        predictions: item.predictions,
+        correct: item.correct
+      }));
+
+    const daysWithPredictions = filtered.filter(day => day.predictions > 0);
+    const stats = {
+      avg: daysWithPredictions.reduce((acc, curr) => acc + (curr.accuracy || 0), 0) / (daysWithPredictions.length || 1),
+      best: Math.max(...daysWithPredictions.map(d => d.accuracy || 0)),
+      worst: Math.min(...daysWithPredictions.map(d => d.accuracy || 0)),
+      overallAccuracy: overallStats?.overallAccuracy || 0,
+      totalCorrect: overallStats?.correctPredictions || 0,
+      totalPredictions: overallStats?.totalPredictions || 0
+    };
+
+    return { filteredData: filtered, stats };
+  }, [performanceData, timeRange, overallStats]);
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error) {
@@ -197,31 +154,23 @@ const PerformanceGraph = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Chart section */}
       <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">AI Performance History</h2>
           <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <TimeRangeButton 
-              active={timeRange === 7} 
-              onClick={() => setTimeRange(7)}
-            >
-              Last 7 Days
-            </TimeRangeButton>
-            <TimeRangeButton 
-              active={timeRange === 14} 
-              onClick={() => setTimeRange(14)}
-            >
-              Last 14 Days
-            </TimeRangeButton>
-            <TimeRangeButton 
-              active={timeRange === 30} 
-              onClick={() => setTimeRange(30)}
-            >
-              Last 30 Days
-            </TimeRangeButton>
+            {[7, 14, 30].map(days => (
+              <TimeRangeButton 
+                key={days}
+                active={timeRange === days} 
+                onClick={() => setTimeRange(days)}
+              >
+                Last {days} Days
+              </TimeRangeButton>
+            ))}
           </div>
         </div>
-  
+
         <div className="h-[300px] sm:h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
@@ -240,16 +189,7 @@ const PerformanceGraph = () => {
                 domain={[0, 100]}
                 ticks={[0, 25, 50, 75, 100]}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  padding: '12px'
-                }}
-                formatter={(value) => [`${value}%`]}
-              />
+              <Tooltip />
               <Legend />
               <Line
                 type="monotone"
@@ -265,20 +205,20 @@ const PerformanceGraph = () => {
         </div>
       </div>
 
+      {/* Stats cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
         <StatCard
           title="Overall Accuracy"
           value={`${stats.overallAccuracy.toFixed(1)}%`}
           subtitle={`${stats.totalCorrect} of ${stats.totalPredictions} completed predictions`}
           color="green"
-          tooltipText="Total correct predictions divided by total number of completed predictions. This is our most accurate measurement of overall performance."
+          tooltipText="Total correct predictions divided by total number of completed predictions"
         />
         <StatCard
           title="Average Daily"
           value={`${stats.avg.toFixed(1)}%`}
-          subtitle={`Average of completed days`}
+          subtitle="Average of completed days"
           color="blue"
-          tooltipText="Average of daily accuracy rates from completed days. This might differ from overall accuracy as days with few predictions carry equal weight."
         />
         <StatCard
           title="Best Day"
