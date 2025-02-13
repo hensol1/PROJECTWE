@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import api from '../api';
+import { LogoService } from '../services/logoService';
 
 const LeagueStats = () => {
   const [leagueStats, setLeagueStats] = useState([]);
@@ -127,33 +128,40 @@ const LeagueStats = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {sortedData.map((league) => (
-              <tr key={league.id} className="hover:bg-gray-50">
-                <td className="px-2 sm:px-4 py-2 sm:py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5">
-                      {league.country?.flag && (
-                        <img 
-                          src={league.country.flag} 
-                          alt={league.country.name || ''}
-                          className="w-3 h-3 sm:w-3.5 sm:h-3.5 object-contain"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                      )}
-                      <img 
-                        src={league.emblem} 
-                        alt={league.name}
-                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
-                        onError={(e) => {
-                          e.target.src = '/placeholder-emblem.png';
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm text-gray-900">{league.name}</span>
-                  </div>
-                </td>
+        {sortedData.map((league) => (
+          <tr key={league.id} className="hover:bg-gray-50">
+            <td className="px-2 sm:px-4 py-2 sm:py-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  {league.country?.flag && (
+                    <img 
+                      src={league.country.flag} 
+                      alt={league.country.name || ''}
+                      className="w-3 h-3 sm:w-3.5 sm:h-3.5 object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <img 
+                    src={LogoService.getCompetitionLogoPath(league.id).localPath} 
+                    alt={league.name}
+                    className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
+                    onError={(e) => {
+                      // If local path fails, try API path
+                      const paths = LogoService.getCompetitionLogoPath(league.id);
+                      e.target.src = paths.apiPath;
+                      // Add another error handler for API path failure
+                      e.target.onerror = () => {
+                        e.target.src = '/placeholder-emblem.png';
+                        e.target.onerror = null; // Prevent infinite loop
+                      };
+                    }}
+                  />
+                </div>
+                <span className="text-sm text-gray-900">{league.name}</span>
+              </div>
+            </td>
                 <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-sm text-gray-600">
                   {league.totalPredictions}
                 </td>
