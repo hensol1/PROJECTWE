@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api';
 import { format, addDays, subDays, isSameDay, parseISO } from 'date-fns';
 import ContactAdmin from './ContactAdmin';
 import AdminLoginForm from './AdminLoginForm';
 import MatchDebugger from './MatchDebugger';
+import { BlogEditor } from './blog/BlogEditor';
+import { useLocation } from 'react-router-dom';
+
+
 
 // Admin action button component
 const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
@@ -97,7 +102,6 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
         message: 'AI stats reset successfully. Please recalculate stats to get new values.'
       });
       
-      // Automatically trigger recalculation after reset
       await handleRecalculateStats();
     } catch (error) {
       console.error('Reset error:', error);
@@ -128,16 +132,15 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
         />
       </div>
       
-{/* Reset section */}
-<div className="flex flex-wrap gap-4 mb-4 border-t pt-4">
-  <AdminButton
-    onClick={handleResetAIStats}
-    isLoading={isResettingAI}
-    label="Reset AI Stats"
-    loadingLabel="Resetting AI..."
-    className="bg-orange-500 hover:bg-orange-600"
-  />
-</div>
+      <div className="flex flex-wrap gap-4 mb-4 border-t pt-4">
+        <AdminButton
+          onClick={handleResetAIStats}
+          isLoading={isResettingAI}
+          label="Reset AI Stats"
+          loadingLabel="Resetting AI..."
+          className="bg-orange-500 hover:bg-orange-600"
+        />
+      </div>
 
       {lastAction && (
         <div className={`mt-2 p-2 rounded ${
@@ -229,20 +232,27 @@ const MatchCard = ({ match, onPrediction }) => {
   );
 };
 
-const AdminPage = () => {
+const AdminPage = ({ defaultTab }) => {
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState('matches'); 
+  const [activeTab, setActiveTab] = useState(defaultTab || 'matches');
+  
+  // When defaultTab changes, update activeTab
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
   const [matches, setMatches] = useState({});
   const [currentDate, setCurrentDate] = useState(new Date());
   const [notification, setNotification] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [posts, setPosts] = useState([]);
   const scrollPositionRef = useRef(0);
 
   useEffect(() => {
-    // Check for admin token on component mount
     const token = localStorage.getItem('adminToken');
     if (token) {
-      // Set the token in API headers
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setIsAuthenticated(true);
     }
@@ -253,6 +263,29 @@ const AdminPage = () => {
       fetchMatches(currentDate);
     }
   }, [currentDate, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'blog') {
+      const fetchPosts = async () => {
+        try {
+          const response = await api.getBlogPosts();
+          setPosts(response.data.posts);
+        } catch (error) {
+          console.error('Error fetching blog posts:', error);
+          setNotification({
+            type: 'error',
+            message: 'Failed to fetch blog posts'
+          });
+        }
+      };
+      fetchPosts();
+    }
+  }, [isAuthenticated, activeTab]);
+
+  useEffect(() => {
+    console.log('Location state:', location.state);
+    console.log('Current active tab:', activeTab);
+  }, [location.state, activeTab]);  
 
   const handleLoginSuccess = (token) => {
     setIsAuthenticated(true);
@@ -305,14 +338,11 @@ const AdminPage = () => {
 
   const handlePrediction = async (matchId, prediction) => {
     try {
-      console.log('Attempting to make prediction:', { matchId, prediction });
       const response = await api.makeAIPrediction(matchId, prediction);
-      console.log('Prediction response:', response.data);
       setNotification({
         type: 'success',
         message: 'AI prediction recorded'
       });
-      
       await fetchMatches(currentDate, true);
     } catch (error) {
       console.error('Error making AI prediction:', error);
@@ -323,13 +353,33 @@ const AdminPage = () => {
     }
   };
 
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    try {
+      await api.deleteBlogPost(postId);
+      setPosts(posts.filter(post => post._id !== postId));
+      setNotification({
+        type: 'success',
+        message: 'Post deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setNotification({
+        type: 'error',
+        message: 'Failed to delete post'
+      });
+    }
+  };
+
   if (!isAuthenticated) {
     return <AdminLoginForm onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      {/* Add this tab navigation */}
       <div className="flex space-x-4 mb-6">
         <button
           onClick={() => setActiveTab('matches')}
@@ -351,62 +401,109 @@ const AdminPage = () => {
         >
           Contact Messages
         </button>
+        <button
+          onClick={() => setActiveTab('blog')}
+          className={`px-4 py-2 rounded-lg transition duration-200 ${
+            activeTab === 'blog' 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+          }`}
+        >
+          Blog Posts
+        </button>
       </div>
-  
-      {/* Conditional rendering based on active tab */}
+
       {activeTab === 'matches' ? (
-  <>
-    <AdminControls 
-      selectedDate={currentDate} 
-      onRefreshMatches={fetchMatches} // Move this inside AdminControls
-    />
-    <MatchDebugger />
-      {/* Date Navigation */}
-      <div className="flex justify-between items-center mb-6">
-        <button 
-          onClick={() => handleDateChange(-1)} 
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200"
-          disabled={isLoading}
+        <>
+          <AdminControls 
+            selectedDate={currentDate} 
+            onRefreshMatches={fetchMatches}
+          />
+          <MatchDebugger />
+          <div className="flex justify-between items-center mb-6">
+            <button 
+              onClick={() => handleDateChange(-1)} 
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200"
+              disabled={isLoading}
+            >
+              Previous Day
+            </button>
+            <h2 className="text-2xl font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
+            <button 
+              onClick={() => handleDateChange(1)} 
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200"
+              disabled={isLoading}
+            >
+              Next Day
+            </button>
+          </div>
+
+          {isLoading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+
+          {!isLoading && Object.keys(matches).length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No matches scheduled for this date
+            </div>
+          )}
+
+          {!isLoading && Object.entries(matches).map(([competition, competitionMatches]) => (
+            <div key={competition} className="mb-4">
+              <h2 className="text-xl font-semibold mb-2">{competition}</h2>
+              {competitionMatches.map(match => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  onPrediction={handlePrediction}
+                />
+              ))}
+            </div>
+          ))}
+        </>
+      ) : activeTab === 'contacts' ? (
+        <ContactAdmin />
+      ) : activeTab === 'blog' ? (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-800">Blog Posts</h2>
+            <Link 
+  to="/admin/blog/new"
+  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded transition duration-200"
+>
+  Create New Post
+</Link>
+          </div>
+          
+          <div className="space-y-4">
+  {posts.map(post => (
+    <div key={post._id} className="bg-white shadow-md rounded-lg p-4">
+      <h3 className="text-xl font-semibold mb-2">{post.title}</h3>
+      <p className="text-gray-600 mb-2">
+        {new Date(post.publishDate).toLocaleDateString()}
+      </p>
+      <div className="flex space-x-2">
+        <Link
+          to={`/admin/blog/edit/${post._id}`}  // Make sure we're using _id here
+          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          Previous Day
-        </button>
-        <h2 className="text-2xl font-bold text-gray-800">{format(currentDate, 'dd MMM yyyy')}</h2>
-        <button 
-          onClick={() => handleDateChange(1)} 
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200"
-          disabled={isLoading}
+          Edit
+        </Link>
+        <button
+          onClick={() => handleDeletePost(post._id)}
+          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
         >
-          Next Day
+          Delete
         </button>
       </div>
+    </div>
+  ))}
+</div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
-      )}
-
-      {/* No Matches Message */}
-      {!isLoading && Object.keys(matches).length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No matches scheduled for this date
-        </div>
-      )}
-
-      {/* Matches Display */}
-      {!isLoading && Object.entries(matches).map(([competition, competitionMatches]) => (
-        <div key={competition} className="mb-4">
-          <h2 className="text-xl font-semibold mb-2">{competition}</h2>
-          {competitionMatches.map(match => (
-            <MatchCard
-              key={match.id}
-              match={match}
-              onPrediction={handlePrediction}
-            />
-          ))}
-        </div>
-      ))}
+      ) : null}
 
       {notification && (
         <Notification
@@ -415,12 +512,8 @@ const AdminPage = () => {
           onClose={() => setNotification(null)}
         />
       )}
-      </>
-    ) : (
-      <ContactAdmin />
-    )}
-  </div>
-);
-}
+    </div>
+  );
+};
 
 export default AdminPage;

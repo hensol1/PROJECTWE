@@ -9,6 +9,7 @@ const contactRoutes = require('./routes/contact');
 const standingsRoutes = require('./routes/standings');
 const lineupsRoutes = require('./routes/lineups');
 const adminRouter = require('./routes/admin');
+const blogRoutes = require('./routes/blog');
 
 dotenv.config();
 require('./scheduledTasks');
@@ -57,6 +58,7 @@ app.use('/api/standings', standingsRoutes);
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/lineups', lineupsRoutes);
 app.use('/api/admin', adminRouter);
+app.use('/api/blog', blogRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

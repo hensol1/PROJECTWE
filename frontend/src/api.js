@@ -13,12 +13,9 @@ const api = axios.create({
 // Request interceptor for authentication
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken'); // Change from 'token' to 'adminToken'
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
-      console.log('Adding auth header:', config.headers['Authorization']);
-    } else {
-      console.log('No token found in localStorage');
     }
     return config;
   },
@@ -31,16 +28,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error);
-    // Only redirect to login if it's a 401 and not already on the login page
     if (error.response?.status === 401 && !window.location.pathname.includes('login')) {
-      localStorage.removeItem('token');
+      localStorage.removeItem('adminToken'); // Change from 'token' to 'adminToken'
       localStorage.removeItem('userId');
-      // Instead of redirecting, return a specific error
       return Promise.reject({ isAuthError: true, ...error });
     }
     return Promise.reject(error);
   }
 );
+
 
 // Add all API methods here
 api.fetchMatches = (date) => {
@@ -83,10 +79,8 @@ api.fetchLiveMatches = () => {
 api.fetchAccuracy = async () => {
   try {
     const response = await api.get('/api/accuracy/ai');
-    console.log('API accuracy response:', response);
     return response.data;
   } catch (error) {
-    console.error('Error in fetchAccuracy:', error);
     throw error;
   }
 };
@@ -94,9 +88,7 @@ api.fetchAccuracy = async () => {
 // Ticker last seccessful prediction
 api.fetchLatestSuccessfulPrediction = async () => {
   try {
-    console.log('Calling latest-success endpoint...');
     const response = await api.get('/api/accuracy/latest-success');
-    console.log('Latest prediction response:', response);
     return response.data;
   } catch (error) {
     console.error('Error fetching latest successful prediction:', error.response || error);
@@ -107,9 +99,7 @@ api.fetchLatestSuccessfulPrediction = async () => {
 // Ticker
 api.fetchLastTwoDaysStats = async () => {
   try {
-    console.log('Fetching last two days stats...'); // Add debug log
     const response = await api.get('/api/accuracy/ai/two-days');
-    console.log('Last two days stats response:', response.data); // Add debug log
     return response.data;
   } catch (error) {
     console.error('Error fetching last two days stats:', error);
@@ -150,7 +140,6 @@ api.getWeeklyLeaderboard = () => {
 api.fetchUserDailyAccuracy = async () => {
   try {
     const response = await api.get('/api/accuracy/user/daily');
-    console.log('API user daily accuracy response:', response);
     return response.data;
   } catch (error) {
     console.error('Error in fetchUserDailyAccuracy:', error);
@@ -161,7 +150,6 @@ api.fetchUserDailyAccuracy = async () => {
 // League Accuracy stats
 api.fetchLeagueStats = async () => {
   try {
-    console.log('Making league stats API request...');
     return await api.get('/api/accuracy/ai/league-stats');
   } catch (error) {
     console.error('League stats API error:', {
@@ -198,14 +186,12 @@ api.voteForMatch = (matchId, vote) => api.post(`/api/matches/${matchId}/vote`, {
 
 // Admin related endpoints
 api.makeAIPrediction = (matchId, prediction) => {
-  console.log('Making AI prediction:', { matchId, prediction });
   return api.post(`/api/admin/matches/${matchId}/prediction`, { prediction });
 };
 
 // Admin routes
 api.triggerFetchMatches = (date) => {
   const formattedDate = format(new Date(date), 'yyyy-MM-dd');
-  console.log('Triggering fetch with formatted date:', formattedDate);
   return api.post('/api/admin/fetch-matches', { 
     date: formattedDate,
     debug: true  // Add this flag
@@ -218,11 +204,16 @@ api.resetStats = () => api.post('/api/accuracy/reset');
 api.getDailyPredictions = () => api.get('/api/stats/daily-predictions');
 api.resetAIStats = () => api.post('/api/admin/reset-ai');
 api.updateAllResults = () => api.post('/api/matches/update-results');
-
+api.getBlogPosts = (page = 1) => api.get(`/api/blog?page=${page}`);
+api.getLatestPost = () => api.get('/api/blog/latest');
+api.getBlogPost = (slug) => api.get(`/api/blog/post/${slug}`); // for public viewing
+api.getAdminBlogPost = (id) => api.get(`/api/blog/admin/${id}`); // for admin editing
+api.createBlogPost = (data) => api.post('/api/blog', data);
+api.updateBlogPost = (id, data) => api.put(`/api/blog/${id}`, data);
+api.deleteBlogPost = (id) => api.delete(`/api/blog/${id}`);
 
 // Contact submission
 api.submitContactForm = (formData) => {
-  console.log('Submitting contact form:', formData); // Add this log
   return api.post('/api/contact', formData);
 };
 api.getContactSubmissions = () => api.get('/api/contact/submissions');

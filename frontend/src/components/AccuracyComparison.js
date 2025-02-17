@@ -5,6 +5,7 @@ import api from '../api';
 import PredictionTicker from './PredictionTicker';
 import NextMatchCountdown from './NextMatchCountdown';
 import TopLeaguesPerformance from './TopLeaguesPerformance';
+import { BlogPreview } from './blog/BlogPreview';
 
 const RacingBarDisplay = ({ score }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -214,30 +215,45 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
   return (
     <div className="max-w-6xl mx-auto mt-4">
       <div className="flex justify-center relative">
+        {/* Left side - Top Leagues (desktop only) */}
         <div className="hidden md:block absolute -left-20 top-0 w-[280px]">
           <TopLeaguesPerformance displayMode="desktop" />
         </div>
-
+  
+        {/* Center content */}
         <div className="w-full max-w-xl">
           <div className="mb-3">
             <RacingBarDisplay 
               score={animatedAiAccuracy || 0}
             />
           </div>
-
+  
+          {/* Mobile Top Leagues */}
           <div className="md:hidden mb-3">
             <TopLeaguesPerformance displayMode="mobile" />
           </div>
-
+  
           <div className="mb-2">
             <PredictionTicker />
           </div>
           
           <div className="mb-6">
             <NextMatchCountdown scheduledMatches={scheduledMatches} />
+            
+            {/* Mobile Blog Preview */}
+            <div className="md:hidden mt-4">
+              <BlogPreview />
+            </div>
+          </div>
+        </div>
+  
+        {/* Right side - Blog Preview (desktop only) */}
+        <div className="hidden md:block absolute -right-20 top-0 w-[280px]">
+          <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
+            <BlogPreview />
           </div>
         </div>
       </div>
     </div>
   );
-}
+    }

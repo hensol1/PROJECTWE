@@ -19,8 +19,13 @@ import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
 import SEO from './components/SEO';
 import StatsPage from './components/StatsPage';
-import { BookOpen, LineChart } from 'lucide-react'; 
+import { BookOpen, LineChart, FileText} from 'lucide-react'; 
 import InstallPrompt from './components/InstallPrompt';
+import { BlogList } from './components/blog/BlogList';
+import { BlogPost } from './components/blog/BlogPost';
+import { BlogEditor } from './components/blog/BlogEditor';
+import { PrivateRoute } from './components/PrivateRoute';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -116,6 +121,12 @@ function App() {
   >
     <LineChart className="w-5 h-5 md:w-6 md:h-6" />
   </Link>
+  <Link
+  to="/blog"
+  className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
+>
+  <FileText className="w-5 h-5 md:w-6 md:h-6" /> {/* Using FileText icon instead */}
+</Link>
 
                   </div>
 
@@ -243,6 +254,50 @@ function App() {
                     }
                   />
                   <Route path="*" element={<Navigate to="/" />} />
+                  <Route 
+  path="/blog" 
+  element={
+    <>
+      <SEO 
+        title="Match Reviews - We Know Better"
+        description="Read our expert match previews and analysis for upcoming football matches."
+        path="/blog"
+      />
+      <BlogList />
+    </>
+  } 
+/>
+<Route 
+  path="/blog/:slug" 
+  element={
+    <>
+      <SEO 
+        title="Match Review - We Know Better"
+        description="Detailed analysis and predictions for football matches."
+        path="/blog"
+      />
+      <BlogPost />
+    </>
+  } 
+/>
+<Route 
+  path="/admin/blog/edit/:id" 
+  element={
+    <PrivateRoute>
+      <BlogEditor />
+    </PrivateRoute>
+  } 
+/>
+<Route path="/admin" element={<AdminPage />} />
+  <Route path="/admin/blog" element={<AdminPage defaultTab="blog" />} />
+  <Route 
+    path="/admin/blog/new" 
+    element={
+      <PrivateRoute>
+        <BlogEditor />
+      </PrivateRoute>
+    } 
+  />
                 </Routes>
             </main>
 
