@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../api';
+import { renderMarkdown } from './MarkdownRenderer';
 
 export const BlogPost = () => {
   const { slug } = useParams();
@@ -64,12 +65,11 @@ export const BlogPost = () => {
         <p className="text-gray-400 mb-8">
           {new Date(post.publishDate).toLocaleDateString()}
         </p>
-        <div 
-          className="prose prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ 
-            __html: post.content.replace(/\n/g, '<br />') 
-          }}
-        />
+        <div className="bg-gray-800 rounded-lg p-6">
+          <div className="prose max-w-none text-white">
+            {renderMarkdown(post.content)}
+          </div>
+        </div>
       </article>
     </div>
   );

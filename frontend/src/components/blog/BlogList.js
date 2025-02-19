@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
+import { renderMarkdown } from './MarkdownRenderer';
 
 export const BlogList = () => {
   const [posts, setPosts] = useState([]);
@@ -54,25 +55,25 @@ export const BlogList = () => {
       <div className="space-y-6">
         {posts.map(post => (
           <article key={post._id} className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-white mb-2">
-              <Link to={`/blog/${post.slug}`} className="hover:text-green-400">
-                {post.title}
-              </Link>
-            </h2>
-            <p className="text-gray-400 text-sm mb-4">
-              {new Date(post.publishDate).toLocaleDateString()}
-            </p>
-            <p className="text-gray-300 mb-4">
-              {post.content.substring(0, 300)}...
-            </p>
-            <Link 
-              to={`/blog/${post.slug}`}
-              className="text-green-400 hover:text-green-300"
-            >
-              Read more →
+          <h2 className="text-xl font-bold text-white mb-2">
+            <Link to={`/blog/${post.slug}`} className="hover:text-green-400">
+              {post.title}
             </Link>
-          </article>
-        ))}
+          </h2>
+          <p className="text-gray-400 text-sm mb-4">
+            {new Date(post.publishDate).toLocaleDateString()}
+          </p>
+          <div className="text-gray-300 mb-4">
+  {renderMarkdown(post.content, { preview: true })}
+</div>
+          <Link 
+            to={`/blog/${post.slug}`}
+            className="text-green-400 hover:text-green-300"
+          >
+            Read more →
+          </Link>
+        </article>
+      ))}
       </div>
     </div>
   );

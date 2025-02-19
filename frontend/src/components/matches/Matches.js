@@ -25,7 +25,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
   const userTimeZone = useMemo(() => 
     Intl.DateTimeFormat().resolvedOptions().timeZone, 
     []
-  );
+  );  
 
   // Custom hooks
   const {
@@ -55,6 +55,19 @@ const Matches = ({ user, onOpenAuthModal }) => {
   const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'], userTimeZone, selectedDate);
   const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED'], userTimeZone, selectedDate);
   const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED'], userTimeZone, selectedDate);
+
+  const determineInitialTab = useCallback(() => {
+    if (Object.keys(allLiveMatches).length > 0) {
+      return 'live';
+    }
+    if (Object.keys(scheduledMatches).length > 0) {
+      return 'scheduled';
+    }
+    if (Object.keys(finishedMatches).length > 0) {
+      return 'finished';
+    }
+    return 'scheduled'; // Default to scheduled if no matches anywhere
+  }, [allLiveMatches, scheduledMatches, finishedMatches]);
 
   const {
     activeTab,
@@ -194,6 +207,11 @@ const Matches = ({ user, onOpenAuthModal }) => {
           fetchMatches(getDateForSelection('yesterday')),
           fetchMatches(getDateForSelection('tomorrow'))
         ]);
+        
+        // Set initial tab based on available matches
+        const initialTab = determineInitialTab();
+        setActiveTab(initialTab);
+        
         setIsInitialized(true);
       } catch (error) {
         console.error('Error during initialization:', error);
@@ -201,8 +219,8 @@ const Matches = ({ user, onOpenAuthModal }) => {
     };
   
     initialize();
-  }, [userTimeZone, isInitialized, fetchLiveMatches, fetchMatches]);
-
+  }, [userTimeZone, isInitialized, fetchLiveMatches, fetchMatches, determineInitialTab, setActiveTab]);
+  
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -350,14 +368,22 @@ const Matches = ({ user, onOpenAuthModal }) => {
                   </button>
                 </div>
 
-                <LeagueListing
-                  matches={getCurrentMatches()}
-                  collapsedLeagues={collapsedLeagues}
-                  onLeagueToggle={toggleLeague}
-                  onVote={handleVote}
-                  selectedLeague={selectedLeague}
-                  activeTab={activeTab}
-                />
+                {Object.keys(getCurrentMatches()).length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">
+                    {activeTab === 'live' && "No Live matches at the moment"}
+                    {activeTab === 'finished' && "No Finished matches at the moment"}
+                    {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
+                  </div>
+                ) : (
+                  <LeagueListing
+                    matches={getCurrentMatches()}
+                    collapsedLeagues={collapsedLeagues}
+                    onLeagueToggle={toggleLeague}
+                    onVote={handleVote}
+                    selectedLeague={selectedLeague}
+                    activeTab={activeTab}
+                  />
+                )}
 
                 <div className="h-16 md:hidden"></div>
               </div>
