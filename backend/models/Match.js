@@ -1,4 +1,3 @@
-// backend/models/Match.js
 const mongoose = require('mongoose');
 
 const MatchSchema = new mongoose.Schema({
@@ -43,6 +42,21 @@ const MatchSchema = new mongoose.Schema({
       home: Number,
       away: Number
     }
+  },
+  odds: {
+    update: Date,
+    bookmakers: [{
+      id: Number,
+      name: String,
+      bets: [{
+        id: Number,
+        name: String,
+        values: [{
+          value: String,
+          odd: Number
+        }]
+      }]
+    }]
   },
   source: String,
   status: String,

@@ -12,6 +12,7 @@ import LoadingLogo from '../LoadingLogo';
 import LeagueFilter from '../LeagueFilter';
 import api from '../../api';
 import _ from 'lodash';
+import TodaysOdds from '../TodaysOdds';
 
 const Matches = ({ user, onOpenAuthModal }) => {
   // State declarations
@@ -320,54 +321,46 @@ const Matches = ({ user, onOpenAuthModal }) => {
         setMatches={setMatches}
       />
 
-        <div className="relative flex flex-col items-center mb-24">
-          <MatchFilters
-            selectedDay={selectedDay}
-            setSelectedDay={handleDayChange}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            hasAnyLiveMatches={Object.keys(allLiveMatches).length > 0}
-            getDateForSelection={getDateForSelection}
-          />
+      <div className="relative flex flex-col items-center mb-24">
+        <MatchFilters
+          selectedDay={selectedDay}
+          setSelectedDay={handleDayChange}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          hasAnyLiveMatches={Object.keys(allLiveMatches).length > 0}
+          getDateForSelection={getDateForSelection}
+        />
 
-          <div className="w-full max-w-5xl relative">
-            <div className="flex relative pb-8">
-              <div className="hidden md:block absolute -left-36 top-0 w-[280px]">
-                <div className="sticky top-4 pb-24">
-                  <LeagueFilter
-                    leagues={extractLeagues(matchesForCurrentDate, allLiveMatches)}
-                    selectedLeague={selectedLeague}
-                    onLeagueSelect={handleLeagueSelect}
-                    isMobileOpen={isMobileFilterOpen}
-                    onClose={() => setIsMobileFilterOpen(false)}
-                  />
-                </div>
+        <div className="w-full max-w-5xl relative">
+          {/* Mobile Layout */}
+          <div className="md:hidden mb-6">
+            <TodaysOdds matches={getCurrentMatches()} />
+          </div>
+
+          <div className="flex relative pb-8">
+            {/* Desktop League Filter */}
+            <div className="hidden md:block absolute -left-36 top-0 w-[280px]">
+              <div className="sticky top-4 pb-24">
+                <LeagueFilter
+                  leagues={extractLeagues(matchesForCurrentDate, allLiveMatches)}
+                  selectedLeague={selectedLeague}
+                  onLeagueSelect={handleLeagueSelect}
+                  isMobileOpen={isMobileFilterOpen}
+                  onClose={() => setIsMobileFilterOpen(false)}
+                />
               </div>
             </div>
 
-            <div className="w-full min-h-[500px]">
-              <div className="max-w-md mx-auto">
-                <div className="md:hidden">
-                  <button
-                    onClick={() => setIsMobileFilterOpen(true)}
-                    className="fixed left-4 bottom-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 z-50"
-                    aria-label="Filter Leagues"
-                  >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      className="w-5 h-5"
-                    >
-                      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
-                    </svg>
-                  </button>
-                </div>
+            {/* Desktop Today's Odds */}
+            <div className="hidden md:block absolute -right-36 top-0 w-[280px]">
+              <div className="sticky top-4 pb-24">
+                <TodaysOdds matches={getCurrentMatches()} />
+              </div>
+            </div>
 
+            {/* Main Content Area */}
+            <div className="w-full">
+              <div className="max-w-md mx-auto">
                 {Object.keys(getCurrentMatches()).length === 0 ? (
                   <div className="text-center py-10 text-gray-500">
                     {activeTab === 'live' && "No Live matches at the moment"}
@@ -384,23 +377,41 @@ const Matches = ({ user, onOpenAuthModal }) => {
                     activeTab={activeTab}
                   />
                 )}
-
-                <div className="h-16 md:hidden"></div>
               </div>
             </div>
           </div>
-
-          <div className="md:hidden">
-            <LeagueFilter
-              leagues={extractLeagues(matchesForCurrentDate, allLiveMatches)}
-              selectedLeague={selectedLeague}
-              onLeagueSelect={handleLeagueSelect}
-              isMobileOpen={isMobileFilterOpen}
-              onClose={() => setIsMobileFilterOpen(false)}
-            />
-          </div>
         </div>
-      
+
+        {/* Mobile League Filter Button */}
+        <div className="md:hidden">
+          <button
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="fixed left-4 bottom-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 z-50"
+            aria-label="Filter Leagues"
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="w-5 h-5"
+            >
+              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+            </svg>
+          </button>
+
+          <LeagueFilter
+            leagues={extractLeagues(matchesForCurrentDate, allLiveMatches)}
+            selectedLeague={selectedLeague}
+            onLeagueSelect={handleLeagueSelect}
+            isMobileOpen={isMobileFilterOpen}
+            onClose={() => setIsMobileFilterOpen(false)}
+          />
+        </div>
+      </div>
     </div>
   );
 };
