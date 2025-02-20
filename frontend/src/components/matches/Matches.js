@@ -321,6 +321,11 @@ const Matches = ({ user, onOpenAuthModal }) => {
         setMatches={setMatches}
       />
 
+      {/* Mobile Today's Odds - Moved here */}
+      <div className="md:hidden mb-6">
+        <TodaysOdds matches={getCurrentMatches()} />
+      </div>
+
       <div className="relative flex flex-col items-center mb-24">
         <MatchFilters
           selectedDay={selectedDay}
@@ -332,11 +337,6 @@ const Matches = ({ user, onOpenAuthModal }) => {
         />
 
         <div className="w-full max-w-5xl relative">
-          {/* Mobile Layout */}
-          <div className="md:hidden mb-6">
-            <TodaysOdds matches={getCurrentMatches()} />
-          </div>
-
           <div className="flex relative pb-8">
             {/* Desktop League Filter */}
             <div className="hidden md:block absolute -left-36 top-0 w-[280px]">
