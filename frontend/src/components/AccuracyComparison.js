@@ -7,22 +7,10 @@ import NextMatchCountdown from './NextMatchCountdown';
 import TopLeaguesPerformance from './TopLeaguesPerformance';
 import { BlogPreview } from './blog/BlogPreview';
 
-// Separate component definition
-function RacingBarDisplay({ score, isLoading }) {
+const RacingBarDisplay = ({ score }) => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
   
-  if (isLoading) {
-    return (
-      <div className="relative bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
-        <div className="animate-pulse">
-          <div className="h-7 bg-gray-800/50 w-full"></div>
-          <div className="h-12 bg-gray-800/30 w-3/4 mt-1"></div>
-        </div>
-      </div>
-    );
-  }
-
   const isFullScore = score >= 100;
   
   return (
@@ -100,7 +88,6 @@ function RacingBarDisplay({ score, isLoading }) {
 };
 
 export default function AccuracyComparison({ allLiveMatches, scheduledMatches }) {
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const [accuracyData, setAccuracyData] = useState({
     aiAccuracy: 0,
@@ -114,47 +101,43 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      
-      // Use Promise.allSettled instead of Promise.all to handle partial failures
-      const results = await Promise.allSettled([
+      const [accuracyResponse, dailyResponse] = await Promise.all([
         api.fetchAccuracy(),
         api.fetchDailyAccuracy()
       ]);
+      
+      const aiAccuracy = accuracyResponse?.aiAccuracy || 0;
+      const aiStats = {
+        ai: {
+          total: dailyResponse?.data?.ai?.total || 0,
+          correct: dailyResponse?.data?.ai?.correct || 0
+        }
+      };
   
-      const [accuracyResult, dailyResult] = results;
-  
-      // Handle accuracy data
-      if (accuracyResult.status === 'fulfilled') {
-        const aiAccuracy = accuracyResult.value?.aiAccuracy || 0;
-        setAccuracyData({
-          aiAccuracy,
-          lastUpdated: new Date()
-        });
-      }
-  
-      // Handle daily stats
-      if (dailyResult.status === 'fulfilled') {
-        const aiStats = {
-          ai: {
-            total: dailyResult.value?.data?.ai?.total || 0,
-            correct: dailyResult.value?.data?.ai?.correct || 0
-          }
-        };
-        setDailyStats(aiStats);
-      }
-  
+      setAccuracyData({
+        aiAccuracy,
+        lastUpdated: new Date()
+      });
+      setDailyStats(aiStats);
       setError(null);
     } catch (error) {
       console.error('Error fetching accuracy data:', error);
-      // Set default values but don't block rendering
-      setAccuracyData({ aiAccuracy: 0, lastUpdated: new Date() });
-      setDailyStats({ ai: { total: 0, correct: 0 } });
+      setAccuracyData({
+        aiAccuracy: 0,
+        lastUpdated: new Date()
+      });
+      setDailyStats({
+        ai: {
+          total: 0,
+          correct: 0
+        }
+      });
+      setError('Failed to fetch accuracy data');
     } finally {
       setIsLoading(false);
-      setIsInitialLoading(false);
     }
   };
-    
+
   useEffect(() => {
     const initialize = async () => {
       if (isInitialized) return;
@@ -193,15 +176,9 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
   }, [isInitialized]);
 
   useEffect(() => {
-    // Skip animation on initial load
-    if (isInitialLoading) {
-      setAnimatedAiAccuracy(accuracyData?.aiAccuracy || 0);
-      return;
-    }
-  
     const targetAi = accuracyData?.aiAccuracy || 0;
-    const duration = 1000; // Reduced from 1500
-    const steps = 30;  // Reduced from 60 for smoother performance
+    const duration = 1500;
+    const steps = 60;
     
     const interval = setInterval(() => {
       setAnimatedAiAccuracy(prev => {
@@ -211,8 +188,8 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
     }, duration / steps);
   
     return () => clearInterval(interval);
-  }, [accuracyData?.aiAccuracy, isInitialLoading]);
-    
+  }, [accuracyData?.aiAccuracy]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-24 mt-4">
@@ -239,55 +216,44 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
     <div className="max-w-6xl mx-auto mt-4">
       <div className="flex justify-center relative">
         {/* Left side - Top Leagues (desktop only) */}
-        {!isInitialLoading && (
-          <div className="hidden md:block absolute -left-20 top-0 w-[280px]">
-            <TopLeaguesPerformance displayMode="desktop" />
-          </div>
-        )}
+        <div className="hidden md:block absolute -left-20 top-0 w-[280px]">
+          <TopLeaguesPerformance displayMode="desktop" />
+        </div>
   
         {/* Center content */}
         <div className="w-full max-w-xl">
           <div className="mb-3">
             <RacingBarDisplay 
               score={animatedAiAccuracy || 0}
-              isLoading={isInitialLoading}
             />
           </div>
   
           {/* Mobile Top Leagues */}
-          {!isInitialLoading && (
-            <div className="md:hidden mb-3">
-              <TopLeaguesPerformance displayMode="mobile" />
-            </div>
-          )}
+          <div className="md:hidden mb-3">
+            <TopLeaguesPerformance displayMode="mobile" />
+          </div>
   
-          {!isInitialLoading && (
-            <>
-              <div className="mb-2">
-                <PredictionTicker />
-              </div>
-              
-              <div className="mb-6">
-                <NextMatchCountdown scheduledMatches={scheduledMatches} />
-                
-                {/* Mobile Blog Preview */}
-                <div className="md:hidden mt-4">
-                  <BlogPreview />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-  
-        {/* Right side - Blog Preview (desktop only) */}
-        {!isInitialLoading && (
-          <div className="hidden md:block absolute -right-20 top-0 w-[280px]">
-            <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
+          <div className="mb-2">
+            <PredictionTicker />
+          </div>
+          
+          <div className="mb-6">
+            <NextMatchCountdown scheduledMatches={scheduledMatches} />
+            
+            {/* Mobile Blog Preview */}
+            <div className="md:hidden mt-4">
               <BlogPreview />
             </div>
           </div>
-        )}
+        </div>
+  
+        {/* Right side - Blog Preview (desktop only) */}
+        <div className="hidden md:block absolute -right-20 top-0 w-[280px]">
+          <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
+            <BlogPreview />
+          </div>
+        </div>
       </div>
     </div>
   );
-      }
+    }
