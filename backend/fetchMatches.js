@@ -8,7 +8,7 @@ const BASE_URL = "https://v3.football.api-sports.io";
 const HEADERS = { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" };
 
 // MongoDB Configuration
-const MONGO_URI = "mongodb://localhost:27017/";
+const MONGO_URI = process.env.MONGODB_URI;
 const DB_NAME = "test";
 const COLLECTION_NAME = "matches";
 
