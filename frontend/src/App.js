@@ -7,7 +7,6 @@ import HeaderLogo from './components/HeaderLogo';
 import Matches from './components/matches/Matches';
 import AdminPage from './components/AdminPage';
 import IconMenu from './components/IconMenu';
-import LoadingScreen from './components/LoadingScreen';
 import api from './api';
 import config from './config';
 import CookieConsent from './components/CookieConsent.js';

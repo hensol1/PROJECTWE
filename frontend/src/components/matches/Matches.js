@@ -5,7 +5,6 @@ import { useMatchNotifications } from '../../hooks/useMatchNotifications';
 import { useMatchTabManagement } from '../../hooks/useMatchTabManagement';
 import { filterMatchesByStatus, extractLeagues, getDateForSelection } from '../../utils/matchUtils';
 import { MatchFilters } from './MatchFilters';
-import { LeagueListing } from './LeagueListing';
 import NotificationQueue from '../NotificationQueue';
 import ModernAccuracyComparison from '../AccuracyComparison';
 import LoadingLogo from '../LoadingLogo';

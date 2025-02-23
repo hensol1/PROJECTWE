@@ -123,6 +123,48 @@ const FieldVisualization = ({ lineup, teamColor }) => {
   
       fetchMatchDetails();
     }, [match.id]);
+
+    const formatEventTime = (time) => {
+        if (!time?.elapsed) return '';
+        return `${time.elapsed}'${time.extra ? `+${time.extra}` : ''}`;
+      };
+      
+      const formatEventDetails = (event) => {
+        if (event.type === 'subst') {
+          return (
+            <div>
+              <span className="text-emerald-400">{event.player?.name}</span>
+              <span className="text-gray-400"> in • </span>
+              <span className="text-red-400">{event.assist?.name}</span>
+              <span className="text-gray-400"> out</span>
+            </div>
+          );
+        }
+      
+        return (
+          <div>
+            <span>{event.player?.name}</span>
+            {event.assist?.name && (
+              <span className="text-gray-400"> (assist: {event.assist.name})</span>
+            )}
+          </div>
+        );
+      };
+            
+      const getEventIcon = (type, detail) => {
+        switch (type?.toLowerCase()) {
+          case 'goal':
+            return '⚽';
+          case 'card':
+            return detail === 'Yellow Card' ? '🟨' : '🟥';
+          case 'subst':
+            return '↔️';
+          default:
+            return null;
+        }
+      };
+      
+      
   
     return (
       <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
@@ -165,28 +207,48 @@ const FieldVisualization = ({ lineup, teamColor }) => {
                 <div className="flex justify-center items-center h-96">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
                 </div>
-              ) : activeTab === 'events' ? (
-                <div className="space-y-3">
-                  {events.length > 0 ? events.map((event, index) => (
-                    <div key={index} className="flex items-center gap-2 text-white">
-                      <span className="text-sm text-gray-400 w-12">
-                        {event.time?.elapsed}'{event.time?.extra ? `+${event.time.extra}` : ''}
-                      </span>
-                      <div className="flex-1">
-                        <span className="font-medium">{event.player?.name}</span>
-                        {event.assist && (
-                          <span className="text-gray-400"> (assist: {event.assist.name})</span>
-                        )}
-                      </div>
-                      <span className="text-sm text-gray-400">{event.team?.name}</span>
-                    </div>
-                  )) : (
-                    <div className="text-center text-gray-400 py-8">
-                      No events available
-                    </div>
-                  )}
-                </div>
-              ) : (
+) : activeTab === 'events' ? (
+    <div className="space-y-1">
+      {events.map((event, index) => {
+        const isHomeTeamEvent = event.team?.name === match.homeTeam.name;
+  
+        return (
+          <div key={index} className="flex items-start gap-3 py-2 text-sm text-white">
+            <div className="min-w-[32px] text-gray-400">
+              {event.time?.elapsed}{event.time?.extra ? `+${event.time.extra}` : ''}'
+            </div>
+            
+            {/* Home team events on the left */}
+            {isHomeTeamEvent && (
+              <div className="flex-1 flex items-center gap-2 justify-start">
+                {event.type && (
+                  <span className="text-base">
+                    {getEventIcon(event.type, event.detail)}
+                  </span>
+                )}
+                {formatEventDetails(event)}
+              </div>
+            )}
+  
+            {/* Empty space in the middle */}
+            {!isHomeTeamEvent && <div className="flex-1" />}
+  
+            {/* Away team events on the right */}
+            {!isHomeTeamEvent && (
+              <div className="flex-1 flex items-center gap-2 justify-end">
+                {formatEventDetails(event)}
+                {event.type && (
+                  <span className="text-base">
+                    {getEventIcon(event.type, event.detail)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+                    ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                   {/* Home Team */}
                   <div>
