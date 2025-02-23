@@ -25,6 +25,7 @@ import { BlogList } from './components/blog/BlogList';
 import { BlogPost } from './components/blog/BlogPost';
 import { BlogEditor } from './components/blog/BlogEditor';
 import { PrivateRoute } from './components/PrivateRoute';
+import LoadingManager from './components/LoadingManager';
 
 
 function App() {
@@ -64,13 +65,10 @@ function App() {
     fetchUserData();
   }, []);
 
-  if (loading || initialLoad) {
-    return <LoadingScreen />;
-  }  
-
   return (
-<div className="App">
-  <HelmetProvider>
+    <LoadingManager isLoading={loading || initialLoad}>
+      <div className="App">
+    <HelmetProvider>
     <GoogleOAuthProvider clientId={config.googleClientId}>
       <Router>
         <SEO />
@@ -310,8 +308,9 @@ function App() {
         </GoogleOAuthProvider>
       </HelmetProvider>
       <InstallPrompt />
-    </div>
-  );
+      </div>
+  </LoadingManager>
+);
 }
 
 export default App;
