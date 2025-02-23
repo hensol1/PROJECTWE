@@ -130,7 +130,6 @@ const TeamSelector = ({ onSelect, onClose }) => {
     { id: "63", name: "Leeds" },
     { id: "247", name: "Celtic" },
     { id: "228", name: "Sporting CP" },
-    { id: "197", name: "PSV Eindhoven" },
 
   ];
 

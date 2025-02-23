@@ -98,6 +98,43 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [accuracyResponse, dailyResponse] = await Promise.all([
+          api.fetchAccuracy(),
+          api.fetchDailyAccuracy()
+        ]);
+        
+        // Set all states at once to minimize re-renders
+        const updates = {
+          accuracyData: {
+            aiAccuracy: accuracyResponse?.aiAccuracy || 0,
+            lastUpdated: new Date()
+          },
+          dailyStats: {
+            ai: {
+              total: dailyResponse?.data?.ai?.total || 0,
+              correct: dailyResponse?.data?.ai?.correct || 0
+            }
+          }
+        };
+        
+        setAccuracyData(updates.accuracyData);
+        setDailyStats(updates.dailyStats);
+        setError(null);
+      } catch (error) {
+        console.error('Error fetching accuracy data:', error);
+        setError('Failed to fetch accuracy data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, []);
+    
   const fetchData = async () => {
     try {
       setIsLoading(true);

@@ -1,17 +1,19 @@
-// hooks/useMatchData.js
-import { useState, useCallback } from 'react';
-import { format, parseISO } from 'date-fns';
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
-import api from '../api';
+import { useState, useCallback, useEffect } from 'react';
+import { format, addDays, subDays, parseISO } from 'date-fns';
+import { utcToZonedTime } from 'date-fns-tz';
+import api from '../api';  // adjust the path based on your file structure
 
 export const useMatchData = (userTimeZone) => {
   const [matches, setMatches] = useState({});
   const [allLiveMatches, setAllLiveMatches] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   const processMatchesResponse = useCallback((matchesData) => {
+    if (!matchesData || !Array.isArray(matchesData)) {
+      console.warn('Invalid matchesData received:', matchesData);
+      return { liveMatches: {}, regularMatches: {} };
+    }
+
     const liveMatches = {};
     const regularMatches = {};
 
@@ -23,37 +25,11 @@ export const useMatchData = (userTimeZone) => {
         const dateKey = format(matchLocalDate, 'yyyy-MM-dd');
         const leagueKey = `${match.competition.name}_${match.competition.id}`;
         
-        const voteCounts = match.voteCounts || match.votes || { home: 0, away: 0, draw: 0 };
-        const transformedVoteCounts = {
-          home: voteCounts.home || voteCounts.HOME_TEAM || 0,
-          away: voteCounts.away || voteCounts.AWAY_TEAM || 0,
-          draw: voteCounts.draw || voteCounts.DRAW || 0
-        };
-        
-        const totalVotes = transformedVoteCounts.home + transformedVoteCounts.draw + transformedVoteCounts.away;
-        let fanPrediction = null;
-        
-        if (totalVotes > 0) {
-          const maxVotes = Math.max(
-            transformedVoteCounts.home, 
-            transformedVoteCounts.draw, 
-            transformedVoteCounts.away
-          );
-          if (transformedVoteCounts.home === maxVotes) {
-            fanPrediction = 'HOME_TEAM';
-          } else if (transformedVoteCounts.away === maxVotes) {
-            fanPrediction = 'AWAY_TEAM';
-          } else {
-            fanPrediction = 'DRAW';
-          }
-        }
-
         const updatedMatch = {
           ...match,
           localDate: matchLocalDate,
           userVote: match.userVote,
-          voteCounts: transformedVoteCounts,
-          fanPrediction,
+          voteCounts: match.voteCounts || { home: 0, away: 0, draw: 0 },
           score: match.score || { 
             fullTime: { home: 0, away: 0 },
             halfTime: { home: 0, away: 0 }
@@ -77,90 +53,72 @@ export const useMatchData = (userTimeZone) => {
   }, [userTimeZone]);
 
   const fetchMatches = useCallback(async (date) => {
-    setIsLoading(true);
-    setImagesLoaded(false);
-    
     try {
-      const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
+      const formattedDate = format(date, 'yyyy-MM-dd');
       const response = await api.fetchMatches(formattedDate);
+      
+      if (!response?.data?.matches) return {};
       
       const { regularMatches } = processMatchesResponse(response.data.matches);
-      
-      setMatches(prev => ({
-        ...prev,
-        [formattedDate]: regularMatches[formattedDate] || {}
-      }));
-
+      return regularMatches[formattedDate] || {};
     } catch (error) {
       console.error('Error fetching matches:', error);
-      setMatches(prev => ({
-        ...prev,
-        [format(date, 'yyyy-MM-dd')]: {}
-      }));
-    } finally {
-      setIsLoading(false);
-      setImagesLoaded(true);
+      return {};
     }
-  }, [userTimeZone, processMatchesResponse]);
-
-  const fetchMatchesSoft = useCallback(async (date) => {
-    try {
-      const formattedDate = format(zonedTimeToUtc(date, userTimeZone), 'yyyy-MM-dd');
-      const response = await api.fetchMatches(formattedDate);
-      
-      if (response?.data?.matches) {
-        const { regularMatches } = processMatchesResponse(response.data.matches);
-        return regularMatches[formattedDate];
-      }
-      return null;
-    } catch (error) {
-      console.error('Error in soft fetch matches:', error);
-      return null;
-    }
-  }, [userTimeZone, processMatchesResponse]);
+  }, [processMatchesResponse]);
 
   const fetchLiveMatches = useCallback(async () => {
     try {
       const response = await api.fetchLiveMatches();
-      if (!response?.data?.matches) {
-        setAllLiveMatches({});
-        return;
-      }
+      if (!response?.data?.matches) return {};
       
       const { liveMatches } = processMatchesResponse(response.data.matches);
-      setAllLiveMatches(liveMatches);
+      return liveMatches;
     } catch (error) {
       console.error('Error fetching live matches:', error);
-      setAllLiveMatches({});
+      return {};
     }
   }, [processMatchesResponse]);
 
-  const fetchLiveMatchesSoft = useCallback(async () => {
+  const initializeData = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const response = await api.fetchLiveMatches();
-      if (response?.data?.matches) {
-        const { liveMatches } = processMatchesResponse(response.data.matches);
-        return liveMatches;
-      }
-      return null;
+      const today = new Date();
+      const yesterday = subDays(today, 1);
+      const tomorrow = addDays(today, 1);
+
+      const [liveMatchesData, todayMatches, yesterdayMatches, tomorrowMatches] = await Promise.all([
+        fetchLiveMatches(),
+        fetchMatches(today),
+        fetchMatches(yesterday),
+        fetchMatches(tomorrow)
+      ]);
+
+      setAllLiveMatches(liveMatchesData);
+      setMatches({
+        [format(today, 'yyyy-MM-dd')]: todayMatches,
+        [format(yesterday, 'yyyy-MM-dd')]: yesterdayMatches,
+        [format(tomorrow, 'yyyy-MM-dd')]: tomorrowMatches
+      });
     } catch (error) {
-      console.error('Error in soft fetch live matches:', error);
-      return null;
+      console.error('Error initializing data:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [processMatchesResponse]);
+  }, [fetchLiveMatches, fetchMatches]);
+
+  useEffect(() => {
+    initializeData();
+  }, [initializeData]);
 
   return {
     matches,
     allLiveMatches,
     isLoading,
-    isRefreshing,
-    imagesLoaded,
     fetchMatches,
-    fetchMatchesSoft,
     fetchLiveMatches,
-    fetchLiveMatchesSoft,
     setMatches,
     setAllLiveMatches,
-    setIsRefreshing
+    initializeData
   };
 };

@@ -53,34 +53,42 @@ export const filterMatchesByStatus = (matches, statuses, userTimeZone, selectedD
   }, {});
 };
 
-export const extractLeagues = (matchesForCurrentDate, allLiveMatches) => {
+export const extractLeagues = (matchesForCurrentDate = {}, allLiveMatches = {}) => {
   const leaguesMap = new Map();
 
   // Extract from regular matches
-  Object.values(matchesForCurrentDate).forEach(leagueMatches => {
-    const firstMatch = leagueMatches[0];
-    if (firstMatch) {
-      leaguesMap.set(firstMatch.competition.id, {
-        id: firstMatch.competition.id,
-        name: firstMatch.competition.name,
-        emblem: firstMatch.competition.emblem,
-        country: firstMatch.competition.country
-      });
-    }
-  });
+  if (matchesForCurrentDate && typeof matchesForCurrentDate === 'object') {
+    Object.values(matchesForCurrentDate).forEach(leagueMatches => {
+      if (Array.isArray(leagueMatches) && leagueMatches.length > 0) {
+        const firstMatch = leagueMatches[0];
+        if (firstMatch?.competition?.id) {
+          leaguesMap.set(firstMatch.competition.id, {
+            id: firstMatch.competition.id,
+            name: firstMatch.competition.name || '',
+            emblem: firstMatch.competition.emblem || '',
+            country: firstMatch.competition.country || ''
+          });
+        }
+      }
+    });
+  }
 
   // Extract from live matches
-  Object.values(allLiveMatches).forEach(leagueMatches => {
-    const firstMatch = leagueMatches[0];
-    if (firstMatch) {
-      leaguesMap.set(firstMatch.competition.id, {
-        id: firstMatch.competition.id,
-        name: firstMatch.competition.name,
-        emblem: firstMatch.competition.emblem,
-        country: firstMatch.competition.country
-      });
-    }
-  });
+  if (allLiveMatches && typeof allLiveMatches === 'object') {
+    Object.values(allLiveMatches).forEach(leagueMatches => {
+      if (Array.isArray(leagueMatches) && leagueMatches.length > 0) {
+        const firstMatch = leagueMatches[0];
+        if (firstMatch?.competition?.id) {
+          leaguesMap.set(firstMatch.competition.id, {
+            id: firstMatch.competition.id,
+            name: firstMatch.competition.name || '',
+            emblem: firstMatch.competition.emblem || '',
+            country: firstMatch.competition.country || ''
+          });
+        }
+      }
+    });
+  }
 
   return Array.from(leaguesMap.values());
 };

@@ -13,6 +13,8 @@ import LeagueFilter from '../LeagueFilter';
 import api from '../../api';
 import _ from 'lodash';
 import TodaysOdds from '../TodaysOdds';
+import APIStyleMatches from '../APIStyleMatches';
+
 
 const Matches = ({ user, onOpenAuthModal }) => {
   // State declarations
@@ -38,9 +40,10 @@ const Matches = ({ user, onOpenAuthModal }) => {
     fetchMatchesSoft,
     fetchLiveMatchesSoft,
     setMatches,
-    setAllLiveMatches
+    setAllLiveMatches,
+    initializeData  // Add this line
   } = useMatchData(userTimeZone);
-  
+    
   const {
     goalNotifications,
     checkForGoals,
@@ -50,26 +53,28 @@ const Matches = ({ user, onOpenAuthModal }) => {
   // Derived state
   const selectedDate = getDateForSelection(selectedDay);
   const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
-  const matchesForCurrentDate = matches[currentDateKey] || {};
-  const filteredMatches = matchesForCurrentDate;
-  
+  const matchesForCurrentDate = (matches && matches[currentDateKey]) || {};
+  const filteredMatches = matchesForCurrentDate || {};
+    
   const liveMatches = filterMatchesByStatus(filteredMatches, ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE'], userTimeZone, selectedDate);
   const finishedMatches = filterMatchesByStatus(filteredMatches, ['FINISHED'], userTimeZone, selectedDate);
   const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED'], userTimeZone, selectedDate);
 
   const determineInitialTab = useCallback(() => {
-    if (Object.keys(allLiveMatches).length > 0) {
+    // Add null checks
+    if (!allLiveMatches) return 'scheduled';
+    if (Object.keys(allLiveMatches || {}).length > 0) {
       return 'live';
     }
-    if (Object.keys(scheduledMatches).length > 0) {
+    if (Object.keys(scheduledMatches || {}).length > 0) {
       return 'scheduled';
     }
-    if (Object.keys(finishedMatches).length > 0) {
+    if (Object.keys(finishedMatches || {}).length > 0) {
       return 'finished';
     }
-    return 'scheduled'; // Default to scheduled if no matches anywhere
+    return 'scheduled';
   }, [allLiveMatches, scheduledMatches, finishedMatches]);
-
+    
   const {
     activeTab,
     handleTabChange,
@@ -198,21 +203,13 @@ const Matches = ({ user, onOpenAuthModal }) => {
 
   // Effects
   useEffect(() => {
+    if (!userTimeZone || isInitialized) return;
+    
     const initialize = async () => {
-      if (!userTimeZone || isInitialized) return;
-      
       try {
-        await Promise.all([
-          fetchLiveMatches(),
-          fetchMatches(getDateForSelection('today')),
-          fetchMatches(getDateForSelection('yesterday')),
-          fetchMatches(getDateForSelection('tomorrow'))
-        ]);
-        
-        // Set initial tab based on available matches
+        await initializeData(); // Use the new initializeData function
         const initialTab = determineInitialTab();
         setActiveTab(initialTab);
-        
         setIsInitialized(true);
       } catch (error) {
         console.error('Error during initialization:', error);
@@ -220,8 +217,8 @@ const Matches = ({ user, onOpenAuthModal }) => {
     };
   
     initialize();
-  }, [userTimeZone, isInitialized, fetchLiveMatches, fetchMatches, determineInitialTab, setActiveTab]);
-  
+  }, [userTimeZone, isInitialized, initializeData, determineInitialTab, setActiveTab]);
+          
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -286,16 +283,17 @@ const Matches = ({ user, onOpenAuthModal }) => {
   const getCurrentMatches = useCallback(() => {
     switch (activeTab) {
       case 'live':
-        return allLiveMatches;
+        return allLiveMatches || {};
       case 'finished':
-        return finishedMatches;
+        return finishedMatches || {};
       case 'scheduled':
-        return scheduledMatches;
+        return scheduledMatches || {};
       default:
         return {};
     }
   }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches]);
-
+  
+  
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-2">
@@ -327,27 +325,28 @@ const Matches = ({ user, onOpenAuthModal }) => {
       </div>
 
       <div className="relative flex flex-col items-center mb-24">
-        <MatchFilters
-          selectedDay={selectedDay}
-          setSelectedDay={handleDayChange}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          hasAnyLiveMatches={Object.keys(allLiveMatches).length > 0}
-          getDateForSelection={getDateForSelection}
-        />
+      <MatchFilters
+  selectedDay={selectedDay}
+  setSelectedDay={handleDayChange}
+  activeTab={activeTab}
+  onTabChange={handleTabChange}
+  hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
+  getDateForSelection={getDateForSelection}
+/>
+
 
         <div className="w-full max-w-5xl relative">
           <div className="flex relative pb-8">
             {/* Desktop League Filter */}
             <div className="hidden md:block absolute -left-36 top-0 w-[280px]">
               <div className="sticky top-4 pb-24">
-                <LeagueFilter
-                  leagues={extractLeagues(matchesForCurrentDate, allLiveMatches)}
-                  selectedLeague={selectedLeague}
-                  onLeagueSelect={handleLeagueSelect}
-                  isMobileOpen={isMobileFilterOpen}
-                  onClose={() => setIsMobileFilterOpen(false)}
-                />
+              <LeagueFilter
+  leagues={extractLeagues(matchesForCurrentDate || {}, allLiveMatches || {})}
+  selectedLeague={selectedLeague}
+  onLeagueSelect={handleLeagueSelect}
+  isMobileOpen={isMobileFilterOpen}
+  onClose={() => setIsMobileFilterOpen(false)}
+/>
               </div>
             </div>
 
@@ -358,27 +357,26 @@ const Matches = ({ user, onOpenAuthModal }) => {
               </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="w-full">
-              <div className="max-w-md mx-auto">
-                {Object.keys(getCurrentMatches()).length === 0 ? (
-                  <div className="text-center py-10 text-gray-500">
-                    {activeTab === 'live' && "No Live matches at the moment"}
-                    {activeTab === 'finished' && "No Finished matches at the moment"}
-                    {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
-                  </div>
-                ) : (
-                  <LeagueListing
-                    matches={getCurrentMatches()}
-                    collapsedLeagues={collapsedLeagues}
-                    onLeagueToggle={toggleLeague}
-                    onVote={handleVote}
-                    selectedLeague={selectedLeague}
-                    activeTab={activeTab}
-                  />
-                )}
-              </div>
-            </div>
+{/* Main Content Area */}
+<div className="w-full">
+  <div className="max-w-md mx-auto">
+    {Object.keys(getCurrentMatches()).length === 0 ? (
+      <div className="text-center py-10 text-gray-500">
+        {activeTab === 'live' && "No Live matches at the moment"}
+        {activeTab === 'finished' && "No Finished matches at the moment"}
+        {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
+      </div>
+    ) : (
+      <APIStyleMatches
+        matches={getCurrentMatches()}
+        activeTab={activeTab}
+        collapsedLeagues={collapsedLeagues}
+        onVote={handleVote}
+        selectedLeague={selectedLeague}
+      />
+    )}
+  </div>
+</div>
           </div>
         </div>
 
@@ -404,12 +402,13 @@ const Matches = ({ user, onOpenAuthModal }) => {
           </button>
 
           <LeagueFilter
-            leagues={extractLeagues(matchesForCurrentDate, allLiveMatches)}
-            selectedLeague={selectedLeague}
-            onLeagueSelect={handleLeagueSelect}
-            isMobileOpen={isMobileFilterOpen}
-            onClose={() => setIsMobileFilterOpen(false)}
-          />
+  leagues={extractLeagues(matchesForCurrentDate || {}, allLiveMatches || {})}
+  selectedLeague={selectedLeague}
+  onLeagueSelect={handleLeagueSelect}
+  isMobileOpen={isMobileFilterOpen}
+  onClose={() => setIsMobileFilterOpen(false)}
+/>
+
         </div>
       </div>
     </div>
