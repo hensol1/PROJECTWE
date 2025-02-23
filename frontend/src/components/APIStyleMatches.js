@@ -51,6 +51,16 @@ const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
             onClick={() => toggleLeague(leagueKey)}
           >
             <div className="flex items-center gap-3">
+              {/* Country flag */}
+              {league.matches[0]?.competition?.country?.flag && (
+                <img 
+                  src={league.matches[0].competition.country.flag} 
+                  alt={league.matches[0].competition.country.name}
+                  className="w-5 h-4 object-cover rounded-sm"
+                  onError={(e) => e.target.style.display = 'none'}
+                />
+              )}
+              {/* Competition logo */}
               {league.matches[0]?.competition?.emblem && (
                 <img 
                   src={league.matches[0].competition.emblem} 
@@ -83,8 +93,13 @@ const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="w-16 text-center">
-                      <span className="text-xs font-medium text-gray-400">
+                      <span className={`text-xs font-medium ${
+                        match.status === 'IN_PLAY' 
+                          ? 'text-emerald-400 animate-pulse' 
+                          : 'text-gray-400'
+                      }`}>
                         {match.status === 'FINISHED' ? 'FT' : 
+                         match.status === 'HALFTIME' ? 'HT' :
                          match.status === 'IN_PLAY' ? `${match.minute}'` :
                          new Date(match.utcDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
