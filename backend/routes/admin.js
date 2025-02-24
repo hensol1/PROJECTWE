@@ -270,5 +270,25 @@ router.post('/recalculate-stats', async (req, res) => {
   }
 });
 
+router.post('/fetch-odds', async (req, res) => {  // Changed from '/fetchOdds' to '/fetch-odds'
+  try {
+    const { date } = req.body;
+    const stats = await require('../fetchOdds').processOddsForDate(date);
+    res.json({ 
+      success: true, 
+      stats,
+      message: `Successfully processed odds for ${stats.updated} out of ${stats.total} matches.`
+    });
+  } catch (error) {
+    console.error('Error processing odds:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+
+
 
 module.exports = router;

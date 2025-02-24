@@ -35,6 +35,7 @@ const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
 
 const AdminControls = ({ selectedDate, onRefreshMatches }) => {  
   const [isFetching, setIsFetching] = useState(false);
+  const [isFetchingOdds, setIsFetchingOdds] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isResettingAI, setIsResettingAI] = useState(false);
   const [lastAction, setLastAction] = useState(null);
@@ -47,9 +48,7 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
       const response = await api.triggerFetchMatches(selectedDate);
       if (response.data.success) {
         console.log('Fetch matches result:', response.data);
-        
         await onRefreshMatches(selectedDate, true);
-  
         setLastAction({ 
           type: 'success', 
           message: `Matches fetched successfully! Found ${response.data.stats?.filtered || 0} matches.`
@@ -65,6 +64,32 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
       });
     } finally {
       setIsFetching(false);
+    }
+  };
+
+  const handleFetchOdds = async () => {
+    try {
+      setIsFetchingOdds(true);
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const response = await api.triggerFetchOdds(formattedDate);
+      
+      if (response.data.success) {
+        setLastAction({ 
+          type: 'success', 
+          message: `Odds fetched successfully! Updated ${response.data.stats?.updated || 0} matches.`
+        });
+        await onRefreshMatches(selectedDate, true);
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch odds');
+      }
+    } catch (error) {
+      console.error('Fetch odds error:', error);
+      setLastAction({ 
+        type: 'error', 
+        message: 'Error fetching odds: ' + (error.response?.data?.message || error.message) 
+      });
+    } finally {
+      setIsFetchingOdds(false);
     }
   };
       
@@ -123,6 +148,12 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
           isLoading={isFetching}
           label="Fetch Matches"
           loadingLabel="Fetching..."
+        />
+        <AdminButton
+          onClick={handleFetchOdds}
+          isLoading={isFetchingOdds}
+          label="Fetch Odds"
+          loadingLabel="Fetching Odds..."
         />
         <AdminButton
           onClick={handleRecalculateStats}

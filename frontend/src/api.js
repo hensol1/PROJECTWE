@@ -198,6 +198,13 @@ api.triggerFetchMatches = (date) => {
   });
 };
 
+// Admin routes
+api.triggerFetchOdds = (date) => {
+  const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+  return api.post('/api/admin/fetch-odds', {  // This should now match your backend route
+    date: formattedDate
+  });
+};
 
 api.recalculateStats = () => api.post('/api/admin/recalculate-stats');
 api.resetStats = () => api.post('/api/accuracy/reset');
