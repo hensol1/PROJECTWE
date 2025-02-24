@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import LoadingSpinner from './LoadingSpinner';
 import PerformanceGraph from './PerformanceGraph';
 import LeagueStats from './LeagueStats';
 import api from '../api';

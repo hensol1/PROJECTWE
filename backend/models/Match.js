@@ -59,9 +59,13 @@ const MatchSchema = new mongoose.Schema({
     }]
   },
   source: String,
-  status: String,
+  status: {
+    type: String,
+    index: true  // Add index for status queries
+  },
   utcDate: {
     type: String,
+    index: true,  // Add index for date queries
     get: (v) => v,
     set: (v) => {
       if (!v) return v;
@@ -72,11 +76,28 @@ const MatchSchema = new mongoose.Schema({
   aiPrediction: {
     type: String,
     enum: ['HOME_TEAM', 'DRAW', 'AWAY_TEAM', null],
-    default: null
+    default: null,
+    index: true  // Add index for prediction queries
   }
 }, { 
   collection: 'matches',
   toJSON: { getters: true }
 });
+
+// Add compound indexes for common queries
+MatchSchema.index({ status: 1, utcDate: 1 });
+MatchSchema.index({ status: 1, aiPrediction: 1 });
+MatchSchema.index({ 'competition.id': 1, status: 1 });
+
+// Add partial index for finished matches with predictions
+MatchSchema.index(
+  { status: 1, aiPrediction: 1, utcDate: 1 },
+  { 
+    partialFilterExpression: { 
+      status: "FINISHED",
+      aiPrediction: { $exists: true } 
+    }
+  }
+);
 
 module.exports = mongoose.model('Match', MatchSchema);

@@ -1,51 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const NodeCache = require('node-cache');
 const Match = require('../models/Match');
 const AIPredictionStat = require('../models/AIPredictionStat');
+const { withCache } = require('../middleware/cacheMiddleware');
 
-// Cache with 1 hour TTL
-const statsCache = new NodeCache({ stdTTL: 3600 });
-
-// Middleware to handle cache
-const withCache = (key, ttl = 3600) => async (req, res, next) => {
-  try {
-    // Check cache first
-    const cached = statsCache.get(key);
-    if (cached) {
-      console.log(`Cache hit for ${key}`);
-      return res.json(cached);
-    }
-
-    // Store original res.json to intercept the response
-    const originalJson = res.json;
-    res.json = function(data) {
-      // Store in cache before sending
-      statsCache.set(key, data, ttl);
-      return originalJson.call(this, data);
-    };
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Clear cache at midnight
-const setupCacheClear = () => {
-  const now = new Date();
-  const night = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-  const msToMidnight = night.getTime() - now.getTime();
-
-  setTimeout(() => {
-    statsCache.flushAll();
-    setupCacheClear(); // Setup next day's clear
-  }, msToMidnight);
-};
-
-setupCacheClear();
-
-// Get daily stats with 15-minute cache
+// Get daily predictions (15min cache)
 router.get('/daily-predictions', withCache('daily-stats', 900), async (req, res) => {
   try {
     const today = new Date();
@@ -53,12 +12,16 @@ router.get('/daily-predictions', withCache('daily-stats', 900), async (req, res)
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // Use lean() and only select needed fields
     const matches = await Match.find({
       utcDate: {
         $gte: today.toISOString(),
         $lt: tomorrow.toISOString()
       }
-    }).lean(); // Use lean() for better performance
+    })
+    .select('aiPrediction status')
+    .lean()
+    .hint({ status: 1, utcDate: 1 });  // Use compound index
 
     const stats = {
       totalMatches: matches.length,
@@ -73,30 +36,127 @@ router.get('/daily-predictions', withCache('daily-stats', 900), async (req, res)
   }
 });
 
-// Get general stats with 1-hour cache
-router.get('/general', withCache('general-stats', 3600), async (req, res) => {
+// Get AI performance history (1hr cache)
+router.get('/ai/history', withCache('ai-history', 3600), async (req, res) => {
   try {
-    const [matches, aiStats] = await Promise.all([
-      Match.find({ status: 'FINISHED' }).lean(),
-      AIPredictionStat.findOne().lean()
-    ]);
+    // Use aggregation for better performance
+    const stats = await Match.aggregate([
+      {
+        $match: {
+          status: 'FINISHED',
+          aiPrediction: { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { 
+              format: "%Y-%m-%d", 
+              date: { $dateFromString: { dateString: "$utcDate" } }
+            }
+          },
+          totalPredictions: { $sum: 1 },
+          correctPredictions: {
+            $sum: {
+              $cond: [
+                { $eq: ['$aiPrediction', '$score.winner'] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          date: '$_id',
+          totalPredictions: 1,
+          correctPredictions: 1,
+          accuracy: {
+            $multiply: [
+              { $divide: ['$correctPredictions', '$totalPredictions'] },
+              100
+            ]
+          }
+        }
+      },
+      { $sort: { date: -1 } }
+    ]).hint({ status: 1, aiPrediction: 1, utcDate: 1 });
 
-    const stats = {
-      totalMatches: matches.length,
-      predictedMatches: matches.filter(m => m.aiPrediction).length,
-      aiAccuracy: aiStats ? {
-        total: aiStats.totalPredictions,
-        correct: aiStats.correctPredictions,
-        percentage: aiStats.totalPredictions > 0 
-          ? (aiStats.correctPredictions / aiStats.totalPredictions * 100).toFixed(2)
-          : 0
-      } : { total: 0, correct: 0, percentage: 0 }
-    };
+    // Calculate overall stats
+    const overall = stats.reduce((acc, day) => ({
+      totalPredictions: acc.totalPredictions + day.totalPredictions,
+      correctPredictions: acc.correctPredictions + day.correctPredictions
+    }), { totalPredictions: 0, correctPredictions: 0 });
+
+    const overallAccuracy = overall.totalPredictions > 0
+      ? (overall.correctPredictions / overall.totalPredictions * 100)
+      : 0;
+
+    res.json({
+      stats,
+      overall: {
+        ...overall,
+        overallAccuracy
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching AI history:', error);
+    res.status(500).json({ message: 'Error fetching AI history' });
+  }
+});
+
+// Get league stats (1hr cache)
+router.get('/ai/league-stats', withCache('league-stats', 3600), async (req, res) => {
+  try {
+    const stats = await Match.aggregate([
+      {
+        $match: {
+          status: 'FINISHED',
+          aiPrediction: { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$competition.id',
+          name: { $first: '$competition.name' },
+          emblem: { $first: '$competition.emblem' },
+          country: { $first: '$competition.country' },
+          totalPredictions: { $sum: 1 },
+          correctPredictions: {
+            $sum: {
+              $cond: [
+                { $eq: ['$aiPrediction', '$score.winner'] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          id: '$_id',
+          name: 1,
+          emblem: 1,
+          country: 1,
+          totalPredictions: 1,
+          correctPredictions: 1,
+          accuracy: {
+            $multiply: [
+              { $divide: ['$correctPredictions', '$totalPredictions'] },
+              100
+            ]
+          }
+        }
+      },
+      { $sort: { totalPredictions: -1 } }
+    ]).hint({ 'competition.id': 1, status: 1 });
 
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching general stats:', error);
-    res.status(500).json({ message: 'Error fetching stats' });
+    console.error('Error fetching league stats:', error);
+    res.status(500).json({ message: 'Error fetching league stats' });
   }
 });
 
