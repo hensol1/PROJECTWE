@@ -130,6 +130,10 @@ const TeamSelector = ({ onSelect, onClose }) => {
     { id: "63", name: "Leeds" },
     { id: "247", name: "Celtic" },
     { id: "228", name: "Sporting CP" },
+    { id: "645", name: "Galatasaray" },
+    { id: "611", name: "Fenerbahce" },
+    { id: "798", name: "Mallorca" },
+
 
   ];
 
@@ -154,7 +158,9 @@ const CompetitionSelector = ({ onSelect, onClose }) => {
     { id: "137", name: "Coppa Italia" },
     { id: "140", name: "La Liga" },
     { id: "61", name: "Ligue 1" },
-    { id: "62", name: "Ligue 2" }
+    { id: "62", name: "Ligue 2" },
+    { id: "203", name: "Süper Lig" },
+
   ];
 
   return (
