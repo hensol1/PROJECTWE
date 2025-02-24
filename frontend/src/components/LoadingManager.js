@@ -29,7 +29,7 @@ const LoadingManager = ({ children, isLoading, minLoadTime = 1000 }) => {
             <div className="absolute inset-4 rounded-full border-b-4 border-emerald-300 animate-spin-slower"></div>
           </div>
           <div className="text-emerald-500 font-semibold animate-pulse">
-            Loading your predictions...
+            Loading predictions and stats...
           </div>
         </div>
       </div>

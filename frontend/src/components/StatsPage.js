@@ -1,13 +1,34 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import LoadingSpinner from './LoadingSpinner';
+import PerformanceGraph from './PerformanceGraph';
+import LeagueStats from './LeagueStats';
+import api from '../api';
 
-// Lazy load components
-const PerformanceGraph = React.lazy(() => import('./PerformanceGraph'));
-const LeagueStats = React.lazy(() => import('./LeagueStats'));
+// Custom hook to prefetch all data
+const usePrefetchData = () => {
+  useEffect(() => {
+    // Prefetch both datasets immediately
+    const prefetchData = async () => {
+      try {
+        await Promise.all([
+          api.fetchAIHistory(),
+          api.fetchLeagueStats()
+        ]);
+      } catch (error) {
+        console.error('Prefetch error:', error);
+      }
+    };
+    
+    prefetchData();
+  }, []);
+};
 
 const StatsPage = () => {
   const [activeTab, setActiveTab] = useState('overall');
+  
+  // Start prefetching as soon as the page loads
+  usePrefetchData();
 
   const TabButton = ({ tab, label }) => (
     <button
@@ -22,6 +43,18 @@ const StatsPage = () => {
     </button>
   );
 
+  // Render both components but hide inactive one
+  const renderContent = () => (
+    <div className="relative">
+      <div className={activeTab === 'overall' ? 'block' : 'hidden'}>
+        <PerformanceGraph />
+      </div>
+      <div className={activeTab === 'leagues' ? 'block' : 'hidden'}>
+        <LeagueStats />
+      </div>
+    </div>
+  );
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
@@ -33,10 +66,14 @@ const StatsPage = () => {
             <TabButton tab="leagues" label="League Performance" />
           </div>
 
-          <ErrorBoundary fallback={<div>Error loading stats</div>}>
-            <Suspense fallback={<LoadingSpinner />}>
-              {activeTab === 'overall' ? <PerformanceGraph /> : <LeagueStats />}
-            </Suspense>
+          <ErrorBoundary 
+            fallback={
+              <div className="text-red-600 p-4">
+                Error loading statistics. Please refresh the page.
+              </div>
+            }
+          >
+            {renderContent()}
           </ErrorBoundary>
         </div>
       </div>
