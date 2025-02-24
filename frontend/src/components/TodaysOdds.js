@@ -71,7 +71,7 @@ const Match = ({ match }) => {
   );
 };
 
-const TodaysOdds = ({ matches = {} }) => {
+const TodaysOdds = ({ allMatches }) => {  // Changed prop name to allMatches
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [expandedCompetitions, setExpandedCompetitions] = useState(new Set());
@@ -79,7 +79,8 @@ const TodaysOdds = ({ matches = {} }) => {
   const getMatchesGroupedByCompetition = () => {
     const groupedMatches = new Map();
     
-    if (Array.isArray(matches)) {
+    // Process matches by league
+    Object.entries(allMatches || {}).forEach(([leagueId, matches]) => {
       matches.forEach(match => {
         if (match.odds?.harmonicMeanOdds) {
           const compId = match.competition.id;
@@ -92,28 +93,16 @@ const TodaysOdds = ({ matches = {} }) => {
           groupedMatches.get(compId).matches.push(match);
         }
       });
-    } else {
-      Object.values(matches).forEach(leagueMatches => {
-        if (Array.isArray(leagueMatches)) {
-          leagueMatches.forEach(match => {
-            if (match.odds?.harmonicMeanOdds) {
-              const compId = match.competition.id;
-              if (!groupedMatches.has(compId)) {
-                groupedMatches.set(compId, {
-                  competition: match.competition,
-                  matches: []
-                });
-              }
-              groupedMatches.get(compId).matches.push(match);
-            }
-          });
-        }
-      });
-    }
-
+    });
+  
+    // Sort matches within each competition by kickoff time
+    groupedMatches.forEach(group => {
+      group.matches.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+    });
+  
     return Array.from(groupedMatches.values());
   };
-
+  
   const competitions = getMatchesGroupedByCompetition();
 
   useEffect(() => {

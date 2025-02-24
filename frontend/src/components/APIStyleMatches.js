@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown } from 'lucide-react';
 import MatchDetailsModal from './MatchDetailsModal';
 import StandingsModal from './StandingsModal';
 
+
 const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [collapsedLeagues, setCollapsedLeagues] = useState({});
@@ -52,9 +53,16 @@ const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
             onClose={() => setSelectedLeagueForStandings(null)}
           />
         )}
-  
-        {sortedLeagues.map(([leagueKey, league]) => (
-          <div key={leagueKey} className="border-b border-gray-700 last:border-b-0">
+    
+        {sortedLeagues.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            {activeTab === 'live' && "No Live matches at the moment"}
+            {activeTab === 'finished' && "No Finished matches at the moment"}
+            {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
+          </div>
+        ) : (
+          sortedLeagues.map(([leagueKey, league]) => (
+              <div key={leagueKey} className="border-b border-gray-700 last:border-b-0">
             <div 
               className="px-4 py-3 bg-[#242938] flex items-center justify-between cursor-pointer hover:bg-[#2a2f3d]"
               onClick={() => toggleLeague(leagueKey)}
@@ -229,9 +237,10 @@ const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
               </div>
             )}
           </div>
-        ))}
-      </div>
-    );
+      ))
+    )}
+  </div>
+);
   };
   
   export default APIStyleMatches;

@@ -280,17 +280,56 @@ const Matches = ({ user, onOpenAuthModal }) => {
   };
 
   const getCurrentMatches = useCallback(() => {
+    let matches;
     switch (activeTab) {
       case 'live':
-        return allLiveMatches || {};
+        matches = allLiveMatches || {};
+        break;
       case 'finished':
-        return finishedMatches || {};
+        matches = finishedMatches || {};
+        break;
       case 'scheduled':
-        return scheduledMatches || {};
+        matches = scheduledMatches || {};
+        break;
       default:
-        return {};
+        matches = {};
     }
-  }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches]);
+  
+    // If no league is selected, return all matches
+    if (!selectedLeague) {
+      return matches;
+    }
+  
+    // Filter matches for the selected league
+    return Object.entries(matches).reduce((filtered, [leagueId, leagueMatches]) => {
+      if (leagueId.includes(selectedLeague)) {  // Check if leagueId contains the selectedLeague
+        filtered[leagueId] = leagueMatches;
+      }
+      return filtered;
+    }, {});
+  }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches, selectedLeague]);
+        
+  const getAllTodayMatches = useCallback(() => {
+    // Create an object that combines matches from all categories
+    const combinedMatches = {};
+    
+    // Helper function to merge matches from a source into combinedMatches
+    const mergeMatches = (source) => {
+      Object.entries(source || {}).forEach(([leagueId, leagueMatches]) => {
+        if (!combinedMatches[leagueId]) {
+          combinedMatches[leagueId] = [];
+        }
+        combinedMatches[leagueId] = [...combinedMatches[leagueId], ...leagueMatches];
+      });
+    };
+  
+    // Merge matches from all three sources
+    mergeMatches(allLiveMatches);
+    mergeMatches(finishedMatches);
+    mergeMatches(scheduledMatches);
+    
+    return combinedMatches;
+  }, [allLiveMatches, finishedMatches, scheduledMatches]);    
   
   
   if (isLoading) {
@@ -318,10 +357,10 @@ const Matches = ({ user, onOpenAuthModal }) => {
         setMatches={setMatches}
       />
 
-      {/* Mobile Today's Odds - Moved here */}
-      <div className="md:hidden mb-6">
-        <TodaysOdds matches={getCurrentMatches()} />
-      </div>
+{/* Mobile Today's Odds */}
+<div className="md:hidden mb-6">
+  <TodaysOdds allMatches={getAllTodayMatches()} />
+</div>
 
       <div className="relative flex flex-col items-center mb-24">
       <MatchFilters
@@ -349,12 +388,12 @@ const Matches = ({ user, onOpenAuthModal }) => {
               </div>
             </div>
 
-            {/* Desktop Today's Odds */}
-            <div className="hidden md:block absolute -right-36 top-0 w-[280px]">
-              <div className="sticky top-4 pb-24">
-                <TodaysOdds matches={getCurrentMatches()} />
-              </div>
-            </div>
+{/* Desktop Today's Odds */}
+<div className="hidden md:block absolute -right-36 top-0 w-[280px]">
+  <div className="sticky top-4 pb-24">
+    <TodaysOdds allMatches={getAllTodayMatches()} />
+  </div>
+</div>
 
 {/* Main Content Area */}
 <div className="w-full">
