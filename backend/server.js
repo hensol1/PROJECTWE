@@ -1,4 +1,4 @@
-const dotenv = require('dotenv');
+sconst dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
