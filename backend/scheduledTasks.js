@@ -8,11 +8,13 @@ const { fetchAndStoreEvents } = require('./fetchEvents');
 const { fetchAndStoreAllLiveEvents } = require('./fetchEvents');
 const { recalculateStats } = require('./utils/statsProcessor');
 const { updateStandingsForLeague } = require('./utils/standingsProcessor');
+const generateAllStatsFile = require('./scripts/generateStatsFile');
 
 // Declare all job variables at the top
 let matchFetchingJob = null;
 let dailyResetJob = null;
 let accuracyStatsJob = null;
+let statsGenerationJob = null;
 
 async function scheduleNextMatchCheck() {
     try {
@@ -179,6 +181,15 @@ async function handleMatchFetching() {
                 if (stats.aiStats) {
                     console.log(`New AI accuracy: ${stats.aiStats.accuracy}%`);
                 }
+                
+                // Generate new stats files after recalculation
+                try {
+                    console.log('Generating new stats files after match completion...');
+                    await generateAllStatsFile();
+                    console.log('Stats files updated successfully');
+                } catch (statsError) {
+                    console.error('Error generating stats files after match completion:', statsError);
+                }
             } catch (error) {
                 console.error('Error updating stats after match completion:', error);
             }
@@ -268,11 +279,40 @@ async function updateDailyPredictionStats() {
             await aiStats.save();
         }
 
+        // After updating the daily stats, regenerate the stats files
+        try {
+            await generateAllStatsFile();
+            console.log('Stats files updated after daily prediction stats update');
+        } catch (error) {
+            console.error('Error generating stats files after daily update:', error);
+        }
+
         return stats;
     } catch (error) {
         console.error('Error updating daily prediction stats:', error);
         throw error;
     }
+}
+
+// Initialize the stats generation job
+function initializeStatsJob() {
+    console.log('Initializing stats file generation job...');
+    
+    // Generate stats files at 3:00 AM UTC every day (after all matches finished)
+    statsGenerationJob = cron.schedule('0 3 * * *', async () => {
+        try {
+            console.log('Starting daily stats file generation...');
+            const result = await generateAllStatsFile();
+            
+            if (result.success) {
+                console.log('Daily stats file generation completed successfully:', result);
+            } else {
+                console.error('Daily stats file generation failed:', result.error);
+            }
+        } catch (error) {
+            console.error('Error in daily stats file generation:', error);
+        }
+    });
 }
 
 function initializeCronJobs() {
@@ -313,15 +353,25 @@ function initializeCronJobs() {
             
             if (Date.now() - lastUpdate.getTime() > 60 * 60 * 1000) {
                 console.log('Running backup accuracy recalculation');
-                const stats = await recalculateAllStats();
+                const stats = await recalculateStats();
                 console.log('Backup accuracy stats updated:', stats);
+                
+                // Generate stats files after recalculation
+                try {
+                    await generateAllStatsFile();
+                    console.log('Stats files generated after hourly backup recalculation');
+                } catch (error) {
+                    console.error('Error generating stats files after hourly backup:', error);
+                }
             }
         } catch (error) {
             console.error('Error in scheduled accuracy recalculation:', error);
         }
     });
-}
 
+    // Initialize the stats generation job
+    initializeStatsJob();
+}
 
 // Error handling for the cron jobs
 process.on('uncaughtException', (error) => {
@@ -330,17 +380,32 @@ process.on('uncaughtException', (error) => {
     scheduleNextMatchCheck();
     if (dailyResetJob) dailyResetJob.start();
     if (accuracyStatsJob) accuracyStatsJob.start();
+    if (statsGenerationJob) statsGenerationJob.start();
 });
 
 // Initialize everything
 initializeCronJobs();
 scheduleNextMatchCheck();
 
+// Generate stats files on server start
+generateAllStatsFile().then(result => {
+    if (result.success) {
+        console.log('Initial stats files generated successfully on server start');
+    } else {
+        console.error('Failed to generate initial stats files:', result.error);
+    }
+}).catch(error => {
+    console.error('Error generating initial stats files:', error);
+});
+
 // Export all necessary functions and jobs
 module.exports = {
     scheduleNextMatchCheck,
     dailyResetJob,
     accuracyStatsJob,
+    statsGenerationJob,
     updateDailyPredictionStats,
     handleMatchFetching,
+    generateAllStatsFile,
+    initializeStatsJob
 };

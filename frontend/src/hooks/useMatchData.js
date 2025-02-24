@@ -7,6 +7,7 @@ export const useMatchData = (userTimeZone) => {
   const [matches, setMatches] = useState({});
   const [allLiveMatches, setAllLiveMatches] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
   const processMatchesResponse = useCallback((matchesData) => {
     if (!matchesData || !Array.isArray(matchesData)) {
@@ -67,6 +68,22 @@ export const useMatchData = (userTimeZone) => {
     }
   }, [processMatchesResponse]);
 
+  // Add soft fetch function for matches
+  const fetchMatchesSoft = useCallback(async (date) => {
+    try {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      const response = await api.fetchMatches(formattedDate);
+      
+      if (!response?.data?.matches) return null;
+      
+      const { regularMatches } = processMatchesResponse(response.data.matches);
+      return regularMatches[formattedDate] || {};
+    } catch (error) {
+      console.error('Error in soft fetch matches:', error);
+      return null;
+    }
+  }, [processMatchesResponse]);
+
   const fetchLiveMatches = useCallback(async () => {
     try {
       const response = await api.fetchLiveMatches();
@@ -80,8 +97,26 @@ export const useMatchData = (userTimeZone) => {
     }
   }, [processMatchesResponse]);
 
+  // Add soft fetch function for live matches
+  const fetchLiveMatchesSoft = useCallback(async () => {
+    try {
+      const response = await api.fetchLiveMatches();
+      if (!response?.data?.matches) return null;
+      
+      const { liveMatches } = processMatchesResponse(response.data.matches);
+      return liveMatches;
+    } catch (error) {
+      console.error('Error in soft fetch live matches:', error);
+      return null;
+    }
+  }, [processMatchesResponse]);
+
   const initializeData = useCallback(async () => {
-    setIsLoading(true);
+    // Only set loading state if initial data hasn't been loaded yet
+    if (!isInitialDataLoaded) {
+      setIsLoading(true);
+    }
+    
     try {
       const today = new Date();
       const yesterday = subDays(today, 1);
@@ -100,23 +135,35 @@ export const useMatchData = (userTimeZone) => {
         [format(yesterday, 'yyyy-MM-dd')]: yesterdayMatches,
         [format(tomorrow, 'yyyy-MM-dd')]: tomorrowMatches
       });
+      
+      // Mark initial data as loaded
+      setIsInitialDataLoaded(true);
+      return {
+        liveMatches: liveMatchesData,
+        todayMatches,
+        yesterdayMatches,
+        tomorrowMatches
+      };
     } catch (error) {
       console.error('Error initializing data:', error);
+      return null;
     } finally {
       setIsLoading(false);
     }
   }, [fetchLiveMatches, fetchMatches]);
 
-  useEffect(() => {
-    initializeData();
-  }, [initializeData]);
+  // Remove the auto-initialization in useEffect to give control to the parent component
+  // Parent component should call initializeData when it's ready
 
   return {
     matches,
     allLiveMatches,
     isLoading,
+    isInitialDataLoaded,
     fetchMatches,
     fetchLiveMatches,
+    fetchMatchesSoft,
+    fetchLiveMatchesSoft,
     setMatches,
     setAllLiveMatches,
     initializeData

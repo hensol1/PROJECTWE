@@ -16,16 +16,48 @@ const LeagueStats = () => {
     const fetchLeagueStats = async () => {
       try {
         setIsLoading(true);
-        const response = await api.fetchLeagueStats();
-        if (response?.data) {
-          setLeagueStats(response.data);
-        } else {
-          throw new Error('No data received from the API');
+        
+        // First check for cached data to show something immediately
+        const cachedData = sessionStorage.getItem('leagueStats');
+        const cachedTimestamp = sessionStorage.getItem('leagueStatsTimestamp');
+        const now = Date.now();
+        const CACHE_VALIDITY = 5 * 60 * 1000; // 5 minutes
+        
+        // Use cached data if it's fresh (less than 5 minutes old)
+        if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_VALIDITY)) {
+          const parsed = JSON.parse(cachedData);
+          setLeagueStats(parsed);
+          setIsLoading(false);
         }
+        
+        // Always fetch fresh data (even if we showed cached data)
+        const response = await api.fetchLeagueStats();
+        
+        // Handle both possible response formats
+        let statsData;
+        if (Array.isArray(response)) {
+          // Direct array response from new endpoint
+          statsData = response;
+        } else if (response?.data && Array.isArray(response.data)) {
+          // Traditional axios response with data property
+          statsData = response.data;
+        } else if (response?.stats && Array.isArray(response.stats)) {
+          // New format with stats property
+          statsData = response.stats;
+        } else {
+          throw new Error('Unexpected data format from API');
+        }
+        
+        // Save to state
+        setLeagueStats(statsData);
+        setIsLoading(false);
+        
+        // Cache the data with timestamp
+        sessionStorage.setItem('leagueStats', JSON.stringify(statsData));
+        sessionStorage.setItem('leagueStatsTimestamp', now.toString());
       } catch (err) {
         console.error('League stats fetch error:', err);
         setError(err.message || 'Failed to load league statistics');
-      } finally {
         setIsLoading(false);
       }
     };
@@ -49,7 +81,7 @@ const LeagueStats = () => {
   };
 
   const getSortedData = () => {
-    if (!leagueStats) return [];
+    if (!leagueStats || !leagueStats.length) return [];
     
     const sortedData = [...leagueStats].sort((a, b) => {
       if (sortConfig.key === 'name') {
@@ -91,7 +123,7 @@ const LeagueStats = () => {
     </th>
   );
 
-  if (isLoading) {
+  if (isLoading && !leagueStats.length) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6">
         <div className="flex justify-center items-center h-64">
@@ -101,7 +133,7 @@ const LeagueStats = () => {
     );
   }
 
-  if (error) {
+  if (error && !leagueStats.length) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6">
         <div className="text-center text-red-500 p-4">
@@ -128,59 +160,67 @@ const LeagueStats = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-        {sortedData.map((league) => (
-          <tr key={league.id} className="hover:bg-gray-50">
-            <td className="px-2 sm:px-4 py-2 sm:py-3">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5">
-                  {league.country?.flag && (
-                    <img 
-                      src={league.country.flag} 
-                      alt={league.country.name || ''}
-                      className="w-3 h-3 sm:w-3.5 sm:h-3.5 object-contain"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
+            {sortedData.length > 0 ? (
+              sortedData.map((league) => (
+                <tr key={league.id} className="hover:bg-gray-50">
+                  <td className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {league.country?.flag && (
+                          <img 
+                            src={league.country.flag} 
+                            alt={league.country.name || ''}
+                            className="w-3 h-3 sm:w-3.5 sm:h-3.5 object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <img 
+                          src={LogoService.getCompetitionLogoPath(league.id).localPath} 
+                          alt={league.name}
+                          className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
+                          onError={(e) => {
+                            // If local path fails, try API path
+                            const paths = LogoService.getCompetitionLogoPath(league.id);
+                            e.target.src = paths.apiPath;
+                            // Add another error handler for API path failure
+                            e.target.onerror = () => {
+                              e.target.src = '/placeholder-emblem.png';
+                              e.target.onerror = null; // Prevent infinite loop
+                            };
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-900">{league.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-sm text-gray-600">
+                    {league.totalPredictions}
+                  </td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-sm text-gray-600">
+                    {league.correctPredictions}
+                  </td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 text-center">
+                    <div 
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" 
+                      style={{
+                        backgroundColor: `rgba(${league.accuracy >= 50 ? '52, 211, 153' : '239, 68, 68'}, 0.1)`,
+                        color: league.accuracy >= 50 ? 'rgb(4, 120, 87)' : 'rgb(185, 28, 28)'
                       }}
-                    />
-                  )}
-                  <img 
-                    src={LogoService.getCompetitionLogoPath(league.id).localPath} 
-                    alt={league.name}
-                    className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
-                    onError={(e) => {
-                      // If local path fails, try API path
-                      const paths = LogoService.getCompetitionLogoPath(league.id);
-                      e.target.src = paths.apiPath;
-                      // Add another error handler for API path failure
-                      e.target.onerror = () => {
-                        e.target.src = '/placeholder-emblem.png';
-                        e.target.onerror = null; // Prevent infinite loop
-                      };
-                    }}
-                  />
-                </div>
-                <span className="text-sm text-gray-900">{league.name}</span>
-              </div>
-            </td>
-                <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-sm text-gray-600">
-                  {league.totalPredictions}
-                </td>
-                <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-sm text-gray-600">
-                  {league.correctPredictions}
-                </td>
-                <td className="px-2 sm:px-4 py-2 sm:py-3 text-center">
-                  <div 
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" 
-                    style={{
-                      backgroundColor: `rgba(${league.accuracy >= 50 ? '52, 211, 153' : '239, 68, 68'}, 0.1)`,
-                      color: league.accuracy >= 50 ? 'rgb(4, 120, 87)' : 'rgb(185, 28, 28)'
-                    }}
-                  >
-                    {league.accuracy}%
-                  </div>
+                    >
+                      {parseFloat(league.accuracy).toFixed(1)}%
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                  No league stats available
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

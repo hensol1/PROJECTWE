@@ -69,15 +69,20 @@ const usePerformanceData = () => {
 
     const fetchData = async () => {
       try {
-        // Start with cached data if available
+        // Check for cached data first to show something immediately
         const cachedData = sessionStorage.getItem('performanceData');
-        if (cachedData) {
+        const cachedTimestamp = sessionStorage.getItem('performanceDataTimestamp');
+        const now = Date.now();
+        const CACHE_VALIDITY = 5 * 60 * 1000; // 5 minutes
+
+        // Use cached data if it's fresh (less than 5 minutes old)
+        if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_VALIDITY)) {
           const parsed = JSON.parse(cachedData);
           setData(parsed);
           setIsLoading(false);
         }
 
-        // Fetch fresh data
+        // Fetch fresh data (even if we showed cached data, to update it if needed)
         const response = await api.fetchAIHistory();
         const today = startOfToday();
         const PREDICTIONS_START = new Date('2025-01-15');
@@ -107,8 +112,10 @@ const usePerformanceData = () => {
           }
         };
 
-        // Cache the processed data
+        // Cache the processed data with timestamp
         sessionStorage.setItem('performanceData', JSON.stringify(processedData));
+        sessionStorage.setItem('performanceDataTimestamp', now.toString());
+        
         setData(processedData);
         setIsLoading(false);
       } catch (err) {
