@@ -99,10 +99,21 @@ api.fetchLiveMatches = () => {
 
 api.fetchAccuracy = async () => {
   try {
-    const response = await api.get('/api/accuracy/ai');
-    return response.data;
+    // Try new endpoint first
+    const response = await api.fetchAIHistory();
+    return {
+      aiAccuracy: response.overall.overallAccuracy || 0
+    };
   } catch (error) {
-    throw error;
+    console.error('Error fetching accuracy:', error);
+    // Fallback to old endpoint
+    try {
+      const legacyResponse = await api.get('/api/accuracy/ai');
+      return legacyResponse.data;
+    } catch (fallbackError) {
+      console.error('Error in fallback accuracy fetch:', fallbackError);
+      return { aiAccuracy: 0 };
+    }
   }
 };
 

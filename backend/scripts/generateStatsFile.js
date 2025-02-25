@@ -26,11 +26,16 @@ const ensureDirectoryExists = async (directory) => {
 const generateAIHistoryStats = async () => {
   console.log('Generating AI history stats...');
   
+  // Set January 14, 2024 as the start date for calculations
+  const PREDICTIONS_START_DATE = new Date('2024-01-14T00:00:00Z');
+  
   const stats = await Match.aggregate([
     {
       $match: {
         status: 'FINISHED',
-        aiPrediction: { $exists: true }
+        aiPrediction: { $exists: true },
+        // Add date filter
+        utcDate: { $gte: PREDICTIONS_START_DATE.toISOString() }
       }
     },
     {
@@ -93,11 +98,16 @@ const generateAIHistoryStats = async () => {
 const generateLeagueStats = async () => {
   console.log('Generating league stats...');
   
+  // Set January 14, 2024 as the start date for calculations
+  const PREDICTIONS_START_DATE = new Date('2024-01-14T00:00:00Z');
+  
   const stats = await Match.aggregate([
     {
       $match: {
         status: 'FINISHED',
-        aiPrediction: { $exists: true }
+        aiPrediction: { $exists: true },
+        // Add date filter
+        utcDate: { $gte: PREDICTIONS_START_DATE.toISOString() }
       }
     },
     {
