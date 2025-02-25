@@ -26,70 +26,50 @@ const ensureDirectoryExists = async (directory) => {
 const generateAIHistoryStats = async () => {
   console.log('Generating AI history stats...');
   
+  // Get the overall stats from AIPredictionStat
+  const aiStatRecord = await AIPredictionStat.findOne().lean();
+  
+  if (!aiStatRecord) {
+    console.error('No AIPredictionStat record found');
+    return {
+      stats: [],
+      overall: {
+        totalPredictions: 0,
+        correctPredictions: 0,
+        overallAccuracy: 0
+      },
+      generatedAt: new Date().toISOString()
+    };
+  }
+  
   // Set January 14, 2024 as the start date for calculations
   const PREDICTIONS_START_DATE = new Date('2024-01-14T00:00:00Z');
   
-  const stats = await Match.aggregate([
-    {
-      $match: {
-        status: 'FINISHED',
-        aiPrediction: { $exists: true },
-        // Add date filter
-        utcDate: { $gte: PREDICTIONS_START_DATE.toISOString() }
-      }
-    },
-    {
-      $group: {
-        _id: {
-          $dateToString: { 
-            format: "%Y-%m-%d", 
-            date: { $dateFromString: { dateString: "$utcDate" } }
-          }
-        },
-        totalPredictions: { $sum: 1 },
-        correctPredictions: {
-          $sum: {
-            $cond: [
-              { $eq: ['$aiPrediction', '$score.winner'] },
-              1,
-              0
-            ]
-          }
-        }
-      }
-    },
-    {
-      $project: {
-        date: '$_id',
-        totalPredictions: 1,
-        correctPredictions: 1,
-        accuracy: {
-          $multiply: [
-            { $divide: ['$correctPredictions', '$totalPredictions'] },
-            100
-          ]
-        }
-      }
-    },
-    { $sort: { date: -1 } }
-  ]).hint({ status: 1, aiPrediction: 1, utcDate: 1 });
+  // Filter daily stats by start date and map to expected format
+  const filteredDailyStats = aiStatRecord.dailyStats
+    .filter(stat => new Date(stat.date) >= PREDICTIONS_START_DATE)
+    .map(stat => ({
+      date: new Date(stat.date).toISOString().split('T')[0], // Format as YYYY-MM-DD
+      totalPredictions: stat.totalPredictions,
+      correctPredictions: stat.correctPredictions,
+      accuracy: stat.totalPredictions > 0 
+        ? (stat.correctPredictions / stat.totalPredictions * 100) 
+        : 0
+    }))
+    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
 
-  // Calculate overall stats
-  const overall = stats.reduce((acc, day) => ({
-    totalPredictions: acc.totalPredictions + day.totalPredictions,
-    correctPredictions: acc.correctPredictions + day.correctPredictions
-  }), { totalPredictions: 0, correctPredictions: 0 });
-
-  const overallAccuracy = overall.totalPredictions > 0
-    ? (overall.correctPredictions / overall.totalPredictions * 100)
-    : 0;
+  // Get the overall stats
+  const overallStats = {
+    totalPredictions: aiStatRecord.totalPredictions,
+    correctPredictions: aiStatRecord.correctPredictions,
+    overallAccuracy: aiStatRecord.totalPredictions > 0
+      ? (aiStatRecord.correctPredictions / aiStatRecord.totalPredictions * 100)
+      : 0
+  };
 
   return {
-    stats,
-    overall: {
-      ...overall,
-      overallAccuracy
-    },
+    stats: filteredDailyStats,
+    overall: overallStats,
     generatedAt: new Date().toISOString()
   };
 };
@@ -145,7 +125,7 @@ const generateLeagueStats = async () => {
       }
     },
     { $sort: { totalPredictions: -1 } }
-  ]).hint({ 'competition.id': 1, status: 1 });
+  ]);
 
   return {
     stats,
@@ -157,16 +137,27 @@ const generateLeagueStats = async () => {
 const generateDailyPredictions = async () => {
   console.log('Generating daily predictions stats...');
   
+  // Get the AIPredictionStat record
+  const aiStatRecord = await AIPredictionStat.findOne().lean();
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  // Use lean() and only select needed fields
+  
+  // Find today's stats in the dailyStats array
+  const todayStats = aiStatRecord && aiStatRecord.dailyStats
+    ? aiStatRecord.dailyStats.find(stat => {
+        const statDate = new Date(stat.date);
+        return statDate.getFullYear() === today.getFullYear() &&
+               statDate.getMonth() === today.getMonth() &&
+               statDate.getDate() === today.getDate();
+      })
+    : null;
+  
+  // Use lean() and only select needed fields for match info
   const matches = await Match.find({
     utcDate: {
       $gte: today.toISOString(),
-      $lt: tomorrow.toISOString()
+      $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString()
     }
   })
   .select('aiPrediction status')
@@ -176,6 +167,8 @@ const generateDailyPredictions = async () => {
     totalMatches: matches.length,
     aiPredictions: matches.filter(m => m.aiPrediction).length,
     completedMatches: matches.filter(m => m.status === 'FINISHED').length,
+    totalCorrectToday: todayStats ? todayStats.correctPredictions : 0,
+    totalPredictionsToday: todayStats ? todayStats.totalPredictions : 0,
     generatedAt: new Date().toISOString()
   };
 };
