@@ -4,6 +4,151 @@ const AIPredictionStat = require('../models/AIPredictionStat');
 const Match = require('../models/Match');
 const PREDICTIONS_START_DATE = new Date('2025-01-15T00:00:00Z');
 
+async function validateAndFixStats() {
+  try {
+    console.log('Running stats validation and fix...');
+    
+    // Calculate actual stats from matches
+    const matches = await Match.find({
+      status: 'FINISHED',
+      aiPrediction: { $exists: true }
+    });
+    
+    // Calculate overall totals
+    const totalPredictions = matches.length;
+    const correctPredictions = matches.filter(match => {
+      const actualResult = match.score.winner || 
+        (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+         match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+      return match.aiPrediction === actualResult;
+    }).length;
+    
+    // Get the stored stats
+    const aiStats = await AIPredictionStat.findOne();
+    if (!aiStats) {
+      console.log('No AIPredictionStat found, creating new one...');
+      const newAiStats = new AIPredictionStat({
+        totalPredictions,
+        correctPredictions,
+        dailyStats: []
+      });
+      await newAiStats.save();
+      return;
+    }
+    
+    // Check if there's a discrepancy
+    if (aiStats.totalPredictions !== totalPredictions || aiStats.correctPredictions !== correctPredictions) {
+      console.log('Stats discrepancy found, fixing...', {
+        stored: {
+          total: aiStats.totalPredictions,
+          correct: aiStats.correctPredictions
+        },
+        actual: {
+          total: totalPredictions,
+          correct: correctPredictions
+        }
+      });
+      
+      // Update the overall stats
+      aiStats.totalPredictions = totalPredictions;
+      aiStats.correctPredictions = correctPredictions;
+      
+      // Also validate and fix daily stats
+      await validateAndFixDailyStats(aiStats);
+      
+      await aiStats.save();
+      console.log('Stats fixed successfully');
+    } else {
+      console.log('Stats validation passed, no fix needed');
+    }
+  } catch (error) {
+    console.error('Error in validateAndFixStats:', error);
+  }
+}
+
+// Helper function to validate and fix daily stats
+async function validateAndFixDailyStats(aiStats) {
+  try {
+    // Group matches by date
+    const matchesByDate = await Match.aggregate([
+      {
+        $match: {
+          status: 'FINISHED',
+          aiPrediction: { $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { 
+              format: "%Y-%m-%d", 
+              date: { $dateFromString: { dateString: "$utcDate" } }
+            }
+          },
+          matches: { $push: "$$ROOT" }
+        }
+      }
+    ]);
+    
+    // Process each date's matches
+    for (const dayData of matchesByDate) {
+      const dateStr = dayData._id;
+      const matchDate = new Date(dateStr);
+      matchDate.setHours(0, 0, 0, 0);
+      
+      // Calculate stats for this day
+      const dayMatches = dayData.matches;
+      const totalForDay = dayMatches.length;
+      const correctForDay = dayMatches.filter(match => {
+        const actualResult = match.score.winner || 
+          (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+          match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+        return match.aiPrediction === actualResult;
+      }).length;
+      
+      // Find this day in the stats
+      const existingDayStat = aiStats.dailyStats.find(
+        stat => new Date(stat.date).toDateString() === matchDate.toDateString()
+      );
+      
+      if (existingDayStat) {
+        // Update if different
+        if (existingDayStat.totalPredictions !== totalForDay || 
+            existingDayStat.correctPredictions !== correctForDay) {
+          console.log(`Fixing stats for ${dateStr}:`, {
+            old: {
+              total: existingDayStat.totalPredictions,
+              correct: existingDayStat.correctPredictions
+            },
+            new: {
+              total: totalForDay,
+              correct: correctForDay
+            }
+          });
+          
+          existingDayStat.totalPredictions = totalForDay;
+          existingDayStat.correctPredictions = correctForDay;
+        }
+      } else {
+        // Add new day stat
+        console.log(`Adding missing day stat for ${dateStr}`);
+        aiStats.dailyStats.push({
+          date: matchDate,
+          totalPredictions: totalForDay,
+          correctPredictions: correctForDay
+        });
+      }
+    }
+    
+    // Sort daily stats by date (newest first)
+    aiStats.dailyStats.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    console.log(`Fixed ${matchesByDate.length} daily stat entries`);
+  } catch (error) {
+    console.error('Error in validateAndFixDailyStats:', error);
+  }
+}
+
 // Helper function to get today's date at midnight
 const getTodayDate = () => {
   const today = new Date();
@@ -382,5 +527,26 @@ router.get('/ai/league-stats', async (req, res) => {
   }
 });
 
+// Add this near the bottom of your accuracy.js file (before module.exports)
+
+// Run validation on server start
+validateAndFixStats().catch(err => {
+  console.error('Error during stats validation on startup:', err);
+});
+
+// Admin route to manually fix stats
+router.post('/admin/fix-stats', async (req, res) => {
+  try {
+    await validateAndFixStats();
+    res.json({ success: true, message: 'Stats validation and fix completed' });
+  } catch (error) {
+    console.error('Error in fix-stats endpoint:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fixing stats',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

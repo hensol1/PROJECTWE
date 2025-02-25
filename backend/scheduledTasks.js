@@ -141,6 +141,12 @@ async function handleMatchFetching() {
         if (justFinishedMatches.length > 0) {
             console.log(`${justFinishedMatches.length} matches just finished. Triggering updates...`);
             
+            // Update stats for each finished match individually
+            for (const match of justFinishedMatches) {
+                await updateStatsForMatch(match);
+            }        
+            
+            
             // Keep track of which leagues we've updated to avoid duplicates
             const updatedLeagues = new Set();
             
@@ -172,6 +178,56 @@ async function handleMatchFetching() {
                     }
                 }
             }
+
+            async function updateStatsForMatch(match) {
+                if (match.status === 'FINISHED' && match.aiPrediction) {
+                  try {
+                    // Determine if prediction was correct
+                    const actualResult = match.score.winner || 
+                        (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+                        match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+                    const isCorrect = match.aiPrediction === actualResult;
+                    
+                    // Get match date (use start of day)
+                    const matchDate = new Date(match.utcDate);
+                    matchDate.setHours(0, 0, 0, 0);
+                    
+                    // Update AIPredictionStat
+                    const aiStats = await AIPredictionStat.findOne();
+                    if (aiStats) {
+                      // Update total stats
+                      aiStats.totalPredictions += 1;
+                      if (isCorrect) {
+                        aiStats.correctPredictions += 1;
+                      }
+                      
+                      // Find or create the daily stat
+                      let dayStats = aiStats.dailyStats.find(
+                        stat => new Date(stat.date).toDateString() === matchDate.toDateString()
+                      );
+                      
+                      if (dayStats) {
+                        dayStats.totalPredictions += 1;
+                        if (isCorrect) {
+                          dayStats.correctPredictions += 1;
+                        }
+                      } else {
+                        aiStats.dailyStats.push({
+                          date: matchDate,
+                          totalPredictions: 1,
+                          correctPredictions: isCorrect ? 1 : 0
+                        });
+                      }
+                      
+                      await aiStats.save();
+                      console.log(`Updated stats for match ${match.id}: ${match.homeTeam.name} vs ${match.awayTeam.name} - Prediction ${isCorrect ? 'correct' : 'incorrect'}`);
+                    }
+                  } catch (error) {
+                    console.error(`Error updating stats for match ${match.id}:`, error);
+                  }
+                }
+              }
+              
         
             // After updating standings, recalculate stats
             try {
@@ -220,6 +276,56 @@ async function handleMatchFetching() {
         console.error('Error in match fetching:', error);
     }
 }
+
+async function updateStatsForMatch(match) {
+    if (match.status === 'FINISHED' && match.aiPrediction) {
+      try {
+        // Determine if prediction was correct
+        const actualResult = match.score.winner || 
+            (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
+            match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+        const isCorrect = match.aiPrediction === actualResult;
+        
+        // Get match date (use start of day)
+        const matchDate = new Date(match.utcDate);
+        matchDate.setHours(0, 0, 0, 0);
+        
+        // Update AIPredictionStat
+        const aiStats = await AIPredictionStat.findOne();
+        if (aiStats) {
+          // Update total stats
+          aiStats.totalPredictions += 1;
+          if (isCorrect) {
+            aiStats.correctPredictions += 1;
+          }
+          
+          // Find or create the daily stat
+          let dayStats = aiStats.dailyStats.find(
+            stat => new Date(stat.date).toDateString() === matchDate.toDateString()
+          );
+          
+          if (dayStats) {
+            dayStats.totalPredictions += 1;
+            if (isCorrect) {
+              dayStats.correctPredictions += 1;
+            }
+          } else {
+            aiStats.dailyStats.push({
+              date: matchDate,
+              totalPredictions: 1,
+              correctPredictions: isCorrect ? 1 : 0
+            });
+          }
+          
+          await aiStats.save();
+          console.log(`Updated stats for match ${match.id}: ${match.homeTeam.name} vs ${match.awayTeam.name} - Prediction ${isCorrect ? 'correct' : 'incorrect'}`);
+        }
+      } catch (error) {
+        console.error(`Error updating stats for match ${match.id}:`, error);
+      }
+    }
+  }
+  
 
 async function updateDailyPredictionStats() {
     try {

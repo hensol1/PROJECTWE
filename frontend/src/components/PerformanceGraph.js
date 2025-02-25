@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend 
 } from 'recharts';
-import { format, startOfToday, isBefore } from 'date-fns';
+import { format, startOfToday, isBefore, subDays } from 'date-fns';
 import { InfoIcon } from 'lucide-react';
 import api from '../api';
 
@@ -59,6 +59,24 @@ const ChartSkeleton = () => (
   </div>
 );
 
+// Custom tooltip to show accuracy with consistent decimal places
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
+        <p className="font-semibold">{label}</p>
+        <p className="text-green-600">
+          Accuracy: {payload[0].value.toFixed(1)}%
+        </p>
+        <p className="text-xs text-gray-600">
+          {payload[0].payload.correct} of {payload[0].payload.predictions} predictions
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const usePerformanceData = () => {
   const [data, setData] = useState({ performanceData: [], overallStats: null });
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +100,77 @@ const usePerformanceData = () => {
           setIsLoading(false);
         }
 
-        // Fetch fresh data (even if we showed cached data, to update it if needed)
+        // First try to get the real-time data from the two-days endpoint
+        try {
+          // Get yesterday's stats
+          const twoDaysResponse = await api.get('/api/accuracy/ai/two-days');
+          const yesterdayStats = twoDaysResponse.data.yesterday;
+          
+          // We'll need this for the overall accuracy which we'll still get from the history endpoint
+          const historyResponse = await api.fetchAIHistory();
+          const overallStats = {
+            totalPredictions: historyResponse.overall.totalPredictions,
+            correctPredictions: historyResponse.overall.correctPredictions,
+            overallAccuracy: historyResponse.overall.overallAccuracy
+          };
+          
+          // Get the last 30 days of data
+          // We'll use the history for days before yesterday
+          // But replace yesterday's data with the correct real-time data
+          const historicalData = historyResponse.stats || [];
+          const today = startOfToday();
+          const yesterday = subDays(today, 1);
+          const yesterdayDateString = format(yesterday, 'yyyy-MM-dd');
+          
+          // Format our performance data, replacing yesterday with correct data
+          const formattedData = historicalData
+            .map(stat => {
+              // If this is yesterday's data, replace with real-time data
+              if (stat.date === yesterdayDateString) {
+                return {
+                  date: new Date(stat.date),
+                  displayDate: format(new Date(stat.date), 'MMM dd'),
+                  accuracy: parseFloat(((yesterdayStats.correct / yesterdayStats.total) * 100).toFixed(1)),
+                  predictions: yesterdayStats.total,
+                  correct: yesterdayStats.correct
+                };
+              }
+              
+              // Otherwise use the historical data
+              return {
+                date: new Date(stat.date),
+                displayDate: format(new Date(stat.date), 'MMM dd'),
+                accuracy: parseFloat(stat.accuracy || 0),
+                predictions: stat.totalPredictions || 0,
+                correct: stat.correctPredictions || 0
+              };
+            })
+            .filter(stat => {
+              const statDate = new Date(stat.date);
+              const PREDICTIONS_START = new Date('2025-01-15');
+              return statDate >= PREDICTIONS_START && isBefore(statDate, today);
+            })
+            .sort((a, b) => b.date - a.date);
+
+          if (!isMounted) return;
+
+          const processedData = {
+            performanceData: formattedData,
+            overallStats: overallStats
+          };
+
+          // Cache the processed data with timestamp
+          sessionStorage.setItem('performanceData', JSON.stringify(processedData));
+          sessionStorage.setItem('performanceDataTimestamp', now.toString());
+          
+          setData(processedData);
+          setIsLoading(false);
+          return; // Early return if we got the data from two-days endpoint
+        } catch (realTimeError) {
+          console.warn('Failed to get real-time data, falling back to history endpoint', realTimeError);
+        }
+
+        // Fallback to just using history data
         const response = await api.fetchAIHistory();
         const today = startOfToday();
         const PREDICTIONS_START = new Date('2025-01-15');
@@ -91,7 +179,7 @@ const usePerformanceData = () => {
           .map(stat => ({
             date: new Date(stat.date),
             displayDate: format(new Date(stat.date), 'MMM dd'),
-            accuracy: parseFloat((stat.accuracy || 0).toFixed(1)),
+            accuracy: parseFloat(stat.accuracy || 0),
             predictions: stat.totalPredictions || 0,
             correct: stat.correctPredictions || 0
           }))
@@ -247,7 +335,7 @@ const PerformanceGraph = () => {
                   domain={[0, 100]}
                   ticks={[0, 25, 50, 75, 100]}
                 />
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 <Line
                   type="monotone"
