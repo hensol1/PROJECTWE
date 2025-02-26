@@ -87,95 +87,34 @@ const usePerformanceData = () => {
 
     const fetchData = async () => {
       try {
-        // Check for cached data first to show something immediately
-        const cachedData = sessionStorage.getItem('performanceData');
-        const cachedTimestamp = sessionStorage.getItem('performanceDataTimestamp');
-        const now = Date.now();
-        const CACHE_VALIDITY = 5 * 60 * 1000; // 5 minutes
-
-        // Use cached data if it's fresh (less than 5 minutes old)
-        if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_VALIDITY)) {
-          const parsed = JSON.parse(cachedData);
-          setData(parsed);
-          setIsLoading(false);
+        // Clear session storage cache to force a fresh fetch
+        sessionStorage.removeItem('performanceData');
+        sessionStorage.removeItem('performanceDataTimestamp');
+        
+        // Refresh API cache if that method exists
+        if (typeof api.refreshStatsCache === 'function') {
+          api.refreshStatsCache();
         }
-
-        // First try to get the real-time data from the two-days endpoint
-        try {
-          // Get yesterday's stats
-          const twoDaysResponse = await api.get('/api/accuracy/ai/two-days');
-          const yesterdayStats = twoDaysResponse.data.yesterday;
-          
-          // We'll need this for the overall accuracy which we'll still get from the history endpoint
-          const historyResponse = await api.fetchAIHistory();
-          const overallStats = {
-            totalPredictions: historyResponse.overall.totalPredictions,
-            correctPredictions: historyResponse.overall.correctPredictions,
-            overallAccuracy: historyResponse.overall.overallAccuracy
-          };
-          
-          // Get the last 30 days of data
-          // We'll use the history for days before yesterday
-          // But replace yesterday's data with the correct real-time data
-          const historicalData = historyResponse.stats || [];
-          const today = startOfToday();
-          const yesterday = subDays(today, 1);
-          const yesterdayDateString = format(yesterday, 'yyyy-MM-dd');
-          
-          // Format our performance data, replacing yesterday with correct data
-          const formattedData = historicalData
-            .map(stat => {
-              // If this is yesterday's data, replace with real-time data
-              if (stat.date === yesterdayDateString) {
-                return {
-                  date: new Date(stat.date),
-                  displayDate: format(new Date(stat.date), 'MMM dd'),
-                  accuracy: parseFloat(((yesterdayStats.correct / yesterdayStats.total) * 100).toFixed(1)),
-                  predictions: yesterdayStats.total,
-                  correct: yesterdayStats.correct
-                };
-              }
-              
-              // Otherwise use the historical data
-              return {
-                date: new Date(stat.date),
-                displayDate: format(new Date(stat.date), 'MMM dd'),
-                accuracy: parseFloat(stat.accuracy || 0),
-                predictions: stat.totalPredictions || 0,
-                correct: stat.correctPredictions || 0
-              };
-            })
-            .filter(stat => {
-              const statDate = new Date(stat.date);
-              const PREDICTIONS_START = new Date('2025-01-15');
-              return statDate >= PREDICTIONS_START && isBefore(statDate, today);
-            })
-            .sort((a, b) => b.date - a.date);
-
-          if (!isMounted) return;
-
-          const processedData = {
-            performanceData: formattedData,
-            overallStats: overallStats
-          };
-
-          // Cache the processed data with timestamp
-          sessionStorage.setItem('performanceData', JSON.stringify(processedData));
-          sessionStorage.setItem('performanceDataTimestamp', now.toString());
-          
-          setData(processedData);
-          setIsLoading(false);
-          return; // Early return if we got the data from two-days endpoint
-        } catch (realTimeError) {
-          console.warn('Failed to get real-time data, falling back to history endpoint', realTimeError);
+        
+        // Get fresh data from the API
+        const historyResponse = await api.fetchAIHistory();
+        
+        if (!historyResponse || !historyResponse.overall) {
+          throw new Error('Invalid response from AI history endpoint');
         }
-
-        // Fallback to just using history data
-        const response = await api.fetchAIHistory();
+        
+        // Extract and format the data
+        const overallStats = {
+          totalPredictions: historyResponse.overall.totalPredictions,
+          correctPredictions: historyResponse.overall.correctPredictions,
+          overallAccuracy: historyResponse.overall.overallAccuracy
+        };
+        
+        console.log('Overall stats from API:', overallStats);
+        
         const today = startOfToday();
-        const PREDICTIONS_START = new Date('2025-01-15');
-
-        const formattedData = response.stats
+        
+        const formattedData = (historyResponse.stats || [])
           .map(stat => ({
             date: new Date(stat.date),
             displayDate: format(new Date(stat.date), 'MMM dd'),
@@ -185,7 +124,7 @@ const usePerformanceData = () => {
           }))
           .filter(stat => {
             const statDate = new Date(stat.date);
-            return statDate >= PREDICTIONS_START && isBefore(statDate, today);
+            return isBefore(statDate, today);
           })
           .sort((a, b) => b.date - a.date);
 
@@ -193,23 +132,19 @@ const usePerformanceData = () => {
 
         const processedData = {
           performanceData: formattedData,
-          overallStats: {
-            totalPredictions: response.overall.totalPredictions,
-            correctPredictions: response.overall.correctPredictions,
-            overallAccuracy: response.overall.overallAccuracy
-          }
+          overallStats: overallStats
         };
-
-        // Cache the processed data with timestamp
+        
+        // Cache the new data
         sessionStorage.setItem('performanceData', JSON.stringify(processedData));
-        sessionStorage.setItem('performanceDataTimestamp', now.toString());
+        sessionStorage.setItem('performanceDataTimestamp', Date.now().toString());
         
         setData(processedData);
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching performance data:', err);
         if (isMounted) {
-          setError('Failed to load performance data');
+          setError('Failed to load performance data: ' + (err.message || 'Unknown error'));
           setIsLoading(false);
         }
       }

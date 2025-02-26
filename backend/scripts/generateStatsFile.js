@@ -22,7 +22,6 @@ const ensureDirectoryExists = async (directory) => {
   }
 };
 
-// Generate AI history stats
 const generateAIHistoryStats = async () => {
   console.log('Generating AI history stats...');
   
@@ -42,12 +41,15 @@ const generateAIHistoryStats = async () => {
     };
   }
   
-  // Set January 14, 2024 as the start date for calculations
-  const PREDICTIONS_START_DATE = new Date('2024-01-14T00:00:00Z');
+  // Log the raw data from the database for debugging
+  console.log('Raw AIPredictionStat from database:', {
+    totalPredictions: aiStatRecord.totalPredictions,
+    correctPredictions: aiStatRecord.correctPredictions,
+    dailyStatsCount: aiStatRecord.dailyStats?.length || 0
+  });
   
-  // Filter daily stats by start date and map to expected format
-  const filteredDailyStats = aiStatRecord.dailyStats
-    .filter(stat => new Date(stat.date) >= PREDICTIONS_START_DATE)
+  // Map all daily stats without filtering
+  const filteredDailyStats = (aiStatRecord.dailyStats || [])
     .map(stat => ({
       date: new Date(stat.date).toISOString().split('T')[0], // Format as YYYY-MM-DD
       totalPredictions: stat.totalPredictions,
@@ -58,7 +60,7 @@ const generateAIHistoryStats = async () => {
     }))
     .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
 
-  // Get the overall stats
+  // Use the stored overall stats directly
   const overallStats = {
     totalPredictions: aiStatRecord.totalPredictions,
     correctPredictions: aiStatRecord.correctPredictions,
@@ -66,6 +68,8 @@ const generateAIHistoryStats = async () => {
       ? (aiStatRecord.correctPredictions / aiStatRecord.totalPredictions * 100)
       : 0
   };
+  
+  console.log('Generated stats file with overall stats:', overallStats);
 
   return {
     stats: filteredDailyStats,
@@ -78,16 +82,12 @@ const generateAIHistoryStats = async () => {
 const generateLeagueStats = async () => {
   console.log('Generating league stats...');
   
-  // Set January 14, 2024 as the start date for calculations
-  const PREDICTIONS_START_DATE = new Date('2024-01-14T00:00:00Z');
-  
   const stats = await Match.aggregate([
     {
       $match: {
         status: 'FINISHED',
-        aiPrediction: { $exists: true },
-        // Add date filter
-        utcDate: { $gte: PREDICTIONS_START_DATE.toISOString() }
+        aiPrediction: { $exists: true }
+        // Date filter removed
       }
     },
     {
@@ -263,4 +263,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = generateAllStatsFiles;
+module.exports = generateAllStatsFiles; 

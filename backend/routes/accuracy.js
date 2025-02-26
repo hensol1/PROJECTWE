@@ -159,14 +159,27 @@ const getTodayDate = () => {
 // Get overall AI accuracy
 router.get('/ai', async (req, res) => {
   try {
-    const aiStat = await AIPredictionStat.findOne() || new AIPredictionStat();
+    const aiStat = await AIPredictionStat.findOne();
     
+    if (!aiStat) {
+      return res.json({
+        aiAccuracy: 0,
+        totalPredictions: 0,
+        correctPredictions: 0,
+        lastUpdated: new Date()
+      });
+    }
+    
+    // Use stored values directly instead of recalculating
     const accuracy = aiStat.totalPredictions > 0
       ? (aiStat.correctPredictions / aiStat.totalPredictions * 100)
       : 0;
 
+    // Return full stats object including the raw counts
     res.json({
       aiAccuracy: accuracy,
+      totalPredictions: aiStat.totalPredictions,
+      correctPredictions: aiStat.correctPredictions,
       lastUpdated: new Date()
     });
   } catch (error) {
@@ -343,89 +356,48 @@ router.get('/ai/two-days', async (req, res) => {
 // New route to get historical stats
 router.get('/ai/history', async (req, res) => {
   try {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    // Get only matches from our start date with predictions
-    const matches = await Match.find({
-      status: 'FINISHED',
-      utcDate: {
-        $gte: PREDICTIONS_START_DATE,
-        $lte: now
-      },
-      aiPrediction: { $exists: true }
-    });
-
-    console.log('Found matches:', {
-      total: matches.length,
-      dateRange: {
-        from: PREDICTIONS_START_DATE,
-        to: now
-      }
-    });
-
-    // Group matches by date
-    const groupedMatches = matches.reduce((acc, match) => {
-      // Use UTC date for consistency
-      const matchDate = new Date(match.utcDate);
-      const dateKey = new Date(
-        matchDate.getUTCFullYear(), 
-        matchDate.getUTCMonth(), 
-        matchDate.getUTCDate()
-      ).toISOString();
-
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(match);
-      return acc;
-    }, {});
-
-    // Calculate stats for each day
-    const stats = Object.entries(groupedMatches)
-      .map(([date, dayMatches]) => {
-        const total = dayMatches.length;
-        const correct = dayMatches.filter(match => {
-          const actualResult = match.score.winner || 
-            (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-             match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-          return match.aiPrediction === actualResult;
-        }).length;
-
-        return {
-          date: new Date(date),
-          accuracy: total > 0 ? (correct / total * 100) : 0,
-          totalPredictions: total,
-          correctPredictions: correct
-        };
+    // Get data directly from AIPredictionStat model
+    const aiStat = await AIPredictionStat.findOne().lean();
+    
+    if (!aiStat) {
+      return res.json({
+        stats: [],
+        overall: {
+          totalPredictions: 0,
+          correctPredictions: 0,
+          overallAccuracy: 0
+        }
       });
-
-    // Calculate overall stats
-    const totalPredictions = matches.length;
-    const correctPredictions = matches.filter(match => {
-      const actualResult = match.score.winner || 
-        (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-         match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-      return match.aiPrediction === actualResult;
-    }).length;
-
-    // Debug log the stats
-    console.log('Calculated stats:', {
+    }
+    
+    // Format daily stats
+    const stats = aiStat.dailyStats.map(stat => ({
+      date: format(new Date(stat.date), 'yyyy-MM-dd'),
+      totalPredictions: stat.totalPredictions,
+      correctPredictions: stat.correctPredictions,
+      accuracy: stat.totalPredictions > 0 
+        ? (stat.correctPredictions / stat.totalPredictions * 100)
+        : 0
+    })).sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Use the stored values for overall stats
+    const overall = {
+      totalPredictions: aiStat.totalPredictions,
+      correctPredictions: aiStat.correctPredictions,
+      overallAccuracy: aiStat.totalPredictions > 0 
+        ? (aiStat.correctPredictions / aiStat.totalPredictions * 100)
+        : 0
+    };
+    
+    // Log what we're returning for debugging
+    console.log('AI history response:', {
       totalDays: stats.length,
-      totalPredictions,
-      correctPredictions,
-      overallAccuracy: (correctPredictions / totalPredictions * 100).toFixed(1)
+      overall
     });
-
+    
     res.json({
       stats,
-      overall: {
-        totalPredictions,
-        correctPredictions,
-        overallAccuracy: totalPredictions > 0 
-          ? (correctPredictions / totalPredictions * 100)
-          : 0
-      }
+      overall
     });
   } catch (error) {
     console.error('Error fetching historical stats:', error);
@@ -438,11 +410,9 @@ router.get('/ai/history', async (req, res) => {
 
 router.get('/ai/league-stats', async (req, res) => {
   try {
+    // Get all finished matches with predictions (removed date filter)
     const matches = await Match.find({
       status: 'FINISHED',
-      utcDate: {
-        $gte: PREDICTIONS_START_DATE
-      },
       aiPrediction: { $exists: true }
     });
 
