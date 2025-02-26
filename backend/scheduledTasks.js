@@ -182,12 +182,19 @@ async function handleMatchFetching() {
             async function updateStatsForMatch(match) {
                 if (match.status === 'FINISHED' && match.aiPrediction) {
                   try {
-                    // Determine if prediction was correct
-                    const actualResult = match.score.winner || 
-                        (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-                        match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+                    // Determine if prediction was correct based on actual match score, not tournament progression
+                    const homeScore = match.score.fullTime.home;
+                    const awayScore = match.score.fullTime.away;
+                    
+                    // Calculate actual match result based on scores, not the provided winner field
+                    const actualResult = homeScore > awayScore ? 'HOME_TEAM' : 
+                                        awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW';
+                    
                     const isCorrect = match.aiPrediction === actualResult;
                     
+                    console.log(`Match ${match.id}: ${match.homeTeam.name} ${homeScore}-${awayScore} ${match.awayTeam.name}`);
+                    console.log(`Prediction: ${match.aiPrediction}, Actual: ${actualResult}, Correct: ${isCorrect}`);
+                                  
                     // Get match date (use start of day)
                     const matchDate = new Date(match.utcDate);
                     matchDate.setHours(0, 0, 0, 0);

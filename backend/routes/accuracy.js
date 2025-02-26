@@ -188,46 +188,25 @@ router.get('/ai/daily', async (req, res) => {
     // Get ALL finished matches for today, not just ones with predictions
     const todayMatches = await Match.find({
       status: 'FINISHED',
+      aiPrediction: { $exists: true },
       utcDate: {
         $gte: today.toISOString(),
         $lt: tomorrow.toISOString()
       }
-    });
-
-    // Calculate stats including matches without predictions
-    let total = todayMatches.length; // Count all finished matches
-    let correct = 0;
-
-    todayMatches.forEach(match => {
-      if (match.aiPrediction) {
-        const actualResult = match.score.winner || 
-          (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-           match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-
-        if (match.aiPrediction === actualResult) {
-          correct++;
-        }
-      }
-    });
-
-    // Update or create today's stats
-    const aiStat = await AIPredictionStat.findOne() || new AIPredictionStat();
+    }).lean();
     
-    const todayStats = aiStat.dailyStats.find(stat => 
-      stat.date.toDateString() === today.toDateString()
-    );
-
-    if (todayStats) {
-      todayStats.totalPredictions = total;
-      todayStats.correctPredictions = correct;
-    } else {
-      aiStat.dailyStats.push({
-        date: today,
-        totalPredictions: total,
-        correctPredictions: correct
-      });
-    }
-
+    const todayStats = {
+      total: todayMatches.length,
+      correct: todayMatches.filter(m => {
+        // Calculate actual result based on scores
+        const homeScore = m.score.fullTime.home;
+        const awayScore = m.score.fullTime.away;
+        const actualResult = homeScore > awayScore ? 'HOME_TEAM' : 
+                            awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW';
+        return m.aiPrediction === actualResult;
+      }).length
+    };
+    
     // Keep only last 30 days
     aiStat.dailyStats = aiStat.dailyStats
       .sort((a, b) => b.date - a.date)
