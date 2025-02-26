@@ -17,12 +17,16 @@ async function validateAndFixStats() {
     // Calculate overall totals
     const totalPredictions = matches.length;
     const correctPredictions = matches.filter(match => {
-      const actualResult = match.score.winner || 
-        (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-         match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
+      // Calculate actual result based on full time score - using the same logic as fixDailyStats.js
+      const homeScore = match.score.fullTime.home;
+      const awayScore = match.score.fullTime.away;
+      const actualResult = homeScore > awayScore ? 'HOME_TEAM' : 
+                          awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW';
+      
       return match.aiPrediction === actualResult;
     }).length;
     
+        
     // Get the stored stats
     const aiStats = await AIPredictionStat.findOne();
     if (!aiStats) {

@@ -179,14 +179,14 @@ async function handleMatchFetching() {
                 }
             }
 
+            
+
             async function updateStatsForMatch(match) {
                 if (match.status === 'FINISHED' && match.aiPrediction) {
                   try {
-                    // Determine if prediction was correct based on actual match score, not tournament progression
+                    // Always calculate result based on full time score
                     const homeScore = match.score.fullTime.home;
                     const awayScore = match.score.fullTime.away;
-                    
-                    // Calculate actual match result based on scores, not the provided winner field
                     const actualResult = homeScore > awayScore ? 'HOME_TEAM' : 
                                         awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW';
                     
@@ -194,7 +194,7 @@ async function handleMatchFetching() {
                     
                     console.log(`Match ${match.id}: ${match.homeTeam.name} ${homeScore}-${awayScore} ${match.awayTeam.name}`);
                     console.log(`Prediction: ${match.aiPrediction}, Actual: ${actualResult}, Correct: ${isCorrect}`);
-                                  
+                                                
                     // Get match date (use start of day)
                     const matchDate = new Date(match.utcDate);
                     matchDate.setHours(0, 0, 0, 0);
@@ -229,12 +229,12 @@ async function handleMatchFetching() {
                       await aiStats.save();
                       console.log(`Updated stats for match ${match.id}: ${match.homeTeam.name} vs ${match.awayTeam.name} - Prediction ${isCorrect ? 'correct' : 'incorrect'}`);
                     }
-                  } catch (error) {
+                } catch (error) {
                     console.error(`Error updating stats for match ${match.id}:`, error);
                   }
                 }
               }
-              
+                                          
         
             // After updating standings, recalculate stats
             try {
