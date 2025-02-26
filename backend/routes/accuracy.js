@@ -207,6 +207,9 @@ router.get('/ai/daily', async (req, res) => {
       }).length
     };
     
+    // Retrieve the AI stats record
+    const aiStat = await AIPredictionStat.findOne() || new AIPredictionStat();
+    
     // Keep only last 30 days
     aiStat.dailyStats = aiStat.dailyStats
       .sort((a, b) => b.date - a.date)
@@ -217,8 +220,8 @@ router.get('/ai/daily', async (req, res) => {
     // Add debug logging
     console.log('Daily stats calculated:', {
       date: today,
-      total,
-      correct,
+      total: todayStats.total,
+      correct: todayStats.correct,
       matches: todayMatches.map(m => ({
         id: m._id,
         aiPrediction: m.aiPrediction,
@@ -228,8 +231,8 @@ router.get('/ai/daily', async (req, res) => {
     });
 
     res.json({
-      total,
-      correct
+      total: todayStats.total,
+      correct: todayStats.correct
     });
   } catch (error) {
     console.error('Error handling daily AI stats:', error);
