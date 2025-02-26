@@ -318,4 +318,6 @@ api.submitContactForm = (formData) => {
 };
 api.getContactSubmissions = () => api.get('/api/contact/submissions');
 
+api.fixStats = () => api.post('/api/admin/fix-stats');
+
 export default api;

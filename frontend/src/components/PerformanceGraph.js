@@ -87,55 +87,59 @@ const usePerformanceData = () => {
 
     const fetchData = async () => {
       try {
-        // Clear session storage cache to force a fresh fetch
+        // Clear cache to ensure fresh data
         sessionStorage.removeItem('performanceData');
         sessionStorage.removeItem('performanceDataTimestamp');
         
-        // Refresh API cache if that method exists
         if (typeof api.refreshStatsCache === 'function') {
           api.refreshStatsCache();
         }
         
-        // Get fresh data from the API
-        const historyResponse = await api.fetchAIHistory();
+        // Get data from API
+        const response = await api.fetchAIHistory();
         
-        if (!historyResponse || !historyResponse.overall) {
-          throw new Error('Invalid response from AI history endpoint');
+        if (!response || !response.overall) {
+          throw new Error('Invalid response from API');
         }
         
-        // Extract and format the data
+        // Get overall stats
         const overallStats = {
-          totalPredictions: historyResponse.overall.totalPredictions,
-          correctPredictions: historyResponse.overall.correctPredictions,
-          overallAccuracy: historyResponse.overall.overallAccuracy
+          totalPredictions: response.overall.totalPredictions,
+          correctPredictions: response.overall.correctPredictions,
+          overallAccuracy: response.overall.overallAccuracy
         };
         
-        console.log('Overall stats from API:', overallStats);
-        
+        // Get today's date
         const today = startOfToday();
+        const yesterday = subDays(today, 1);
         
-        const formattedData = (historyResponse.stats || [])
-          .map(stat => ({
-            date: new Date(stat.date),
-            displayDate: format(new Date(stat.date), 'MMM dd'),
-            accuracy: parseFloat(stat.accuracy || 0),
-            predictions: stat.totalPredictions || 0,
-            correct: stat.correctPredictions || 0
-          }))
-          .filter(stat => {
+        // Process daily stats
+        const formattedData = (response.stats || [])
+          .map(stat => {
+            // Parse date properly
             const statDate = new Date(stat.date);
-            return isBefore(statDate, today);
+            
+            return {
+              date: statDate,
+              displayDate: format(statDate, 'MMM dd'), // Format as Feb 26
+              accuracy: parseFloat(stat.accuracy || 0),
+              predictions: stat.totalPredictions || 0,
+              correct: stat.correctPredictions || 0
+            };
           })
+          // Filter out today and future dates
+          .filter(stat => isBefore(stat.date, today))
+          // Sort by date (newest first)
           .sort((a, b) => b.date - a.date);
-
+        
         if (!isMounted) return;
-
+        
         const processedData = {
           performanceData: formattedData,
           overallStats: overallStats
         };
         
-        // Cache the new data
+        // Cache the data
         sessionStorage.setItem('performanceData', JSON.stringify(processedData));
         sessionStorage.setItem('performanceDataTimestamp', Date.now().toString());
         
@@ -144,7 +148,7 @@ const usePerformanceData = () => {
       } catch (err) {
         console.error('Error fetching performance data:', err);
         if (isMounted) {
-          setError('Failed to load performance data: ' + (err.message || 'Unknown error'));
+          setError('Failed to load performance data');
           setIsLoading(false);
         }
       }

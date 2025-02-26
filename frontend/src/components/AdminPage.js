@@ -38,6 +38,7 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
   const [isFetchingOdds, setIsFetchingOdds] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isResettingAI, setIsResettingAI] = useState(false);
+  const [isFixingStats, setIsFixingStats] = useState(false);
   const [lastAction, setLastAction] = useState(null);
 
   const handleFetchMatches = async () => {
@@ -113,6 +114,31 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
     }
   };
 
+  const handleFixStats = async () => {
+    if (!window.confirm('This will recalculate all daily stats with correct dates. Continue?')) {
+      return;
+    }
+
+    try {
+      setIsFixingStats(true);
+      const response = await api.fixStats();
+      
+      console.log('Fix stats result:', response.data);
+      setLastAction({ 
+        type: 'success', 
+        message: 'Daily stats fixed successfully! Please refresh the stats page to see changes.'
+      });
+    } catch (error) {
+      console.error('Fix stats error:', error);
+      setLastAction({ 
+        type: 'error', 
+        message: 'Error fixing stats: ' + (error.response?.data?.message || error.message) 
+      });
+    } finally {
+      setIsFixingStats(false);
+    }
+  };
+
   const handleResetAIStats = async () => {
     if (!window.confirm('Are you sure you want to reset AI prediction stats? This action cannot be undone.')) {
       return;
@@ -160,6 +186,12 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
           isLoading={isRecalculating}
           label="Recalculate Stats"
           loadingLabel="Recalculating..."
+        />
+        <AdminButton
+          onClick={handleFixStats}
+          isLoading={isFixingStats}
+          label="Fix Daily Stats"
+          loadingLabel="Fixing Stats..."
         />
       </div>
       

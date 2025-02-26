@@ -41,8 +41,70 @@ const PredictionTicker = () => {
 
   const fetchData = async () => {
     try {
+      // Get the current UTC date (today)
+      const todayUTC = new Date();
+      // Format it as a string to avoid timezone issues
+      const todayFormatted = todayUTC.toISOString().split('T')[0];
+      
+      // Get yesterday in UTC
+      const yesterdayUTC = new Date(todayUTC);
+      yesterdayUTC.setDate(yesterdayUTC.getDate() - 1);
+      // Format it as a string
+      const yesterdayFormatted = yesterdayUTC.toISOString().split('T')[0];
+      
+      console.log('Fetching ticker stats for dates:', {
+        today: todayFormatted,
+        yesterday: yesterdayFormatted
+      });
+      
+      // Get data from history endpoint (which uses AIPredictionStat)
+      const historyResponse = await api.fetchAIHistory();
+      
+      if (historyResponse && historyResponse.stats && historyResponse.stats.length > 0) {
+        // Process the stats array directly
+        const stats = historyResponse.stats.map(stat => ({
+          date: new Date(stat.date).toISOString().split('T')[0],
+          total: stat.totalPredictions || 0,
+          correct: stat.correctPredictions || 0
+        }));
+        
+        // Find today's and yesterday's stats
+        const todayStats = stats.find(s => s.date === todayFormatted) || 
+                           { total: 0, correct: 0 };
+        
+        const yesterdayStats = stats.find(s => s.date === yesterdayFormatted) || 
+                               { total: 0, correct: 0 };
+        
+        console.log('Processed stats for ticker:', {
+          today: todayStats,
+          yesterday: yesterdayStats,
+          allDates: stats.map(s => s.date) // Log all available dates for debugging
+        });
+        
+        setStats({
+          today: {
+            ai: { 
+              total: todayStats.total, 
+              correct: todayStats.correct 
+            }
+          },
+          yesterday: {
+            ai: { 
+              total: yesterdayStats.total, 
+              correct: yesterdayStats.correct 
+            }
+          }
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // Fallback to two-days endpoint if history doesn't work
+      console.log('Falling back to two-days endpoint');
       const response = await api.get('/api/accuracy/ai/two-days');
-      console.log('Two days stats response:', response.data);
+      
+      console.log('Two-days endpoint response:', response.data);
       
       setStats({
         today: {
@@ -52,17 +114,18 @@ const PredictionTicker = () => {
           ai: response.data.yesterday || { total: 0, correct: 0 }
         }
       });
+      
+      setIsLoading(false);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching prediction ticker data:', error);
       setStats({
         today: { ai: { total: 0, correct: 0 } },
         yesterday: { ai: { total: 0, correct: 0 } }
       });
-    } finally {
       setIsLoading(false);
     }
   };
-
+    
   useEffect(() => {
     const initialize = async () => {
       if (isInitialized) return;

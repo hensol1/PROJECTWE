@@ -288,7 +288,47 @@ router.post('/fetch-odds', async (req, res) => {  // Changed from '/fetchOdds' t
   }
 });
 
+const fixDailyStats = require('../scripts/fixDailyStats');
+const generateAllStatsFile = require('../scripts/generateStatsFile');
 
-
+// Simple admin route to fix daily stats
+router.post('/fix-stats', async (req, res) => {
+  try {
+    console.log('Admin triggered stats fix');
+    
+    // Run the fix script
+    const result = await fixDailyStats();
+    
+    if (result.success) {
+      // Regenerate stats files
+      try {
+        const fileResult = await generateAllStatsFile();
+        console.log('Stats files regenerated');
+        
+        // Return combined results
+        return res.json({
+          success: true,
+          stats: result,
+          files: fileResult
+        });
+      } catch (fileError) {
+        console.error('Error generating stats files:', fileError);
+        return res.json({
+          success: true,
+          stats: result,
+          files: { success: false, error: fileError.message }
+        });
+      }
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error fixing stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

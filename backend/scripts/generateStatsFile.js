@@ -48,16 +48,29 @@ const generateAIHistoryStats = async () => {
     dailyStatsCount: aiStatRecord.dailyStats?.length || 0
   });
   
-  // Map all daily stats without filtering
+  // Map and ensure proper date formatting
   const filteredDailyStats = (aiStatRecord.dailyStats || [])
-    .map(stat => ({
-      date: new Date(stat.date).toISOString().split('T')[0], // Format as YYYY-MM-DD
-      totalPredictions: stat.totalPredictions,
-      correctPredictions: stat.correctPredictions,
-      accuracy: stat.totalPredictions > 0 
-        ? (stat.correctPredictions / stat.totalPredictions * 100) 
-        : 0
-    }))
+    .map(stat => {
+      // Make sure the date is properly formatted to ISO
+      const statDate = new Date(stat.date);
+      const isoDate = statDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      
+      // Log each date conversion for debugging
+      console.log('Date processing:', {
+        original: stat.date,
+        converted: statDate.toISOString(),
+        formatted: isoDate
+      });
+      
+      return {
+        date: isoDate,
+        totalPredictions: stat.totalPredictions,
+        correctPredictions: stat.correctPredictions,
+        accuracy: stat.totalPredictions > 0 
+          ? (stat.correctPredictions / stat.totalPredictions * 100) 
+          : 0
+      };
+    })
     .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
 
   // Use the stored overall stats directly
