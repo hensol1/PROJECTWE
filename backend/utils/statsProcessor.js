@@ -15,10 +15,11 @@ async function recalculateStats() {
         if (match.aiPrediction) {
             aiStats.totalPredictions++;
             
-            const actualResult = match.score.winner || 
-                (match.score.fullTime.home > match.score.fullTime.away ? 'HOME_TEAM' : 
-                match.score.fullTime.away > match.score.fullTime.home ? 'AWAY_TEAM' : 'DRAW');
-
+            const homeScore = match.score.fullTime.home;
+            const awayScore = match.score.fullTime.away;
+            const actualResult = homeScore > awayScore ? 'HOME_TEAM' : 
+                                awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW';
+            
             if (match.aiPrediction === actualResult) {
                 aiStats.correctPredictions++;
             }

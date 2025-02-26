@@ -107,13 +107,30 @@ router.get('/ai/history', withCache('ai-history', 300), async (req, res) => {
             correctPredictions: {
               $sum: {
                 $cond: [
-                  { $eq: ['$aiPrediction', '$score.winner'] },
+                  { 
+                    $eq: [
+                      "$aiPrediction",
+                      {
+                        $cond: [
+                          { $gt: ["$score.fullTime.home", "$score.fullTime.away"] },
+                          "HOME_TEAM",
+                          {
+                            $cond: [
+                              { $gt: ["$score.fullTime.away", "$score.fullTime.home"] },
+                              "AWAY_TEAM",
+                              "DRAW"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   1,
                   0
                 ]
               }
             }
-          }
+                      }
         },
         {
           $project: {
@@ -184,13 +201,30 @@ router.get('/ai/league-stats', withCache('league-stats', 300), async (req, res) 
             correctPredictions: {
               $sum: {
                 $cond: [
-                  { $eq: ['$aiPrediction', '$score.winner'] },
+                  { 
+                    $eq: [
+                      "$aiPrediction",
+                      {
+                        $cond: [
+                          { $gt: ["$score.fullTime.home", "$score.fullTime.away"] },
+                          "HOME_TEAM",
+                          {
+                            $cond: [
+                              { $gt: ["$score.fullTime.away", "$score.fullTime.home"] },
+                              "AWAY_TEAM",
+                              "DRAW"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   1,
                   0
                 ]
               }
             }
-          }
+                      }
         },
         {
           $project: {
