@@ -197,24 +197,26 @@ const OddsPage = () => {
 
   return (
     <div className="container mx-auto py-2 px-2 md:py-4 md:px-4">
-      {/* Header with date selector */}
-      <div className="flex items-center justify-between mb-2 md:mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center">
-          <Calendar className="mr-2 text-[#40c456]" />
-          Betting Odds
-        </h1>
+      {/* Header with title centered and filter button */}
+      <div className="flex items-center mb-2 md:mb-6">
+        <div className="flex-1 flex justify-center">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center">
+            <Calendar className="mr-2 text-[#40c456]" />
+            Betting Odds
+          </h1>
+        </div>
         
-        {/* Mobile filter button */}
+        {/* Mobile filter button - positioned absolutely to maintain centering */}
         <button 
-          className="md:hidden px-3 py-1 bg-[#40c456] text-white rounded-md flex items-center text-sm"
+          className="md:hidden absolute right-4 px-3 py-1 bg-[#40c456] text-white rounded-md flex items-center text-sm"
           onClick={() => setIsMobileFilterOpen(true)}
         >
           <Filter size={16} className="mr-1" /> Filter
         </button>
       </div>
 
-      {/* Date navigation */}
-      <div className="flex items-center justify-between mb-2 md:mb-4 bg-gray-100 rounded-lg p-1 md:p-2">
+      {/* Date navigation - more compact */}
+      <div className="flex items-center justify-center mb-2 md:mb-4 bg-gray-100 rounded-lg p-1 md:p-2">
         <button 
           onClick={handlePreviousDay}
           className="p-1 md:p-2 text-gray-600 hover:text-[#40c456]"
@@ -222,17 +224,17 @@ const OddsPage = () => {
           <ChevronLeft size={18} />
         </button>
         
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center mx-2 md:mx-4">
           <div className="text-base md:text-lg font-medium">
             {getDateLabel(selectedDate)}
           </div>
-          <div className="text-xs md:text-sm text-gray-500">
+          <div className="text-xs md:text-sm text-gray-500 ml-2">
             {formattedDate}
           </div>
           {!isToday(selectedDate) && (
             <button 
               onClick={handleToday}
-              className="px-2 py-0.5 text-xs bg-[#40c456] text-white rounded"
+              className="ml-2 px-2 py-0.5 text-xs bg-[#40c456] text-white rounded"
             >
               Today
             </button>
