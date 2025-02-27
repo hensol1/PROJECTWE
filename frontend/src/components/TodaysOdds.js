@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 const websiteColors = {
   primary: '#2ECC40',
@@ -71,10 +71,11 @@ const Match = ({ match }) => {
   );
 };
 
-const TodaysOdds = ({ allMatches, isPage = false }) => {
+const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [expandedCompetitions, setExpandedCompetitions] = useState(new Set());
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const getMatchesGroupedByCompetition = () => {
     const groupedMatches = new Map();
@@ -147,11 +148,34 @@ const TodaysOdds = ({ allMatches, isPage = false }) => {
     });
   };
 
+  // Toggle tooltip visibility
+  const handleInfoClick = (e) => {
+    e.stopPropagation();
+    setShowTooltip(!showTooltip);
+  };
+
+  // Component wrapper with click handler
+  const WrapperComponent = ({ children }) => {
+    if (onClick) {
+      return (
+        <div 
+          className="w-full cursor-pointer hover:opacity-95 transition-opacity" 
+          onClick={onClick}
+        >
+          {children}
+        </div>
+      );
+    }
+    return <>{children}</>;
+  };
+
   if (competitions.length === 0) {
     return (
-      <div className="w-full rounded-xl shadow-lg overflow-hidden bg-gray-900 p-4 text-center text-gray-400 text-xs md:text-sm">
-        No odds available for today's matches
-      </div>
+      <WrapperComponent>
+        <div className="w-full rounded-xl shadow-lg overflow-hidden bg-gray-900 p-4 text-center text-gray-400 text-xs md:text-sm">
+          No odds available for today's matches
+        </div>
+      </WrapperComponent>
     );
   }
 
@@ -219,103 +243,147 @@ const TodaysOdds = ({ allMatches, isPage = false }) => {
     : currentCompetition.matches.slice(0, 3);
 
   return (
-    <div className="sticky top-4" style={{ overflow: 'visible' }}
-         onMouseEnter={() => setIsPaused(true)}
-         onMouseLeave={() => setIsPaused(false)}>
-      <div className="w-full rounded-xl shadow-lg relative" 
-           style={{ background: websiteColors.background, overflow: 'visible' }}>
-        <div className="p-2 md:p-4 border-b border-gray-800">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm md:text-lg font-medium" style={{ color: websiteColors.primary }}>
-              Today's Odds
-            </h2>
-            <div className="relative group">
-              <Info 
-                className="w-3 h-3 md:w-4 md:h-4 text-gray-400 hover:text-gray-300 cursor-help" 
-              />
-              <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-gray-800 rounded-lg shadow-xl text-xs md:text-sm text-white z-[9999]" style={{ pointerEvents: 'none' }}>
-                <div className="relative">
-                  <div className="text-left">
-                    <p className="mb-2">
-                      The displayed odds represent a sophisticated harmonic mean calculation derived from over 15 leading bookmakers.
-                    </p>
-                    <p>
-                      We utilize the harmonic mean methodology as it provides a more conservative and statistically robust average, particularly suitable for betting odds analysis and market consensus evaluation.
-                    </p>
+    <WrapperComponent>
+      <div className="sticky top-4" style={{ overflow: 'visible' }}
+           onMouseEnter={() => setIsPaused(true)}
+           onMouseLeave={() => setIsPaused(false)}>
+        <div className="w-full rounded-xl shadow-lg relative" 
+             style={{ background: websiteColors.background, overflow: 'visible' }}>
+          <div className="p-2 md:p-4 border-b border-gray-800">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm md:text-lg font-medium" style={{ color: websiteColors.primary }}>
+                Today's Odds
+              </h2>
+              {/* Info icon with repositioned tooltip */}
+              <div className="relative">
+                <Info 
+                  className="w-3 h-3 md:w-4 md:h-4 text-gray-400 hover:text-gray-300 cursor-help"
+                  onClick={handleInfoClick}
+                />
+                
+                {/* Mobile-friendly tooltip positioning */}
+                {showTooltip && (
+                  <div 
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:hidden"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTooltip(false);
+                    }}
+                  >
+                    <div 
+                      className="bg-gray-800 rounded-lg p-4 max-w-xs mx-auto text-xs text-white"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button 
+                        className="float-right text-gray-400 hover:text-white"
+                        onClick={() => setShowTooltip(false)}
+                      >
+                        <X size={16} />
+                      </button>
+                      <p className="mb-2">
+                        The displayed odds represent a sophisticated harmonic mean calculation derived from over 15 leading bookmakers.
+                      </p>
+                      <p>
+                        We utilize the harmonic mean methodology as it provides a more conservative and statistically robust average, particularly suitable for betting odds analysis and market consensus evaluation.
+                      </p>
+                    </div>
                   </div>
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-800 rotate-45"></div>
+                )}
+                
+                {/* Desktop tooltip (unchanged) */}
+                <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-gray-800 rounded-lg shadow-xl text-xs md:text-sm text-white z-[9999] hidden md:block" style={{ pointerEvents: 'none' }}>
+                  <div className="relative">
+                    <div className="text-left">
+                      <p className="mb-2">
+                        The displayed odds represent a sophisticated harmonic mean calculation derived from over 15 leading bookmakers.
+                      </p>
+                      <p>
+                        We utilize the harmonic mean methodology as it provides a more conservative and statistically robust average, particularly suitable for betting odds analysis and market consensus evaluation.
+                      </p>
+                    </div>
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-800 rotate-45"></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {currentCompetition?.competition && (
-          <div className="p-2 md:p-3 border-b border-gray-800">
-            <div className="flex items-center justify-between">
-              <button 
-                onClick={handlePrevious}
-                className="p-1 text-white/50 hover:text-white transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
+          {currentCompetition?.competition && (
+            <div className="p-2 md:p-3 border-b border-gray-800">
+              <div className="flex items-center justify-between">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering the parent onClick
+                    handlePrevious();
+                  }}
+                  className="p-1 text-white/50 hover:text-white transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
 
-              <div className="flex items-center justify-center gap-2">
-                {currentCompetition.competition.emblem && (
-                  <img 
-                    src={currentCompetition.competition.emblem} 
-                    alt={currentCompetition.competition.name}
-                    className="w-4 h-4 md:w-6 md:h-6 object-contain"
-                  />
-                )}
-                <span className="text-xs md:text-sm text-white font-medium">
-                  {currentCompetition.competition.name}
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  {currentCompetition.competition.emblem && (
+                    <img 
+                      src={currentCompetition.competition.emblem} 
+                      alt={currentCompetition.competition.name}
+                      className="w-4 h-4 md:w-6 md:h-6 object-contain"
+                    />
+                  )}
+                  <span className="text-xs md:text-sm text-white font-medium">
+                    {currentCompetition.competition.name}
+                  </span>
+                </div>
+
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering the parent onClick
+                    handleNext();
+                  }}
+                  className="p-1 text-white/50 hover:text-white transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
               </div>
-
-              <button 
-                onClick={handleNext}
-                className="p-1 text-white/50 hover:text-white transition-colors"
-              >
-                <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
             </div>
-          </div>
-        )}
-
-        <div className="relative">
-          <div>
-            {displayMatches.map(match => (
-              <Match key={match.id} match={match} />
-            ))}
-          </div>
-
-          {currentCompetition.matches.length > 3 && (
-            <button
-              onClick={() => toggleExpand(currentCompetition.competition.id)}
-              className="w-full py-2 flex items-center justify-center text-gray-300 hover:text-white transition-colors border-t border-gray-800/50"
-            >
-              {expandedCompetitions.has(currentCompetition.competition.id) ? (
-                <ChevronUp className="w-5 h-5" />
-              ) : (
-                <ChevronDown className="w-5 h-5" />
-              )}
-            </button>
           )}
 
-          <div className="py-2 flex justify-center gap-1 border-t border-gray-800/50">
-            {competitions.map((_, index) => (
-              <div 
-                key={index}
-                className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-colors duration-300 ${
-                  index === currentIndex ? 'bg-green-500' : 'bg-gray-600'
-                }`}
-              />
-            ))}
+          <div className="relative">
+            <div>
+              {displayMatches.map(match => (
+                <Match key={match.id} match={match} />
+              ))}
+            </div>
+
+            {currentCompetition.matches.length > 3 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering the parent onClick
+                  toggleExpand(currentCompetition.competition.id);
+                }}
+                className="w-full py-2 flex items-center justify-center text-gray-300 hover:text-white transition-colors border-t border-gray-800/50"
+              >
+                {expandedCompetitions.has(currentCompetition.competition.id) ? (
+                  <ChevronUp className="w-5 h-5" />
+                ) : (
+                  <ChevronDown className="w-5 h-5" />
+                )}
+              </button>
+            )}
+
+            <div className="py-2 flex justify-center gap-1 border-t border-gray-800/50">
+              {competitions.map((_, index) => (
+                <div 
+                  key={index}
+                  className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-colors duration-300 ${
+                    index === currentIndex ? 'bg-green-500' : 'bg-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </WrapperComponent>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { useMatchData } from '../../hooks/useMatchData';
 import { useMatchNotifications } from '../../hooks/useMatchNotifications';
 import { useMatchTabManagement } from '../../hooks/useMatchTabManagement';
@@ -16,6 +17,9 @@ import APIStyleMatches from '../APIStyleMatches';
 
 
 const Matches = ({ user, onOpenAuthModal }) => {
+  // Get navigate function for redirection
+  const navigate = useNavigate();
+  
   // State declarations
   const [selectedDay, setSelectedDay] = useState('today');
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
@@ -29,6 +33,11 @@ const Matches = ({ user, onOpenAuthModal }) => {
     []
   );  
 
+  // Navigation to odds page
+  const navigateToOddsPage = useCallback(() => {
+    navigate('/odds');
+  }, [navigate]);
+
   // Custom hooks
   const {
     matches,
@@ -40,7 +49,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
     fetchLiveMatchesSoft,
     setMatches,
     setAllLiveMatches,
-    initializeData  // Add this line
+    initializeData
   } = useMatchData(userTimeZone);
     
   const {
@@ -357,43 +366,48 @@ const Matches = ({ user, onOpenAuthModal }) => {
         setMatches={setMatches}
       />
 
-{/* Mobile Today's Odds */}
-<div className="md:hidden mb-6">
-  <TodaysOdds allMatches={getAllTodayMatches()} />
-</div>
+      {/* Mobile Today's Odds - with onClick to navigate to odds page */}
+      <div className="md:hidden mb-6">
+        <TodaysOdds
+          allMatches={getAllTodayMatches()}
+          onClick={navigateToOddsPage}
+        />
+      </div>
 
       <div className="relative flex flex-col items-center mb-24">
-      <MatchFilters
-  selectedDay={selectedDay}
-  setSelectedDay={handleDayChange}
-  activeTab={activeTab}
-  onTabChange={handleTabChange}
-  hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
-  getDateForSelection={getDateForSelection}
-/>
-
+        <MatchFilters
+          selectedDay={selectedDay}
+          setSelectedDay={handleDayChange}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
+          getDateForSelection={getDateForSelection}
+        />
 
         <div className="w-full max-w-5xl relative">
           <div className="flex relative pb-8">
             {/* Desktop League Filter */}
             <div className="hidden md:block absolute -left-36 top-0 w-[280px]">
               <div className="sticky top-4 pb-24">
-              <LeagueFilter
-  leagues={extractLeagues(matchesForCurrentDate || {}, allLiveMatches || {})}
-  selectedLeague={selectedLeague}
-  onLeagueSelect={handleLeagueSelect}
-  isMobileOpen={isMobileFilterOpen}
-  onClose={() => setIsMobileFilterOpen(false)}
-/>
+                <LeagueFilter
+                  leagues={extractLeagues(matchesForCurrentDate || {}, allLiveMatches || {})}
+                  selectedLeague={selectedLeague}
+                  onLeagueSelect={handleLeagueSelect}
+                  isMobileOpen={isMobileFilterOpen}
+                  onClose={() => setIsMobileFilterOpen(false)}
+                />
               </div>
             </div>
 
-{/* Desktop Today's Odds */}
-<div className="hidden md:block absolute -right-36 top-0 w-[280px]">
-  <div className="sticky top-4 pb-24">
-    <TodaysOdds allMatches={getAllTodayMatches()} />
-  </div>
-</div>
+            {/* Desktop Today's Odds - with onClick to navigate to odds page */}
+            <div className="hidden md:block absolute -right-36 top-0 w-[280px]">
+              <div className="sticky top-4 pb-24">
+                <TodaysOdds
+                  allMatches={getAllTodayMatches()}
+                  onClick={navigateToOddsPage}
+                />
+              </div>
+            </div>
 
 {/* Main Content Area */}
 <div className="w-full">
