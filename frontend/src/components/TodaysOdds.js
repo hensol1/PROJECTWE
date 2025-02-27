@@ -71,7 +71,7 @@ const Match = ({ match }) => {
   );
 };
 
-const TodaysOdds = ({ allMatches }) => {  // Changed prop name to allMatches
+const TodaysOdds = ({ allMatches, isPage = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [expandedCompetitions, setExpandedCompetitions] = useState(new Set());
@@ -112,7 +112,7 @@ const TodaysOdds = ({ allMatches }) => {  // Changed prop name to allMatches
   }, [competitions.length, currentIndex]);
 
   useEffect(() => {
-    if (competitions.length === 0) return;
+    if (competitions.length === 0 || isPage) return;
 
     const timer = !isPaused && setInterval(() => {
       setCurrentIndex((current) => 
@@ -121,7 +121,7 @@ const TodaysOdds = ({ allMatches }) => {  // Changed prop name to allMatches
     }, 3000);
 
     return () => timer && clearInterval(timer);
-  }, [competitions.length, isPaused]);
+  }, [competitions.length, isPaused, isPage]);
 
   const handlePrevious = () => {
     setCurrentIndex(current => 
@@ -155,6 +155,64 @@ const TodaysOdds = ({ allMatches }) => {  // Changed prop name to allMatches
     );
   }
 
+  // On the odds page, we want to show all competitions
+  if (isPage) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {competitions.map((competition) => {
+          const displayMatches = expandedCompetitions.has(competition.competition.id) 
+            ? competition.matches 
+            : competition.matches.slice(0, 3);
+            
+          return (
+            <div 
+              key={competition.competition.id}
+              className="w-full rounded-xl shadow-lg relative" 
+              style={{ background: websiteColors.background, overflow: 'visible' }}
+            >
+              <div className="p-2 md:p-3 border-b border-gray-800">
+                <div className="flex items-center justify-center gap-2">
+                  {competition.competition.emblem && (
+                    <img 
+                      src={competition.competition.emblem} 
+                      alt={competition.competition.name}
+                      className="w-4 h-4 md:w-6 md:h-6 object-contain"
+                    />
+                  )}
+                  <span className="text-xs md:text-sm text-white font-medium">
+                    {competition.competition.name}
+                  </span>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div>
+                  {displayMatches.map(match => (
+                    <Match key={match.id} match={match} />
+                  ))}
+                </div>
+
+                {competition.matches.length > 3 && (
+                  <button
+                    onClick={() => toggleExpand(competition.competition.id)}
+                    className="w-full py-2 flex items-center justify-center text-gray-300 hover:text-white transition-colors border-t border-gray-800/50"
+                  >
+                    {expandedCompetitions.has(competition.competition.id) ? (
+                      <ChevronUp className="w-5 h-5" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // For sidebar view (original behavior)
   const currentCompetition = competitions[currentIndex] || competitions[0];
   const displayMatches = expandedCompetitions.has(currentCompetition.competition.id) 
     ? currentCompetition.matches 

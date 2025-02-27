@@ -1,4 +1,3 @@
-// App.js
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -18,7 +17,8 @@ import ContactAdmin from './components/ContactAdmin';
 import WelcomeSlides from './components/WelcomeSlides';
 import SEO from './components/SEO';
 import StatsPage from './components/StatsPage';
-import { BookOpen, LineChart, FileText} from 'lucide-react'; 
+import OddsPage from './components/OddsPage'; // Import the new OddsPage component
+import { BookOpen, LineChart, FileText, Dices } from 'lucide-react'; // Added DollarSign
 import InstallPrompt from './components/InstallPrompt';
 import { BlogList } from './components/blog/BlogList';
 import { BlogPost } from './components/blog/BlogPost';
@@ -107,24 +107,30 @@ function App() {
                       <IconMenu user={user} />
                     </div>
                     <button
-  onClick={() => setWelcomeSlidesOpen(true)}
-  className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
->
-  <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
-</button>
-<Link
-    to="/stats"
-    className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
-  >
-    <LineChart className="w-5 h-5 md:w-6 md:h-6" />
-  </Link>
-  <Link
-  to="/blog"
-  className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
->
-  <FileText className="w-5 h-5 md:w-6 md:h-6" /> {/* Using FileText icon instead */}
-</Link>
-
+                      onClick={() => setWelcomeSlidesOpen(true)}
+                      className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
+                    >
+                      <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                    <Link
+                      to="/stats"
+                      className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
+                    >
+                      <LineChart className="w-5 h-5 md:w-6 md:h-6" />
+                    </Link>
+                    <Link
+                      to="/blog"
+                      className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
+                    >
+                      <FileText className="w-5 h-5 md:w-6 md:h-6" />
+                    </Link>
+                    {/* New odds page link */}
+                    <Link
+                      to="/odds"
+                      className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
+                    >
+                      <Dices className="w-5 h-5 md:w-6 md:h-6" />
+                    </Link>
                   </div>
 
                   <div className="flex justify-end">
@@ -151,6 +157,20 @@ function App() {
                           user={user} 
                           onOpenAuthModal={() => setAuthModalOpen(true)}
                         />
+                      </>
+                    } 
+                  />
+                  {/* New Odds Page Route */}
+                  <Route 
+                    path="/odds" 
+                    element={
+                      <>
+                        <SEO 
+                          title="Today's Odds - We Know Better"
+                          description="View today's football betting odds and predictions across all major leagues and matches."
+                          path="/odds"
+                        />
+                        <OddsPage />
                       </>
                     } 
                   />
@@ -207,34 +227,32 @@ function App() {
                       </>
                     }
                   />
-<Route 
-  path="/admin" 
-  element={
-    <>
-      <SEO 
-        title="Admin Dashboard - We Know Better"
-        description="Admin dashboard for We Know Better platform management."
-        path="/admin"
-      />
-      <AdminPage />
-    </>
-  }
-/>
-<Route 
-  path="/stats" 
-  element={
-    <>
-      <SEO 
-        title="AI Performance Stats - We Know Better"
-        description="Track our AI's prediction performance over time with detailed statistics and visualizations."
-        path="/stats"
-      />
-      <StatsPage />
-    </>
-  }
-/>
-
-
+                  <Route 
+                    path="/admin" 
+                    element={
+                      <>
+                        <SEO 
+                          title="Admin Dashboard - We Know Better"
+                          description="Admin dashboard for We Know Better platform management."
+                          path="/admin"
+                        />
+                        <AdminPage />
+                      </>
+                    }
+                  />
+                  <Route 
+                    path="/stats" 
+                    element={
+                      <>
+                        <SEO 
+                          title="AI Performance Stats - We Know Better"
+                          description="Track our AI's prediction performance over time with detailed statistics and visualizations."
+                          path="/stats"
+                        />
+                        <StatsPage />
+                      </>
+                    }
+                  />
                   <Route 
                     path="/admin/contacts" 
                     element={
@@ -252,49 +270,49 @@ function App() {
                   />
                   <Route path="*" element={<Navigate to="/" />} />
                   <Route 
-  path="/blog" 
-  element={
-    <>
-      <SEO 
-        title="Match Reviews - We Know Better"
-        description="Read our expert match previews and analysis for upcoming football matches."
-        path="/blog"
-      />
-      <BlogList />
-    </>
-  } 
-/>
-<Route 
-  path="/blog/:slug" 
-  element={
-    <>
-      <SEO 
-        title="Match Review - We Know Better"
-        description="Detailed analysis and predictions for football matches."
-        path="/blog"
-      />
-      <BlogPost />
-    </>
-  } 
-/>
-<Route 
-  path="/admin/blog/edit/:id" 
-  element={
-    <PrivateRoute>
-      <BlogEditor />
-    </PrivateRoute>
-  } 
-/>
-<Route path="/admin" element={<AdminPage />} />
-  <Route path="/admin/blog" element={<AdminPage defaultTab="blog" />} />
-  <Route 
-    path="/admin/blog/new" 
-    element={
-      <PrivateRoute>
-        <BlogEditor />
-      </PrivateRoute>
-    } 
-  />
+                    path="/blog" 
+                    element={
+                      <>
+                        <SEO 
+                          title="Match Reviews - We Know Better"
+                          description="Read our expert match previews and analysis for upcoming football matches."
+                          path="/blog"
+                        />
+                        <BlogList />
+                      </>
+                    } 
+                  />
+                  <Route 
+                    path="/blog/:slug" 
+                    element={
+                      <>
+                        <SEO 
+                          title="Match Review - We Know Better"
+                          description="Detailed analysis and predictions for football matches."
+                          path="/blog"
+                        />
+                        <BlogPost />
+                      </>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/blog/edit/:id" 
+                    element={
+                      <PrivateRoute>
+                        <BlogEditor />
+                      </PrivateRoute>
+                    } 
+                  />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/admin/blog" element={<AdminPage defaultTab="blog" />} />
+                  <Route 
+                    path="/admin/blog/new" 
+                    element={
+                      <PrivateRoute>
+                        <BlogEditor />
+                      </PrivateRoute>
+                    } 
+                  />
                 </Routes>
             </main>
 
