@@ -254,14 +254,14 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
               <h2 className="text-sm md:text-lg font-medium" style={{ color: websiteColors.primary }}>
                 Today's Odds
               </h2>
-              {/* Info icon with repositioned tooltip */}
-              <div className="relative">
+              {/* Info icon with appropriate tooltips for desktop and mobile */}
+              <div className="relative group">
                 <Info 
                   className="w-3 h-3 md:w-4 md:h-4 text-gray-400 hover:text-gray-300 cursor-help"
                   onClick={handleInfoClick}
                 />
                 
-                {/* Mobile-friendly tooltip positioning */}
+                {/* Mobile tooltip - only shown when clicked */}
                 {showTooltip && (
                   <div 
                     className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:hidden"
@@ -290,8 +290,8 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
                   </div>
                 )}
                 
-                {/* Desktop tooltip (unchanged) */}
-                <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-gray-800 rounded-lg shadow-xl text-xs md:text-sm text-white z-[9999] hidden md:block" style={{ pointerEvents: 'none' }}>
+                {/* Desktop tooltip - shown on hover */}
+                <div className="hidden md:block invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-gray-800 rounded-lg shadow-xl text-xs md:text-sm text-white z-[9999]">
                   <div className="relative">
                     <div className="text-left">
                       <p className="mb-2">
