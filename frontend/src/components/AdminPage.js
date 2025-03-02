@@ -39,6 +39,7 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isResettingAI, setIsResettingAI] = useState(false);
   const [isFixingStats, setIsFixingStats] = useState(false);
+  const [isGeneratingStatsFiles, setIsGeneratingStatsFiles] = useState(false);
   const [lastAction, setLastAction] = useState(null);
 
   const handleFetchMatches = async () => {
@@ -139,6 +140,27 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
     }
   };
 
+  const handleGenerateStatsFiles = async () => {
+    try {
+      setIsGeneratingStatsFiles(true);
+      const response = await api.generateStatsFiles();
+      
+      console.log('Generate stats files result:', response.data);
+      setLastAction({ 
+        type: 'success', 
+        message: 'Stats files generated successfully! Updated files for AI performance and odds calculations.'
+      });
+    } catch (error) {
+      console.error('Generate stats files error:', error);
+      setLastAction({ 
+        type: 'error', 
+        message: 'Error generating stats files: ' + (error.response?.data?.message || error.message) 
+      });
+    } finally {
+      setIsGeneratingStatsFiles(false);
+    }
+  };
+
   const handleResetAIStats = async () => {
     if (!window.confirm('Are you sure you want to reset AI prediction stats? This action cannot be undone.')) {
       return;
@@ -192,6 +214,12 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
           isLoading={isFixingStats}
           label="Fix Daily Stats"
           loadingLabel="Fixing Stats..."
+        />
+        <AdminButton
+          onClick={handleGenerateStatsFiles}
+          isLoading={isGeneratingStatsFiles}
+          label="Generate Stats Files"
+          loadingLabel="Generating..."
         />
       </div>
       

@@ -256,7 +256,7 @@ router.get('/ai/league-stats', withCache('league-stats', 300), async (req, res) 
 // Admin route to manually trigger stats file generation
 router.post('/generate-files', async (req, res) => {
   try {
-    const generateAllStatsFiles = require('../scripts/generateStatsFiles');
+    const generateAllStatsFiles = require('../scripts/generateStatsFile');
     const result = await generateAllStatsFiles();
     
     if (result.success) {
