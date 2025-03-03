@@ -26,6 +26,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [predictionFilter, setPredictionFilter] = useState('all'); // Options: 'all', 'correct', 'incorrect'
 
   // Time zone setup
   const userTimeZone = useMemo(() => 
@@ -317,7 +318,40 @@ const Matches = ({ user, onOpenAuthModal }) => {
       return filtered;
     }, {});
   }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches, selectedLeague]);
+
+  const getFilteredMatches = useCallback(() => {
+    let currentMatches = getCurrentMatches();
         
+    // Only apply filter when showing finished matches and the toggle is on
+    if (activeTab === 'finished' && predictionFilter !== 'all') {
+      const filteredMatches = {};
+      
+      Object.entries(currentMatches).forEach(([leagueKey, leagueMatches]) => {
+        // Filter matches based on prediction accuracy
+        const filteredLeagueMatches = leagueMatches.filter(match => {
+          const isPredictionCorrect = (
+            (match.aiPrediction === 'HOME_TEAM' && match.score.fullTime.home > match.score.fullTime.away) ||
+            (match.aiPrediction === 'AWAY_TEAM' && match.score.fullTime.away > match.score.fullTime.home) ||
+            (match.aiPrediction === 'DRAW' && match.score.fullTime.home === match.score.fullTime.away)
+          );
+          
+          // Return matches based on the selected filter
+          return predictionFilter === 'correct' ? isPredictionCorrect : !isPredictionCorrect;
+        });
+        
+        // Only include league if it has matches after filtering
+        if (filteredLeagueMatches.length > 0) {
+          filteredMatches[leagueKey] = filteredLeagueMatches;
+        }
+      });
+      
+      return filteredMatches;
+    }
+    
+    // Return unfiltered matches if not on finished tab or filter is set to 'all'
+    return currentMatches;
+  }, [activeTab, getCurrentMatches, predictionFilter]);
+            
   const getAllTodayMatches = useCallback(() => {
     // Create an object that combines matches from all categories
     const combinedMatches = {};
@@ -375,14 +409,16 @@ const Matches = ({ user, onOpenAuthModal }) => {
       </div>
 
       <div className="relative flex flex-col items-center mb-24">
-        <MatchFilters
-          selectedDay={selectedDay}
-          setSelectedDay={handleDayChange}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
-          getDateForSelection={getDateForSelection}
-        />
+      <MatchFilters
+  selectedDay={selectedDay}
+  setSelectedDay={handleDayChange}
+  activeTab={activeTab}
+  onTabChange={handleTabChange}
+  hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
+  getDateForSelection={getDateForSelection}
+  predictionFilter={predictionFilter}
+  setPredictionFilter={setPredictionFilter}
+/>
 
         <div className="w-full max-w-5xl relative">
           <div className="flex relative pb-8">
@@ -419,13 +455,13 @@ const Matches = ({ user, onOpenAuthModal }) => {
         {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
       </div>
     ) : (
-      <APIStyleMatches
-        matches={getCurrentMatches()}
-        activeTab={activeTab}
-        collapsedLeagues={collapsedLeagues}
-        onVote={handleVote}
-        selectedLeague={selectedLeague}
-      />
+<APIStyleMatches
+  matches={getFilteredMatches()}
+  activeTab={activeTab}
+  collapsedLeagues={collapsedLeagues}
+  onVote={handleVote}
+  selectedLeague={selectedLeague}
+/>
     )}
   </div>
 </div>

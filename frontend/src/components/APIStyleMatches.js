@@ -164,29 +164,29 @@ const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
                       </div>
                       
                       <div className="w-24 flex flex-col items-end">
-                        <div className="text-xs text-gray-400 mb-1">Our Prediction:</div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (match.status !== 'FINISHED') {
-                                onVote(match.id, 'HOME_TEAM');
-                              }
-                            }}
-                            className={`px-2 py-1 text-xs rounded ${
-                              match.status === 'FINISHED' 
-                                ? match.score.fullTime.home > match.score.fullTime.away
-                                  ? 'bg-emerald-500 text-white'
-                                  : match.aiPrediction === 'HOME_TEAM'
-                                  ? 'bg-red-500 text-white'
-                                  : 'bg-gray-700'
-                                : match.aiPrediction === 'HOME_TEAM'
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-gray-700 hover:bg-gray-600'
-                            }`}
-                          >
-                            1
-                          </button>
+  <div className="text-xs text-gray-400 mb-1">Our Prediction:</div>
+  <div className="flex gap-1">
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        if (match.status !== 'FINISHED') {
+          onVote(match.id, 'HOME_TEAM');
+        }
+      }}
+      className={`px-2 py-1 text-xs rounded ${
+        match.status === 'FINISHED' 
+          ? match.score.fullTime.home > match.score.fullTime.away
+            ? 'bg-emerald-500 text-white'
+            : match.aiPrediction === 'HOME_TEAM'
+            ? 'bg-red-500 text-white'
+            : 'bg-gray-700'
+          : match.aiPrediction === 'HOME_TEAM'
+          ? 'bg-emerald-500 text-white'
+          : 'bg-gray-700 hover:bg-gray-600'
+      }`}
+    >
+      1
+    </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

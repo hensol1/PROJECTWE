@@ -1,3 +1,5 @@
+// Updated MatchFilters.js with a dropdown filter instead of toggle switches
+
 import React from 'react';
 import { BiAlarm, BiAlarmOff } from "react-icons/bi";
 import { TabsSection } from './TabsSection';
@@ -8,9 +10,13 @@ export const MatchFilters = ({
   activeTab,
   onTabChange,
   hasAnyLiveMatches,
-  getDateForSelection
+  getDateForSelection,
+  predictionFilter,
+  setPredictionFilter
 }) => {
   const renderStatusTabs = () => {
+    // Your existing status tabs code...
+    // (Keeping your current implementation unchanged)
     if (selectedDay === 'yesterday') {
       return (
         <div className="inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md mt-2">
@@ -71,14 +77,59 @@ export const MatchFilters = ({
     );
   };
 
+  // New prediction filter UI - using radio buttons for a cleaner interface
+  const renderPredictionFilter = () => {
+    if (activeTab === 'finished') {
+      return (
+        <div className="mt-3 inline-flex bg-gray-100 p-0.5 rounded-lg shadow-md">
+          <button
+            onClick={() => setPredictionFilter('all')}
+            className={`
+              px-3 sm:px-4 py-1 sm:py-1.5 text-xs font-medium rounded-md transition-all
+              ${predictionFilter === 'all' 
+                ? 'bg-white text-blue-600 shadow-sm' 
+                : 'text-gray-600 hover:bg-gray-200'}
+            `}
+          >
+            All Matches
+          </button>
+          <button
+            onClick={() => setPredictionFilter('correct')}
+            className={`
+              px-3 sm:px-4 py-1 sm:py-1.5 text-xs font-medium rounded-md transition-all
+              ${predictionFilter === 'correct' 
+                ? 'bg-white text-green-600 shadow-sm' 
+                : 'text-gray-600 hover:bg-gray-200'}
+            `}
+          >
+            Correct Predictions
+          </button>
+          <button
+            onClick={() => setPredictionFilter('incorrect')}
+            className={`
+              px-3 sm:px-4 py-1 sm:py-1.5 text-xs font-medium rounded-md transition-all
+              ${predictionFilter === 'incorrect' 
+                ? 'bg-white text-red-600 shadow-sm' 
+                : 'text-gray-600 hover:bg-gray-200'}
+            `}
+          >
+            Incorrect Predictions
+          </button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="flex flex-col items-center gap-4">
-<TabsSection 
-  selectedDay={selectedDay}
-  setSelectedDay={setSelectedDay}  // This will now receive handleDayChange
-  getDateForSelection={getDateForSelection}
-/>
+      <TabsSection 
+        selectedDay={selectedDay}
+        setSelectedDay={setSelectedDay}
+        getDateForSelection={getDateForSelection}
+      />
       {renderStatusTabs()}
+      {renderPredictionFilter()}
     </div>
   );
 };
