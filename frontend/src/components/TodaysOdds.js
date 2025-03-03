@@ -186,7 +186,7 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
         {competitions.map((competition) => {
           const displayMatches = expandedCompetitions.has(competition.competition.id) 
             ? competition.matches 
-            : competition.matches.slice(0, 3);
+            : competition.matches.slice(0, 1); // Show only 1 match initially
             
           return (
             <div 
@@ -216,18 +216,25 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
                   ))}
                 </div>
 
-                {competition.matches.length > 3 && (
-                  <button
-                    onClick={() => toggleExpand(competition.competition.id)}
-                    className="w-full py-2 flex items-center justify-center text-gray-300 hover:text-white transition-colors border-t border-gray-800/50"
-                  >
-                    {expandedCompetitions.has(competition.competition.id) ? (
-                      <ChevronUp className="w-5 h-5" />
+                {/* Always show a div/button regardless of match count */}
+                <div
+                  className={`w-full py-2 flex items-center justify-center border-t border-gray-800/50 ${competition.matches.length > 1 ? 'cursor-pointer hover:bg-gray-800/30' : ''}`}
+                  onClick={competition.matches.length > 1 ? (e) => {
+                    e.stopPropagation();
+                    toggleExpand(competition.competition.id);
+                  } : undefined}
+                >
+                  {competition.matches.length > 1 ? (
+                    expandedCompetitions.has(competition.competition.id) ? (
+                      <ChevronUp className="w-5 h-5 text-gray-300" />
                     ) : (
-                      <ChevronDown className="w-5 h-5" />
-                    )}
-                  </button>
-                )}
+                      <ChevronDown className="w-5 h-5 text-gray-300 animate-bounce" />
+                    )
+                  ) : (
+                    // Invisible placeholder to maintain height
+                    <div className="w-5 h-5"></div>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -240,7 +247,7 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   const currentCompetition = competitions[currentIndex] || competitions[0];
   const displayMatches = expandedCompetitions.has(currentCompetition.competition.id) 
     ? currentCompetition.matches 
-    : currentCompetition.matches.slice(0, 3);
+    : currentCompetition.matches.slice(0, 1); // Show only 1 match initially
 
   return (
     <WrapperComponent>
@@ -354,21 +361,25 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
               ))}
             </div>
 
-            {currentCompetition.matches.length > 3 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering the parent onClick
-                  toggleExpand(currentCompetition.competition.id);
-                }}
-                className="w-full py-2 flex items-center justify-center text-gray-300 hover:text-white transition-colors border-t border-gray-800/50"
-              >
-                {expandedCompetitions.has(currentCompetition.competition.id) ? (
-                  <ChevronUp className="w-5 h-5" />
+            {/* Always show a footer div with consistent height regardless of match count */}
+            <div
+              className={`w-full py-2 flex items-center justify-center border-t border-gray-800/50 ${currentCompetition.matches.length > 1 ? 'cursor-pointer hover:bg-gray-800/30' : ''}`}
+              onClick={currentCompetition.matches.length > 1 ? (e) => {
+                e.stopPropagation();
+                toggleExpand(currentCompetition.competition.id);
+              } : undefined}
+            >
+              {currentCompetition.matches.length > 1 ? (
+                expandedCompetitions.has(currentCompetition.competition.id) ? (
+                  <ChevronUp className="w-5 h-5 text-gray-300" />
                 ) : (
-                  <ChevronDown className="w-5 h-5" />
-                )}
-              </button>
-            )}
+                  <ChevronDown className="w-5 h-5 text-gray-300 animate-bounce" />
+                )
+              ) : (
+                // Invisible placeholder to maintain height
+                <div className="w-5 h-5"></div>
+              )}
+            </div>
 
             <div className="py-2 flex justify-center gap-1 border-t border-gray-800/50">
               {competitions.map((_, index) => (
