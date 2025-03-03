@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import LeagueFilter from './LeagueFilter';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
-import { Calendar, Loader, ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react';
+import { Calendar, Loader, ChevronLeft, ChevronRight, ChevronDown, Filter, Info, X } from 'lucide-react';
 import { format, addDays, subDays, isToday, isTomorrow, isYesterday, isSameDay, parseISO } from 'date-fns';
 
 const OddsPage = () => {
@@ -13,6 +13,7 @@ const OddsPage = () => {
   const [loading, setLoading] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
+  const [showTooltip, setShowTooltip] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,6 +38,12 @@ const OddsPage = () => {
 
   const handleToday = () => {
     setSelectedDate(new Date());
+  };
+
+  // Toggle tooltip visibility
+  const handleInfoClick = (e) => {
+    e.stopPropagation();
+    setShowTooltip(!showTooltip);
   };
 
   // Parse league ID from URL if present
@@ -203,6 +210,58 @@ const OddsPage = () => {
           <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center">
             <Calendar className="mr-2 text-[#40c456]" />
             Betting Odds
+            
+            {/* Info icon for tooltip */}
+            <div className="relative group ml-2">
+              <Info 
+                className="w-4 h-4 md:w-5 md:h-5 text-gray-400 hover:text-[#40c456] cursor-help"
+                onClick={handleInfoClick}
+              />
+              
+              {/* Mobile tooltip - only shown when clicked */}
+              {showTooltip && (
+                <div 
+                  className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:hidden"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowTooltip(false);
+                  }}
+                >
+                  <div 
+                    className="bg-gray-800 rounded-lg p-4 max-w-xs mx-auto text-xs text-white"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button 
+                      className="float-right text-gray-400 hover:text-white"
+                      onClick={() => setShowTooltip(false)}
+                    >
+                      <X size={16} />
+                    </button>
+                    <p className="mb-2">
+                      The displayed odds represent a sophisticated harmonic mean calculation derived from over 15 leading bookmakers.
+                    </p>
+                    <p>
+                      We utilize the harmonic mean methodology as it provides a more conservative and statistically robust average, particularly suitable for betting odds analysis and market consensus evaluation.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Desktop tooltip - shown on hover */}
+              <div className="hidden md:block invisible group-hover:visible absolute left-1/2 -translate-x-1/2 mt-2 w-72 p-3 bg-gray-800 rounded-lg shadow-xl text-xs md:text-sm text-white z-[9999]">
+                <div className="relative">
+                  <div className="text-left">
+                    <p className="mb-2">
+                      The displayed odds represent a sophisticated harmonic mean calculation derived from over 15 leading bookmakers.
+                    </p>
+                    <p>
+                      We utilize the harmonic mean methodology as it provides a more conservative and statistically robust average, particularly suitable for betting odds analysis and market consensus evaluation.
+                    </p>
+                  </div>
+                  <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-800 rotate-45"></div>
+                </div>
+              </div>
+            </div>
           </h1>
         </div>
         
