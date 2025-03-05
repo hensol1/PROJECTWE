@@ -124,6 +124,13 @@ const getAIAccuracy = async () => {
 // Routes
 router.get('/', async (req, res) => {
   try {
+    // Add cache control headers to prevent caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     const { date } = req.query;
     const timeZone = req.headers['x-timezone'] || 'UTC';
     
@@ -222,6 +229,13 @@ router.post('/update-match-status', async (req, res) => {
 
 router.get('/live', async (req, res) => {
   try {
+    // Add cache control headers to prevent caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     const liveMatches = await Match.find({
       status: { 
         $in: ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']
@@ -243,6 +257,13 @@ router.get('/live', async (req, res) => {
 
 router.get('/:matchId/events', async (req, res) => {
   try {
+    // Add cache control headers to prevent caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     const { matchId } = req.params;
     
     // First try to get events from database

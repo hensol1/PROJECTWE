@@ -13,9 +13,22 @@ const performanceStats = {
 };
 
 const withCache = (key, ttl = 3600) => async (req, res, next) => {
+  // Moved inside the middleware function scope
   const startTime = Date.now();
   
   try {
+    // For paths that should never be cached, skip caching
+    if (req.path.includes('/matches/live') || 
+        (req.path.includes('/matches') && req.query.date)) {
+      // Just set cache control headers and continue
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      return next();
+    }
+
     // Check cache first
     const cached = cache.get(key);
     if (cached) {

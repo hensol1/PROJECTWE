@@ -29,7 +29,14 @@ app.use(cors({
     'https://www.weknowbetter.app'  // Include www subdomain just in case
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-timezone'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'x-timezone',
+    'Cache-Control',
+    'Pragma',
+    'Expires'
+  ],
   credentials: true,
   optionsSuccessStatus: 200
 }));

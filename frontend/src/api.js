@@ -75,9 +75,11 @@ const fetchStatsManifest = async () => {
 // Add all API methods here
 api.fetchMatches = (date) => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return api.get(`/api/matches?date=${date}`, {
+  const cacheBuster = Date.now(); // Keep cache buster
+  return api.get(`/api/matches?date=${date}&_=${cacheBuster}`, {
     headers: {
       'x-timezone': timeZone
+      // Remove the cache-control headers from here
     }
   });
 };
@@ -90,9 +92,11 @@ api.getStandings = (leagueId, season) => {
 // New method for fetching live matches
 api.fetchLiveMatches = () => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return api.get('/api/matches/live', {
+  const cacheBuster = Date.now(); // Keep cache buster
+  return api.get(`/api/matches/live?_=${cacheBuster}`, {
     headers: {
       'x-timezone': timeZone
+      // Remove the cache-control headers from here
     }
   });
 };

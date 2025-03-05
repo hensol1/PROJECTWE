@@ -1,43 +1,121 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import { useMatchData } from '../../hooks/useMatchData';
 import { useMatchNotifications } from '../../hooks/useMatchNotifications';
 import { useMatchTabManagement } from '../../hooks/useMatchTabManagement';
 import { filterMatchesByStatus, extractLeagues, getDateForSelection } from '../../utils/matchUtils';
 import { MatchFilters } from './MatchFilters';
 import NotificationQueue from '../NotificationQueue';
-import ModernAccuracyComparison from '../AccuracyComparison';
 import LoadingLogo from '../LoadingLogo';
-import LeagueFilter from '../LeagueFilter';
 import api from '../../api';
 import _ from 'lodash';
-import TodaysOdds from '../TodaysOdds';
 import APIStyleMatches from '../APIStyleMatches';
+import TodaysOdds from '../TodaysOdds';
 
+// Custom hook to expose match data to other components
+export const useMatchesData = () => {
+  const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+  // Create a new instance of the hook
+  const {
+    matches,
+    allLiveMatches,
+    isLoading,
+    isInitialDataLoaded,
+    initializeData
+  } = useMatchData(userTimeZone);
 
-const Matches = ({ user, onOpenAuthModal }) => {
+  // State for tracking whether data has been initialized
+  const [isInit, setIsInit] = useState(false);
+  const [activeTab, setActiveTab] = useState('scheduled');
+  
+  // Initialize data if needed
+  useEffect(() => {
+    if (!isInit) {
+      initializeData().then(() => setIsInit(true));
+    }
+  }, [isInit, initializeData]);
+  
+  // Get today's date for filtering
+  const today = new Date();
+  const currentDateKey = format(today, 'yyyy-MM-dd');
+  const matchesForCurrentDate = (matches && matches[currentDateKey]) || {};
+  
+  // Filter matches by status
+  const liveMatches = useMemo(() => 
+    allLiveMatches || {}, 
+    [allLiveMatches]
+  );
+  
+  const finishedMatches = useMemo(() => 
+    filterMatchesByStatus(matchesForCurrentDate, ['FINISHED'], userTimeZone, today),
+    [matchesForCurrentDate, userTimeZone, today]
+  );
+  
+  const scheduledMatches = useMemo(() => 
+    filterMatchesByStatus(matchesForCurrentDate, ['TIMED', 'SCHEDULED'], userTimeZone, today),
+    [matchesForCurrentDate, userTimeZone, today]
+  );
+  
+  // Combined matches for the league filter
+  const allMatches = useMemo(() => {
+    const combined = { ...liveMatches };
+    
+    // Add finished and scheduled matches
+    Object.entries(finishedMatches).forEach(([leagueKey, matches]) => {
+      if (!combined[leagueKey]) combined[leagueKey] = [];
+      combined[leagueKey] = [...combined[leagueKey], ...matches];
+    });
+    
+    Object.entries(scheduledMatches).forEach(([leagueKey, matches]) => {
+      if (!combined[leagueKey]) combined[leagueKey] = [];
+      combined[leagueKey] = [...combined[leagueKey], ...matches];
+    });
+    
+    return combined;
+  }, [liveMatches, finishedMatches, scheduledMatches]);
+  
+  return {
+    getCurrentMatches: (tab = activeTab) => {
+      switch (tab) {
+        case 'live':
+          return liveMatches;
+        case 'finished':
+          return finishedMatches;
+        case 'scheduled':
+          return scheduledMatches;
+        default:
+          return allMatches; // Return all matches combined
+      }
+    },
+    isLoading,
+    activeTab,
+    setActiveTab
+  };
+};
+
+const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeague = null }) => {
   // Get navigate function for redirection
   const navigate = useNavigate();
   
   // State declarations
   const [selectedDay, setSelectedDay] = useState('today');
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
-  const [selectedLeague, setSelectedLeague] = useState(null);
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [predictionFilter, setPredictionFilter] = useState('all'); // Options: 'all', 'correct', 'incorrect'
+  
+  const navigateToOddsPage = useCallback(() => {
+    if (!disableSidebars) {
+      navigate('/odds');
+    }
+  }, [navigate, disableSidebars]);
 
   // Time zone setup
   const userTimeZone = useMemo(() => 
     Intl.DateTimeFormat().resolvedOptions().timeZone, 
     []
   );  
-
-  // Navigation to odds page
-  const navigateToOddsPage = useCallback(() => {
-    navigate('/odds');
-  }, [navigate]);
 
   // Custom hooks
   const {
@@ -70,20 +148,25 @@ const Matches = ({ user, onOpenAuthModal }) => {
   const scheduledMatches = filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED'], userTimeZone, selectedDate);
 
   const determineInitialTab = useCallback(() => {
-    // Add null checks
-    if (!allLiveMatches) return 'scheduled';
-    if (Object.keys(allLiveMatches || {}).length > 0) {
+    // First priority: Live matches
+    if (allLiveMatches && Object.keys(allLiveMatches).length > 0) {
       return 'live';
     }
-    if (Object.keys(scheduledMatches || {}).length > 0) {
+    
+    // Second priority: Scheduled matches
+    if (scheduledMatches && Object.keys(scheduledMatches).length > 0) {
       return 'scheduled';
     }
-    if (Object.keys(finishedMatches || {}).length > 0) {
+    
+    // Third priority: Finished matches
+    if (finishedMatches && Object.keys(finishedMatches).length > 0) {
       return 'finished';
     }
+    
+    // Fallback to scheduled (even if empty)
     return 'scheduled';
   }, [allLiveMatches, scheduledMatches, finishedMatches]);
-    
+      
   const {
     activeTab,
     handleTabChange,
@@ -210,43 +293,62 @@ const Matches = ({ user, onOpenAuthModal }) => {
     checkForGoals
   ]);
 
+    const getAllTodayMatches = useCallback(() => {
+    if (disableSidebars) return {};
+    
+    // Original implementation
+    const combinedMatches = {};
+    
+    // Helper function to merge matches from a source into combinedMatches
+    const mergeMatches = (source) => {
+      Object.entries(source || {}).forEach(([leagueId, leagueMatches]) => {
+        if (!combinedMatches[leagueId]) {
+          combinedMatches[leagueId] = [];
+        }
+        combinedMatches[leagueId] = [...combinedMatches[leagueId], ...leagueMatches];
+      });
+    };
+  
+    // Merge matches from all three sources
+    mergeMatches(allLiveMatches);
+    mergeMatches(finishedMatches);
+    mergeMatches(scheduledMatches);
+    
+    return combinedMatches;
+  }, [allLiveMatches, finishedMatches, scheduledMatches, disableSidebars]);
+
+
   // Effects
   useEffect(() => {
     if (!userTimeZone || isInitialized) return;
     
     const initialize = async () => {
       try {
-        await initializeData(); // Use the new initializeData function
+        // initializeData already handles loading state internally
+        await initializeData(); // Initial data load
+        
+        // Determine and set the most appropriate tab after data is loaded
         const initialTab = determineInitialTab();
         setActiveTab(initialTab);
         setIsInitialized(true);
+        
+        // Immediately perform a soft update to get latest data
+        await softUpdateMatches();
       } catch (error) {
         console.error('Error during initialization:', error);
+        setIsInitialized(true); // Still mark as initialized to prevent infinite retries
       }
     };
   
     initialize();
-  }, [userTimeZone, isInitialized, initializeData, determineInitialTab, setActiveTab]);
-          
+  }, [userTimeZone, isInitialized, initializeData, determineInitialTab, setActiveTab, softUpdateMatches]);
+                
   useEffect(() => {
     if (!isInitialized) return;
 
     const updateTimer = setInterval(softUpdateMatches, activeTab === 'live' ? 15000 : 30000);
     return () => clearInterval(updateTimer);
   }, [isInitialized, softUpdateMatches, activeTab]);
-
-  // Callbacks
-  const handleLeagueSelect = useCallback((leagueId) => {
-    setSelectedLeague(leagueId);
-    setActiveTab(determineAppropriateTab(leagueId));
-  }, [determineAppropriateTab, setActiveTab]);
-
-  const toggleLeague = useCallback((leagueKey) => {
-    setCollapsedLeagues(prev => ({
-      ...prev,
-      [leagueKey]: !prev[leagueKey]
-    }));
-  }, []);
 
   const handleDayChange = useCallback((newDay) => {
     setSelectedDay(newDay);
@@ -312,7 +414,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
   
     // Filter matches for the selected league
     return Object.entries(matches).reduce((filtered, [leagueId, leagueMatches]) => {
-      if (leagueId.includes(selectedLeague)) {  // Check if leagueId contains the selectedLeague
+      if (leagueId === selectedLeague) {  // Use exact match instead of includes
         filtered[leagueId] = leagueMatches;
       }
       return filtered;
@@ -350,30 +452,7 @@ const Matches = ({ user, onOpenAuthModal }) => {
     
     // Return unfiltered matches if not on finished tab or filter is set to 'all'
     return currentMatches;
-  }, [activeTab, getCurrentMatches, predictionFilter]);
-            
-  const getAllTodayMatches = useCallback(() => {
-    // Create an object that combines matches from all categories
-    const combinedMatches = {};
-    
-    // Helper function to merge matches from a source into combinedMatches
-    const mergeMatches = (source) => {
-      Object.entries(source || {}).forEach(([leagueId, leagueMatches]) => {
-        if (!combinedMatches[leagueId]) {
-          combinedMatches[leagueId] = [];
-        }
-        combinedMatches[leagueId] = [...combinedMatches[leagueId], ...leagueMatches];
-      });
-    };
-  
-    // Merge matches from all three sources
-    mergeMatches(allLiveMatches);
-    mergeMatches(finishedMatches);
-    mergeMatches(scheduledMatches);
-    
-    return combinedMatches;
-  }, [allLiveMatches, finishedMatches, scheduledMatches]);    
-  
+  }, [activeTab, getCurrentMatches, predictionFilter]);  
   
   if (isLoading) {
     return (
@@ -390,113 +469,39 @@ const Matches = ({ user, onOpenAuthModal }) => {
         onDismiss={handleNotificationDismiss}
       />
       
-      <ModernAccuracyComparison 
-        user={user}
-        onSignInClick={onOpenAuthModal}
-        allLiveMatches={allLiveMatches}
-        scheduledMatches={scheduledMatches}
-        selectedDate={selectedDate}
-        matches={matches}
-        setMatches={setMatches}
-      />
-
-      {/* Mobile Today's Odds - with onClick to navigate to odds page */}
-      <div className="md:hidden mb-6">
-        <TodaysOdds
-          allMatches={getAllTodayMatches()}
-          onClick={navigateToOddsPage}
-        />
-      </div>
-
       <div className="relative flex flex-col items-center mb-24">
-      <MatchFilters
-  selectedDay={selectedDay}
-  setSelectedDay={handleDayChange}
-  activeTab={activeTab}
-  onTabChange={handleTabChange}
-  hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
-  getDateForSelection={getDateForSelection}
-  predictionFilter={predictionFilter}
-  setPredictionFilter={setPredictionFilter}
-/>
+        <MatchFilters
+          selectedDay={selectedDay}
+          setSelectedDay={handleDayChange}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
+          getDateForSelection={getDateForSelection}
+          predictionFilter={predictionFilter}
+          setPredictionFilter={setPredictionFilter}
+        />
 
         <div className="w-full max-w-5xl relative">
           <div className="flex relative pb-8">
-            {/* Desktop League Filter */}
-            <div className="hidden md:block absolute -left-36 top-0 w-[280px]">
-              <div className="sticky top-4 pb-24">
-                <LeagueFilter
-                  leagues={extractLeagues(matchesForCurrentDate || {}, allLiveMatches || {})}
+            {/* Main Content Area */}
+            <div className="w-full">
+              {Object.keys(getCurrentMatches()).length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  {activeTab === 'live' && "No Live matches at the moment"}
+                  {activeTab === 'finished' && "No Finished matches at the moment"}
+                  {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
+                </div>
+              ) : (
+                <APIStyleMatches
+                  matches={getFilteredMatches()}
+                  activeTab={activeTab}
+                  collapsedLeagues={collapsedLeagues}
+                  onVote={handleVote}
                   selectedLeague={selectedLeague}
-                  onLeagueSelect={handleLeagueSelect}
-                  isMobileOpen={isMobileFilterOpen}
-                  onClose={() => setIsMobileFilterOpen(false)}
                 />
-              </div>
+              )}
             </div>
-
-            {/* Desktop Today's Odds - with onClick to navigate to odds page */}
-            <div className="hidden md:block absolute -right-36 top-0 w-[280px]">
-              <div className="sticky top-4 pb-24">
-                <TodaysOdds
-                  allMatches={getAllTodayMatches()}
-                  onClick={navigateToOddsPage}
-                />
-              </div>
-            </div>
-
-{/* Main Content Area */}
-<div className="w-full">
-  <div className="max-w-md mx-auto">
-    {Object.keys(getCurrentMatches()).length === 0 ? (
-      <div className="text-center py-10 text-gray-500">
-        {activeTab === 'live' && "No Live matches at the moment"}
-        {activeTab === 'finished' && "No Finished matches at the moment"}
-        {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
-      </div>
-    ) : (
-<APIStyleMatches
-  matches={getFilteredMatches()}
-  activeTab={activeTab}
-  collapsedLeagues={collapsedLeagues}
-  onVote={handleVote}
-  selectedLeague={selectedLeague}
-/>
-    )}
-  </div>
-</div>
           </div>
-        </div>
-
-        {/* Mobile League Filter Button */}
-        <div className="md:hidden">
-          <button
-            onClick={() => setIsMobileFilterOpen(true)}
-            className="fixed left-4 bottom-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700 z-50"
-            aria-label="Filter Leagues"
-          >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="w-5 h-5"
-            >
-              <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
-            </svg>
-          </button>
-
-          <LeagueFilter
-  leagues={extractLeagues(matchesForCurrentDate || {}, allLiveMatches || {})}
-  selectedLeague={selectedLeague}
-  onLeagueSelect={handleLeagueSelect}
-  isMobileOpen={isMobileFilterOpen}
-  onClose={() => setIsMobileFilterOpen(false)}
-/>
-
         </div>
       </div>
     </div>

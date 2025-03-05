@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import PredictionTicker from './PredictionTicker';
 import NextMatchCountdown from './NextMatchCountdown';
-import TopLeaguesPerformance from './TopLeaguesPerformance';
-import { BlogPreview } from './blog/BlogPreview';
+
 
 const RacingBarDisplay = ({ score }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -87,7 +86,7 @@ const RacingBarDisplay = ({ score }) => {
   );
 };
 
-export default function AccuracyComparison({ allLiveMatches, scheduledMatches }) {
+export default function AccuracyComparison({ user, onSignInClick }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [accuracyData, setAccuracyData] = useState({
     aiAccuracy: 0,
@@ -97,51 +96,103 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
   const [animatedAiAccuracy, setAnimatedAiAccuracy] = useState(0);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [scheduledMatches, setScheduledMatches] = useState({});
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const [accuracyResponse, dailyResponse] = await Promise.all([
-          api.fetchAccuracy(),
-          api.fetchDailyAccuracy()
-        ]);
-        
-        // Set all states at once to minimize re-renders
-        const updates = {
-          accuracyData: {
-            aiAccuracy: accuracyResponse?.aiAccuracy || 0,
-            lastUpdated: new Date()
-          },
-          dailyStats: {
-            ai: {
-              total: dailyResponse?.data?.ai?.total || 0,
-              correct: dailyResponse?.data?.ai?.correct || 0
-            }
-          }
-        };
-        
-        setAccuracyData(updates.accuracyData);
-        setDailyStats(updates.dailyStats);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching accuracy data:', error);
-        setError('Failed to fetch accuracy data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-  
-    fetchData();
-  }, []);
+  // Debugging function to log details about scheduledMatches
+  const logScheduledMatches = (matches) => {
+    console.log('scheduledMatches structure:', matches);
+    console.log('Number of leagues:', Object.keys(matches).length);
     
+    if (Object.keys(matches).length > 0) {
+      const firstLeagueKey = Object.keys(matches)[0];
+      console.log('First league key:', firstLeagueKey);
+      console.log('First league matches:', matches[firstLeagueKey]);
+      if (matches[firstLeagueKey].length > 0) {
+        console.log('Sample match structure:', matches[firstLeagueKey][0]);
+      }
+    }
+  };
+
+  // Function to fetch scheduled matches
+  const fetchScheduledMatches = async () => {
+    try {
+      console.log('Fetching scheduled matches...');
+      // Get today's date in YYYY-MM-DD format for the API
+      const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      
+      console.log('Fetching matches for date:', formattedDate);
+      const response = await api.fetchMatches(formattedDate);
+      
+      if (response && response.data) {
+        console.log('Response data received:', response.data);
+        
+        // The data seems to be structured as {matches: Array(41)}
+        const matchesArray = response.data.matches;
+        
+        if (Array.isArray(matchesArray) && matchesArray.length > 0) {
+          console.log(`Found ${matchesArray.length} matches in response`);
+          
+          // Filter for scheduled matches and organize by league
+          const scheduledByLeague = {};
+          
+          matchesArray.forEach(match => {
+            if (!match || !match.status) {
+              console.log('Invalid match object:', match);
+              return;
+            }
+            
+            // Check if this is a scheduled match
+            const isScheduled = match.status === 'TIMED' || match.status === 'SCHEDULED';
+            
+            if (isScheduled) {
+              // Get the league ID
+              const leagueId = match.competition?.id || 'unknown';
+              
+              // Initialize league array if needed
+              if (!scheduledByLeague[leagueId]) {
+                scheduledByLeague[leagueId] = [];
+              }
+              
+              // Add match to league
+              scheduledByLeague[leagueId].push(match);
+            }
+          });
+          
+          const leagueCount = Object.keys(scheduledByLeague).length;
+          console.log(`Organized ${leagueCount} leagues with scheduled matches:`, scheduledByLeague);
+          
+          if (leagueCount > 0) {
+            setScheduledMatches(scheduledByLeague);
+            return scheduledByLeague;
+          }
+        }
+      }
+      
+      // Return empty object if no matches found
+      console.log('No scheduled matches found, setting empty object');
+      setScheduledMatches({});
+      return {};
+    } catch (error) {
+      console.error('Error fetching scheduled matches:', error);
+      setScheduledMatches({});
+      return {};
+    }
+  };
+  
+  // Main data fetching function
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      
+      // Execute all API calls in parallel for better performance
       const [accuracyResponse, dailyResponse] = await Promise.all([
         api.fetchAccuracy(),
         api.fetchDailyAccuracy()
       ]);
+      
+      // Fetch scheduled matches separately to debug if needed
+      await fetchScheduledMatches();
       
       const aiAccuracy = accuracyResponse?.aiAccuracy || 0;
       const aiStats = {
@@ -150,7 +201,7 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
           correct: dailyResponse?.data?.ai?.correct || 0
         }
       };
-  
+      
       setAccuracyData({
         aiAccuracy,
         lastUpdated: new Date()
@@ -175,6 +226,7 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
     }
   };
 
+  // Initialize the component
   useEffect(() => {
     const initialize = async () => {
       if (isInitialized) return;
@@ -204,7 +256,7 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
       if (document.visibilityState === 'visible') {
         fetchData();
       }
-    }, 15 * 60 * 1000);
+    }, 15 * 60 * 1000); // 15 minutes
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -212,6 +264,7 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
     };
   }, [isInitialized]);
 
+  // Animation effect for the accuracy score
   useEffect(() => {
     const targetAi = accuracyData?.aiAccuracy || 0;
     const duration = 1500;
@@ -226,6 +279,12 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
   
     return () => clearInterval(interval);
   }, [accuracyData?.aiAccuracy]);
+
+  // Debug the scheduledMatches whenever it changes
+  useEffect(() => {
+    console.log('--- scheduledMatches updated:', scheduledMatches);
+    logScheduledMatches(scheduledMatches);
+  }, [scheduledMatches]);
 
   if (isLoading) {
     return (
@@ -249,48 +308,26 @@ export default function AccuracyComparison({ allLiveMatches, scheduledMatches })
     );
   }
 
+  // Log scheduled matches for debugging
+  logScheduledMatches(scheduledMatches);
+
   return (
-    <div className="max-w-6xl mx-auto mt-4">
-      <div className="flex justify-center relative">
-        {/* Left side - Top Leagues (desktop only) */}
-        <div className="hidden md:block absolute -left-20 top-0 w-[280px]">
-          <TopLeaguesPerformance displayMode="desktop" />
+    <div className="mt-4">
+      <div className="w-full">
+        <div className="mb-3">
+          <RacingBarDisplay 
+            score={animatedAiAccuracy || 0}
+          />
         </div>
   
-        {/* Center content */}
-        <div className="w-full max-w-xl">
-          <div className="mb-3">
-            <RacingBarDisplay 
-              score={animatedAiAccuracy || 0}
-            />
-          </div>
-  
-          {/* Mobile Top Leagues */}
-          <div className="md:hidden mb-3">
-            <TopLeaguesPerformance displayMode="mobile" />
-          </div>
-  
-          <div className="mb-2">
-            <PredictionTicker />
-          </div>
+        <div className="mb-2">
+          <PredictionTicker />
+        </div>
           
-          <div className="mb-6">
-            <NextMatchCountdown scheduledMatches={scheduledMatches} />
-            
-            {/* Mobile Blog Preview */}
-            <div className="md:hidden mt-4">
-              <BlogPreview />
-            </div>
-          </div>
-        </div>
-  
-        {/* Right side - Blog Preview (desktop only) */}
-        <div className="hidden md:block absolute -right-20 top-0 w-[280px]">
-          <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
-            <BlogPreview />
-          </div>
+        <div className="mb-6">
+          <NextMatchCountdown scheduledMatches={scheduledMatches} />
         </div>
       </div>
     </div>
   );
-    }
+  }
