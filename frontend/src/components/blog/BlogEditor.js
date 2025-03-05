@@ -135,6 +135,9 @@ const TeamSelector = ({ onSelect, onClose }) => {
     { id: "798", name: "Mallorca" },
     { id: "42", name: "Arsenal" },
     { id: "79", name: "Lille" },
+    { id: "168", name: "Bayer Leverkusen" },
+    { id: "209", name: "Feyenoord" },
+
 
 
 
