@@ -3,6 +3,8 @@ import { useState, useCallback, useEffect } from 'react';
 export const useMatchTabManagement = (allLiveMatches, scheduledMatches, finishedMatches) => {
   const [activeTab, setActiveTab] = useState('live');
   const [isManualTabSelect, setIsManualTabSelect] = useState(false);
+  // Add a ref to track if the initial selection has happened
+  const [initialSelectionDone, setInitialSelectionDone] = useState(false);
 
   // Determine the most appropriate tab based on available matches
   const determineAppropriateTab = useCallback((selectedDay = 'today') => {
@@ -36,29 +38,17 @@ export const useMatchTabManagement = (allLiveMatches, scheduledMatches, finished
     return 'scheduled';
   }, [allLiveMatches, scheduledMatches, finishedMatches]);
 
-  // Watch for changes in match availability and update the tab if needed
+  // Initialize with the appropriate tab based on available data - ONLY ONCE
   useEffect(() => {
-    // Only run this effect after the component has mounted
-    const currentTabHasMatches = 
-      (activeTab === 'live' && allLiveMatches && Object.keys(allLiveMatches || {}).length > 0) ||
-      (activeTab === 'scheduled' && scheduledMatches && Object.keys(scheduledMatches || {}).length > 0) ||
-      (activeTab === 'finished' && finishedMatches && Object.keys(finishedMatches || {}).length > 0);
-    
-    // If no manual selection was made and current tab has no matches, 
-    // determine a better tab with matches
-    if (!isManualTabSelect && !currentTabHasMatches) {
-      const newTab = determineAppropriateTab();
-      setActiveTab(newTab);
+    // Only run this once on initial mount
+    if (!initialSelectionDone) {
+      const initialTab = determineAppropriateTab();
+      setActiveTab(initialTab);
+      setInitialSelectionDone(true);
     }
-  }, [allLiveMatches, scheduledMatches, finishedMatches, activeTab, isManualTabSelect, determineAppropriateTab]);
+  }, [determineAppropriateTab, initialSelectionDone]);
 
-  // Initialize with the appropriate tab based on available data
-  useEffect(() => {
-    // Run once on mount to set the initial tab
-    const initialTab = determineAppropriateTab();
-    setActiveTab(initialTab);
-  }, [determineAppropriateTab]);
-
+  // Handle tab changes
   const handleTabChange = useCallback((newTab) => {
     setIsManualTabSelect(true);
     setActiveTab(newTab);
