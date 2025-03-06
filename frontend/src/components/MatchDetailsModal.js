@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Tv } from 'lucide-react';
 import api from '../api';
 
 const FieldVisualization = ({ lineup, teamColor }) => {
@@ -130,6 +130,7 @@ const FieldVisualization = ({ lineup, teamColor }) => {
       };
       
       const formatEventDetails = (event) => {
+        // For substitutions
         if (event.type === 'subst') {
           return (
             <div>
@@ -140,7 +141,18 @@ const FieldVisualization = ({ lineup, teamColor }) => {
             </div>
           );
         }
-      
+        
+        // For VAR events
+        if (event.type?.toLowerCase() === 'var') {
+          return (
+            <div>
+              <span>{event.player?.name || 'VAR Decision'}</span>
+              <span className="text-blue-400 block text-xs"> {event.detail}</span>
+            </div>
+          );
+        }
+        
+        // For all other events
         return (
           <div>
             <span>{event.player?.name}</span>
@@ -159,7 +171,14 @@ const FieldVisualization = ({ lineup, teamColor }) => {
             return detail === 'Yellow Card' ? '🟨' : '🟥';
           case 'subst':
             return '↔️';
+          case 'var':
+            return <Tv size={16} className="text-blue-400" />;
           default:
+            // Check if the detail contains VAR-related text
+            if (detail?.toLowerCase()?.includes('var') || 
+                detail?.toLowerCase()?.includes('video assistant referee')) {
+              return <Tv size={16} className="text-blue-400" />;
+            }
             return null;
         }
       };
@@ -351,4 +370,3 @@ const FieldVisualization = ({ lineup, teamColor }) => {
   };
   
   export default MatchDetailsModal;
-  

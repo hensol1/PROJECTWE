@@ -98,6 +98,16 @@ const TopLeaguesPerformance = ({ displayMode = 'desktop' }) => {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-emerald-400">#{index + 1}</span>
                   <div className="flex items-center gap-1.5">
+                    {league.country?.flag && (
+                      <img 
+                        src={league.country.flag} 
+                        alt={league.country.name || ''}
+                        className="w-3 h-3 object-contain"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    )}
                     <img 
                       src={league.emblem} 
                       alt={league.name}
@@ -106,7 +116,7 @@ const TopLeaguesPerformance = ({ displayMode = 'desktop' }) => {
                         e.target.src = '/placeholder-emblem.png';
                       }}
                     />
-                    <span className="text-xs text-gray-300 truncate max-w-[120px]">
+                    <span className="text-xs text-gray-300 truncate max-w-[110px]">
                       {league.name}
                     </span>
                   </div>
