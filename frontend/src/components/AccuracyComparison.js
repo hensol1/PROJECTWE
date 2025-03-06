@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useRef } from 'react';
 import { Activity, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import PredictionTicker from './PredictionTicker';
-import NextMatchCountdown from './NextMatchCountdown';
 
+// Lazy load components that don't need to be instantly visible
+const PredictionTicker = lazy(() => import('./PredictionTicker'));
+const NextMatchCountdown = lazy(() => import('./NextMatchCountdown'));
 
 const RacingBarDisplay = ({ score }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -97,25 +98,82 @@ export default function AccuracyComparison({ user, onSignInClick }) {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [scheduledMatches, setScheduledMatches] = useState({});
+  const [shouldLoadSecondary, setShouldLoadSecondary] = useState(false);
+  
+  // Use refs to track last update times to prevent unnecessary reloads
+  const lastDataUpdate = useRef({
+    accuracy: 0,
+    matches: 0
+  });
+  
+  // Minimum time between updates (in ms)
+  const MIN_UPDATE_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-  // Debugging function to log details about scheduledMatches
-  const logScheduledMatches = (matches) => {
-    console.log('scheduledMatches structure:', matches);
-    console.log('Number of leagues:', Object.keys(matches).length);
-    
-    if (Object.keys(matches).length > 0) {
-      const firstLeagueKey = Object.keys(matches)[0];
-      console.log('First league key:', firstLeagueKey);
-      console.log('First league matches:', matches[firstLeagueKey]);
-      if (matches[firstLeagueKey].length > 0) {
-        console.log('Sample match structure:', matches[firstLeagueKey][0]);
+  // Function to fetch pre-generated stats from static file
+  const fetchPreGeneratedStats = async (forceUpdate = false) => {
+    try {
+      const now = Date.now();
+      
+      // Skip if we updated recently (unless forced)
+      if (!forceUpdate && 
+          now - lastDataUpdate.current.accuracy < MIN_UPDATE_INTERVAL) {
+        console.log('Skipping accuracy update - too soon since last update');
+        return accuracyData;
       }
+      
+      // Try to get cache buster from manifest
+      let cacheBuster = '';
+      try {
+        const manifestResponse = await fetch('/stats/manifest.json');
+        if (manifestResponse.ok) {
+          const manifest = await manifestResponse.json();
+          if (manifest && manifest.aiHistory && manifest.aiHistory.lastUpdated) {
+            cacheBuster = `?t=${manifest.aiHistory.lastUpdated}`;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch manifest for cache busting', err);
+        cacheBuster = `?t=${now}`;
+      }
+      
+      const response = await fetch(`/stats/ai-history.json${cacheBuster}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stats file: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data && data.overall) {
+        // Update the last update timestamp
+        lastDataUpdate.current.accuracy = now;
+        
+        return {
+          aiAccuracy: data.overall.overallAccuracy || 0,
+          lastUpdated: new Date(data.generatedAt) || new Date()
+        };
+      }
+      
+      throw new Error('Invalid stats data format');
+    } catch (err) {
+      console.error('Error loading pre-generated stats:', err);
+      // Fallback to API if file loading fails
+      return null;
     }
   };
-
-  // Function to fetch scheduled matches
-  const fetchScheduledMatches = async () => {
+  
+  // Function to fetch scheduled matches (deferred)
+  const fetchScheduledMatches = async (forceUpdate = false) => {
     try {
+      const now = Date.now();
+      
+      // Skip if we updated recently (unless forced)
+      if (!forceUpdate && 
+          now - lastDataUpdate.current.matches < MIN_UPDATE_INTERVAL) {
+        console.log('Skipping matches update - too soon since last update');
+        return scheduledMatches;
+      }
+      
       console.log('Fetching scheduled matches...');
       // Get today's date in YYYY-MM-DD format for the API
       const today = new Date();
@@ -163,6 +221,9 @@ export default function AccuracyComparison({ user, onSignInClick }) {
           console.log(`Organized ${leagueCount} leagues with scheduled matches:`, scheduledByLeague);
           
           if (leagueCount > 0) {
+            // Update the last update timestamp
+            lastDataUpdate.current.matches = now;
+            
             setScheduledMatches(scheduledByLeague);
             return scheduledByLeague;
           }
@@ -181,48 +242,96 @@ export default function AccuracyComparison({ user, onSignInClick }) {
   };
   
   // Main data fetching function
-  const fetchData = async () => {
+  const fetchData = async (forceUpdate = false) => {
+    // If not forcing an update and component is already loaded, update in background
+    if (!forceUpdate && !isLoading && isInitialized) {
+      console.log('Component already loaded, updating in background');
+      updateDataInBackground();
+      return;
+    }
+    
     try {
-      setIsLoading(true);
+      if (!isInitialized) {
+        setIsLoading(true);
+      }
       
-      // Execute all API calls in parallel for better performance
-      const [accuracyResponse, dailyResponse] = await Promise.all([
-        api.fetchAccuracy(),
-        api.fetchDailyAccuracy()
-      ]);
+      // Try to fetch pre-generated stats first (critical)
+      const preGeneratedStats = await fetchPreGeneratedStats(forceUpdate);
       
-      // Fetch scheduled matches separately to debug if needed
-      await fetchScheduledMatches();
+      let newAccuracyData;
       
-      const aiAccuracy = accuracyResponse?.aiAccuracy || 0;
-      const aiStats = {
-        ai: {
-          total: dailyResponse?.data?.ai?.total || 0,
-          correct: dailyResponse?.data?.ai?.correct || 0
-        }
-      };
+      if (preGeneratedStats) {
+        // Use pre-generated stats if available
+        console.log('Using pre-generated stats');
+        newAccuracyData = preGeneratedStats;
+      } else {
+        // Fallback to API if pre-generated stats are unavailable
+        console.log('Falling back to API for stats');
+        const accuracyResponse = await api.fetchAccuracy();
+        newAccuracyData = {
+          aiAccuracy: accuracyResponse?.aiAccuracy || 0,
+          lastUpdated: new Date()
+        };
+        
+        // Update the last update timestamp
+        lastDataUpdate.current.accuracy = Date.now();
+      }
       
-      setAccuracyData({
-        aiAccuracy,
-        lastUpdated: new Date()
-      });
-      setDailyStats(aiStats);
-      setError(null);
+      setAccuracyData(newAccuracyData);
+      setIsLoading(false);
+      
+      // After initial render, load remaining data
+      if (!shouldLoadSecondary) {
+        setTimeout(() => {
+          setShouldLoadSecondary(true);
+        }, 100);
+      }
     } catch (error) {
       console.error('Error fetching accuracy data:', error);
       setAccuracyData({
         aiAccuracy: 0,
         lastUpdated: new Date()
       });
+      setError('Failed to fetch accuracy data');
+      setIsLoading(false);
+    }
+  };
+  
+  // Function to update data in background without triggering loading state
+  const updateDataInBackground = async () => {
+    try {
+      // Get fresh accuracy data without showing loading indicator
+      const preGeneratedStats = await fetchPreGeneratedStats(false);
+      
+      if (preGeneratedStats) {
+        setAccuracyData(preGeneratedStats);
+      }
+      
+      // Only load secondary data if it's already been loaded once
+      if (shouldLoadSecondary) {
+        loadSecondaryData(false);
+      }
+    } catch (error) {
+      console.error('Error updating data in background:', error);
+    }
+  };
+
+  // Function to load secondary data after initial render
+  const loadSecondaryData = async (forceUpdate = false) => {
+    try {
+      // Fetch daily stats (smaller data)
+      const dailyResponse = await api.fetchDailyAccuracy();
       setDailyStats({
         ai: {
-          total: 0,
-          correct: 0
+          total: dailyResponse?.data?.ai?.total || 0,
+          correct: dailyResponse?.data?.ai?.correct || 0
         }
       });
-      setError('Failed to fetch accuracy data');
-    } finally {
-      setIsLoading(false);
+      
+      // Fetch scheduled matches (can be larger)
+      await fetchScheduledMatches(forceUpdate);
+    } catch (error) {
+      console.error('Error loading secondary data:', error);
     }
   };
 
@@ -232,21 +341,31 @@ export default function AccuracyComparison({ user, onSignInClick }) {
       if (isInitialized) return;
       
       try {
-        setIsLoading(true);
-        await fetchData();
+        await fetchData(true); // Force update on initial load
         setIsInitialized(true);
       } catch (error) {
         console.error('Error during initialization:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     initialize();
+  }, []);
+
+  // Load secondary data after initial render
+  useEffect(() => {
+    if (shouldLoadSecondary) {
+      loadSecondaryData(true); // Force update on initial load of secondary data
+    }
+  }, [shouldLoadSecondary]);
+
+  // Set up polling and visibility handlers
+  useEffect(() => {
+    if (!isInitialized) return;
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && isInitialized) {
-        fetchData();
+      if (document.visibilityState === 'visible') {
+        // Just check for updates in background when tab becomes visible again
+        updateDataInBackground();
       }
     };
 
@@ -254,7 +373,7 @@ export default function AccuracyComparison({ user, onSignInClick }) {
     
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        fetchData();
+        updateDataInBackground();
       }
     }, 15 * 60 * 1000); // 15 minutes
 
@@ -262,7 +381,7 @@ export default function AccuracyComparison({ user, onSignInClick }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(pollInterval);
     };
-  }, [isInitialized]);
+  }, [isInitialized, shouldLoadSecondary]);
 
   // Animation effect for the accuracy score
   useEffect(() => {
@@ -280,12 +399,6 @@ export default function AccuracyComparison({ user, onSignInClick }) {
     return () => clearInterval(interval);
   }, [accuracyData?.aiAccuracy]);
 
-  // Debug the scheduledMatches whenever it changes
-  useEffect(() => {
-    console.log('--- scheduledMatches updated:', scheduledMatches);
-    logScheduledMatches(scheduledMatches);
-  }, [scheduledMatches]);
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-24 mt-4">
@@ -299,7 +412,7 @@ export default function AccuracyComparison({ user, onSignInClick }) {
       <div className="text-center text-red-500 p-4 mt-4">
         <p>{error}</p>
         <button 
-          onClick={fetchData}
+          onClick={() => fetchData(true)}
           className="mt-2 text-sm text-blue-500 hover:text-blue-600"
         >
           Try Again
@@ -307,9 +420,6 @@ export default function AccuracyComparison({ user, onSignInClick }) {
       </div>
     );
   }
-
-  // Log scheduled matches for debugging
-  logScheduledMatches(scheduledMatches);
 
   return (
     <div className="mt-4">
@@ -320,14 +430,22 @@ export default function AccuracyComparison({ user, onSignInClick }) {
           />
         </div>
   
-        <div className="mb-2">
-          <PredictionTicker />
-        </div>
-          
-        <div className="mb-6">
-          <NextMatchCountdown scheduledMatches={scheduledMatches} />
-        </div>
+        {shouldLoadSecondary && (
+          <>
+            <div className="mb-2">
+              <Suspense fallback={<div className="h-8 bg-gray-800 animate-pulse rounded"></div>}>
+                <PredictionTicker />
+              </Suspense>
+            </div>
+              
+            <div className="mb-6">
+              <Suspense fallback={<div className="h-10 bg-gray-800 animate-pulse rounded"></div>}>
+                <NextMatchCountdown scheduledMatches={scheduledMatches} />
+              </Suspense>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
-  }
+}

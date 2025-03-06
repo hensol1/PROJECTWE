@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Timer } from 'lucide-react';
 
-const NextMatchCountdown = ({ scheduledMatches }) => {
+// Using memo to prevent unnecessary re-renders
+const NextMatchCountdown = memo(({ scheduledMatches }) => {
   const [countdown, setCountdown] = useState('');
   const [nextMatches, setNextMatches] = useState([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const truncateTeamName = (name) => {
     return name?.length > 10 ? `${name.substring(0, 10)}...` : name;
   };
 
+  // Separate useEffect for processing matches - this runs once when scheduledMatches change
   useEffect(() => {
     // Immediate return if scheduledMatches is invalid
     if (!scheduledMatches || typeof scheduledMatches !== 'object') {
       console.warn('Invalid scheduledMatches:', scheduledMatches);
       setNextMatches([]);
-      setCountdown('');
+      setIsLoading(false);
       return;
     }
 
@@ -68,21 +71,26 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
       return matches;
     };
 
-    const updateCountdown = () => {
-      const matches = findNextMatches();
-      if (matches.length === 0) {
-        setCountdown('');
-        setNextMatches([]);
-        return;
-      }
+    // Process matches immediately
+    const matches = findNextMatches();
+    setNextMatches(matches);
+    setIsLoading(false);
+  }, [scheduledMatches]);
 
+  // Separate useEffect for countdown - this runs every second
+  useEffect(() => {
+    if (nextMatches.length === 0) {
+      setCountdown('');
+      return;
+    }
+
+    const updateCountdown = () => {
       const now = new Date();
-      const matchTime = new Date(matches[0].utcDate);
+      const matchTime = new Date(nextMatches[0].utcDate);
       const diff = matchTime - now;
 
       if (diff <= 0) {
         setCountdown('');
-        setNextMatches([]);
         return;
       }
 
@@ -93,14 +101,17 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
       setCountdown(
         `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
       );
-      setNextMatches(matches);
     };
 
+    // Update countdown immediately
     updateCountdown();
+    
+    // Then set interval
     const intervalId = setInterval(updateCountdown, 1000);
     return () => clearInterval(intervalId);
-  }, [scheduledMatches]);
+  }, [nextMatches]);
 
+  // Rotation effect for multiple matches
   useEffect(() => {
     if (nextMatches.length <= 1) return;
 
@@ -110,6 +121,17 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
 
     return () => clearInterval(rotationInterval);
   }, [nextMatches.length]);
+
+  // Show loading placeholder if still processing matches
+  if (isLoading) {
+    return (
+      <div className="w-full bg-gray-900 border-t border-b border-gray-700">
+        <div className="h-10 flex items-center justify-center">
+          <div className="w-full max-w-md bg-gray-800 animate-pulse h-4 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   // Return null if no valid matches or countdown
   if (!nextMatches.length || !countdown) {
@@ -133,6 +155,7 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
           src={team.crest} 
           alt={team.name}
           className={`${isHome ? 'w-4 h-4' : 'w-3 h-3'} inline-block shrink-0`}
+          loading="lazy"
           onError={(e) => e.target.style.display = 'none'}
         />
       )}
@@ -186,6 +209,6 @@ const NextMatchCountdown = ({ scheduledMatches }) => {
       </div>
     </div>
   );
-};
+});
 
 export default NextMatchCountdown;

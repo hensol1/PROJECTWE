@@ -72,6 +72,49 @@ const fetchStatsManifest = async () => {
   }
 };
 
+// Direct fetch from static file with fallback to API
+const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformFn = data => data) => {
+  try {
+    // Try to get cache buster from manifest
+    let cacheBuster = '';
+    try {
+      const manifestResponse = await fetch('/stats/manifest.json');
+      if (manifestResponse.ok) {
+        const manifest = await manifestResponse.json();
+        const fileKey = fileUrl.split('/').pop().split('.')[0].replace(/-/g, '');
+        if (manifest && manifest[fileKey] && manifest[fileKey].lastUpdated) {
+          cacheBuster = `?t=${manifest[fileKey].lastUpdated}`;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch manifest for cache busting', err);
+      cacheBuster = `?t=${Date.now()}`;
+    }
+    
+    // Fetch the static file
+    const response = await fetch(`${fileUrl}${cacheBuster}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stats file: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return transformFn(data);
+  } catch (err) {
+    console.warn(`Error fetching static file ${fileUrl}:`, err);
+    console.log(`Falling back to API endpoint: ${fallbackEndpoint}`);
+    
+    // Fallback to API endpoint
+    try {
+      const apiResponse = await api.get(fallbackEndpoint);
+      return apiResponse.data;
+    } catch (apiErr) {
+      console.error('API fallback also failed:', apiErr);
+      throw apiErr;
+    }
+  }
+};
+
 // Add all API methods here
 api.fetchMatches = (date) => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -101,23 +144,18 @@ api.fetchLiveMatches = () => {
   });
 };
 
+// Updated to use static file first with API fallback
 api.fetchAccuracy = async () => {
   try {
-    // Try new endpoint first
-    const response = await api.fetchAIHistory();
-    return {
-      aiAccuracy: response.overall.overallAccuracy || 0
-    };
+    const staticData = await fetchStaticFileWithFallback(
+      '/stats/ai-history.json',
+      '/api/accuracy/ai',
+      data => ({ aiAccuracy: data.overall.overallAccuracy || 0 })
+    );
+    return staticData;
   } catch (error) {
-    console.error('Error fetching accuracy:', error);
-    // Fallback to old endpoint
-    try {
-      const legacyResponse = await api.get('/api/accuracy/ai');
-      return legacyResponse.data;
-    } catch (fallbackError) {
-      console.error('Error in fallback accuracy fetch:', fallbackError);
-      return { aiAccuracy: 0 };
-    }
+    console.error('All accuracy fetch methods failed:', error);
+    return { aiAccuracy: 0 };
   }
 };
 
@@ -149,28 +187,20 @@ api.fetchLastTwoDaysStats = async () => {
 // Optimized version of fetchAIHistory that uses static files
 api.fetchAIHistory = async () => {
   try {
-    // Try to get the manifest for cache busting
-    let cacheBuster = Date.now();
-    try {
-      const manifest = await fetchStatsManifest();
-      cacheBuster = manifest?.aiHistory?.lastUpdated || cacheBuster;
-    } catch (manifestError) {
-      console.warn('Could not fetch manifest, using timestamp as cache buster', manifestError);
-    }
-    
-    // Use the optimized endpoint
-    const response = await api.get(`/api/stats/ai/history?_=${cacheBuster}`);
-    return response.data;
+    return await fetchStaticFileWithFallback(
+      '/stats/ai-history.json',
+      '/api/stats/ai/history'
+    );
   } catch (error) {
     console.error('Error fetching AI history:', error);
     
-    // Fallback to the original endpoint if optimized one fails
+    // Fallback to the original endpoint if all else fails
     try {
       console.log('Falling back to legacy endpoint for AI history');
       const fallbackResponse = await api.get('/api/accuracy/ai/history');
       return fallbackResponse.data;
     } catch (fallbackError) {
-      console.error('Both optimized and fallback endpoints failed:', fallbackError);
+      console.error('All AI history endpoints failed:', fallbackError);
       throw error; // Throw the original error
     }
   }
@@ -186,47 +216,25 @@ api.fetchMatchLineups = (matchId) => {
   return api.get(`/api/lineups/${matchId}`);
 };
 
-// Weekly leaderboard
-api.getWeeklyLeaderboard = () => {
-  return api.get('/api/user/leaderboard/weekly');
-};
 
-// New endpoint for user's daily stats
-api.fetchUserDailyAccuracy = async () => {
-  try {
-    const response = await api.get('/api/accuracy/user/daily');
-    return response.data;
-  } catch (error) {
-    console.error('Error in fetchUserDailyAccuracy:', error);
-    throw error;
-  }
-};
-
-// Optimized version of fetchLeagueStats
+// Optimized version of fetchLeagueStats using static file
 api.fetchLeagueStats = async () => {
   try {
-    // Try to get the manifest for cache busting
-    let cacheBuster = Date.now();
-    try {
-      const manifest = await fetchStatsManifest();
-      cacheBuster = manifest?.leagueStats?.lastUpdated || cacheBuster;
-    } catch (manifestError) {
-      console.warn('Could not fetch manifest, using timestamp as cache buster', manifestError);
-    }
-    
-    // Use the optimized endpoint
-    const response = await api.get(`/api/stats/ai/league-stats?_=${cacheBuster}`);
-    return response.data;
+    return await fetchStaticFileWithFallback(
+      '/stats/league-stats.json',
+      '/api/stats/ai/league-stats',
+      data => data.stats || []
+    );
   } catch (error) {
     console.error('Error fetching league stats:', error);
     
-    // Fallback to the original endpoint if optimized one fails
+    // Fallback to the original endpoint if all else fails
     try {
       console.log('Falling back to legacy endpoint for league stats');
       const fallbackResponse = await api.get('/api/accuracy/ai/league-stats');
       return fallbackResponse.data;
     } catch (fallbackError) {
-      console.error('Both optimized and fallback endpoints failed:', fallbackError);
+      console.error('All league stats endpoints failed:', fallbackError);
       throw error; // Throw the original error
     }
   }
@@ -235,10 +243,19 @@ api.fetchLeagueStats = async () => {
 // Modified to include user stats if available
 api.fetchDailyAccuracy = async () => {
   try {
-    const response = await api.get('/api/accuracy/ai/daily');
+    // Try to get data from static file first
+    const dailyStats = await fetchStaticFileWithFallback(
+      '/stats/daily-predictions.json',
+      '/api/accuracy/ai/daily',
+      data => ({
+        total: data.totalPredictionsToday || 0,
+        correct: data.totalCorrectToday || 0
+      })
+    );
+    
     return {
       data: {
-        ai: response.data
+        ai: dailyStats
       }
     };
   } catch (error) {
@@ -254,17 +271,10 @@ api.fetchDailyAccuracy = async () => {
 // Optimized version of getDailyPredictions
 api.getDailyPredictions = async () => {
   try {
-    // Try to get the manifest for cache busting
-    let cacheBuster = Date.now();
-    try {
-      const manifest = await fetchStatsManifest();
-      cacheBuster = manifest?.dailyPredictions?.lastUpdated || cacheBuster;
-    } catch (manifestError) {
-      console.warn('Could not fetch manifest, using timestamp as cache buster', manifestError);
-    }
-    
-    const response = await api.get(`/api/stats/daily-predictions?_=${cacheBuster}`);
-    return response.data;
+    return await fetchStaticFileWithFallback(
+      '/stats/daily-predictions.json',
+      '/api/stats/daily-predictions'
+    );
   } catch (error) {
     console.error('Error fetching daily predictions:', error);
     throw error;

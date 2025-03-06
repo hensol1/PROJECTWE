@@ -87,7 +87,7 @@ const TopLeaguesPerformance = ({ displayMode = 'desktop' }) => {
         {/* Title */}
         <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-2">
           <Trophy size={14} className="text-emerald-400" />
-          <span className="text-sm font-semibold text-emerald-400">Top Leagues</span>
+          <span className="text-sm font-semibold text-emerald-400">Top Performing Leagues</span>
         </div>
 
         {/* Leagues List */}
