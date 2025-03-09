@@ -80,9 +80,50 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   const getMatchesGroupedByCompetition = () => {
     const groupedMatches = new Map();
     
+    // Get today's date for filtering
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
     // Process matches by league
     Object.entries(allMatches || {}).forEach(([leagueId, matches]) => {
-      matches.forEach(match => {
+      if (!Array.isArray(matches)) {
+        console.warn('Matches is not an array for league', leagueId);
+        return;
+      }
+      
+      // Filter to only include today's matches
+      const todayMatches = matches.filter(match => {
+        try {
+          if (!match.utcDate) return false;
+          const matchDate = new Date(match.utcDate);
+          const matchDateStr = matchDate.toISOString().split('T')[0];
+          return matchDateStr === todayStr;
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      if (todayMatches.length === 0) return; // Skip leagues with no matches today
+  
+      todayMatches.forEach(match => {
+        // Generate placeholder odds data for development
+        if (process.env.NODE_ENV === 'development' && !match.odds) {
+          // Create placeholder odds data for testing purposes
+          match.odds = {
+            harmonicMeanOdds: {
+              home: 2.2 + Math.random() * 0.5,
+              draw: 3.1 + Math.random() * 0.5,
+              away: 2.8 + Math.random() * 0.5
+            },
+            impliedProbabilities: {
+              home: Math.floor(30 + Math.random() * 20),
+              draw: Math.floor(20 + Math.random() * 15),
+              away: Math.floor(25 + Math.random() * 20)
+            }
+          };
+        }
+      
+        // Only include matches with odds data
         if (match.odds?.harmonicMeanOdds) {
           const compId = match.competition.id;
           if (!groupedMatches.has(compId)) {
@@ -98,12 +139,12 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   
     // Sort matches within each competition by kickoff time
     groupedMatches.forEach(group => {
-      group.matches.sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+      group.matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
     });
   
     return Array.from(groupedMatches.values());
   };
-  
+        
   const competitions = getMatchesGroupedByCompetition();
 
   useEffect(() => {

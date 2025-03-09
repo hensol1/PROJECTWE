@@ -40,6 +40,7 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
   const [isResettingAI, setIsResettingAI] = useState(false);
   const [isFixingStats, setIsFixingStats] = useState(false);
   const [isGeneratingStatsFiles, setIsGeneratingStatsFiles] = useState(false);
+  const [isGeneratingTeamStats, setIsGeneratingTeamStats] = useState(false); // Add this state
   const [lastAction, setLastAction] = useState(null);
 
   const handleFetchMatches = async () => {
@@ -187,6 +188,27 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
     }
   };
 
+  const handleGenerateTeamStats = async () => {
+    try {
+      setIsGeneratingTeamStats(true);
+      const response = await api.refreshTeamStats();
+      
+      console.log('Generate team stats result:', response);
+      setLastAction({ 
+        type: 'success', 
+        message: `Team stats generated successfully! Analyzed ${response.totalTeamsAnalyzed} teams.`
+      });
+    } catch (error) {
+      console.error('Generate team stats error:', error);
+      setLastAction({ 
+        type: 'error', 
+        message: 'Error generating team stats: ' + (error.response?.data?.message || error.message) 
+      });
+    } finally {
+      setIsGeneratingTeamStats(false);
+    }
+  };
+
   return (
     <div className="bg-white shadow-md rounded-lg p-4 mb-6">
       <h2 className="text-xl font-semibold mb-4">Admin Controls</h2>
@@ -220,6 +242,13 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
           isLoading={isGeneratingStatsFiles}
           label="Generate Stats Files"
           loadingLabel="Generating..."
+        />
+        {/* Add the new button for team stats */}
+        <AdminButton
+          onClick={handleGenerateTeamStats}
+          isLoading={isGeneratingTeamStats}
+          label="Generate Team Stats"
+          loadingLabel="Processing Teams..."
         />
       </div>
       

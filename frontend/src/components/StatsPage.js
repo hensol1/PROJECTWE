@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import PerformanceGraph from './PerformanceGraph';
 import LeagueStats from './LeagueStats';
+import TeamStats from './TeamStats';
 import api from '../api';
 
 // Custom hook to prefetch all data
 const usePrefetchData = () => {
   useEffect(() => {
-    // Prefetch both datasets immediately
+    // Prefetch all datasets immediately
     const prefetchData = async () => {
       try {
         await Promise.all([
           api.fetchAIHistory(),
-          api.fetchLeagueStats()
+          api.fetchLeagueStats(),
+          api.fetchTeamStats()
         ]);
       } catch (error) {
         console.error('Prefetch error:', error);
@@ -32,7 +34,7 @@ const StatsPage = () => {
   const TabButton = ({ tab, label }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-6 py-2 border-b-2 font-medium transition-colors ${
+      className={`px-3 sm:px-6 py-2 border-b-2 text-sm sm:text-base font-medium transition-colors ${
         activeTab === tab
           ? 'border-green-500 text-green-600'
           : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -42,7 +44,7 @@ const StatsPage = () => {
     </button>
   );
 
-  // Render both components but hide inactive one
+  // Render components but hide inactive ones
   const renderContent = () => (
     <div className="relative">
       <div className={activeTab === 'overall' ? 'block' : 'hidden'}>
@@ -51,18 +53,22 @@ const StatsPage = () => {
       <div className={activeTab === 'leagues' ? 'block' : 'hidden'}>
         <LeagueStats />
       </div>
+      <div className={activeTab === 'teams' ? 'block' : 'hidden'}>
+        <TeamStats />
+      </div>
     </div>
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">AI Performance Statistics</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">AI Performance Statistics</h1>
 
         <div className="w-full">
-          <div className="flex border-b border-gray-200 mb-6">
-            <TabButton tab="overall" label="Overall Performance" />
-            <TabButton tab="leagues" label="League Performance" />
+          <div className="flex border-b border-gray-200 mb-4 sm:mb-6 overflow-x-auto pb-1 no-scrollbar">
+            <TabButton tab="overall" label="Overall" />
+            <TabButton tab="leagues" label="League" />
+            <TabButton tab="teams" label="Teams" />
           </div>
 
           <ErrorBoundary 

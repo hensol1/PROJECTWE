@@ -127,28 +127,69 @@ const OddsPage = () => {
         const processedMatches = {};
         
         // Extract and organize matches by league ID
-        if (matchesResponse.data && typeof matchesResponse.data === 'object') {
-          // Check if the response is already organized by date
-          const responseData = matchesResponse.data[apiDateStr] || matchesResponse.data;
+        if (matchesResponse.data) {
+          let matchesData = [];
           
-          Object.entries(responseData).forEach(([leagueKey, leagueMatches]) => {
-            if (Array.isArray(leagueMatches)) {
-              // Filter matches for the selected date only that have odds
-              leagueMatches.forEach(match => {
-                const matchDate = parseISO(match.utcDate);
-                if (isSameDay(matchDate, selectedDate) && match.odds?.harmonicMeanOdds) {
-                  // Use competition ID as the key
-                  const compId = match.competition.id;
-                  if (!processedMatches[compId]) {
-                    processedMatches[compId] = [];
-                  }
-                  processedMatches[compId].push(match);
+          // Handle different response formats
+          if (matchesResponse.data.matches) {
+            // Direct matches array format
+            matchesData = matchesResponse.data.matches;
+          } else if (matchesResponse.data[apiDateStr]) {
+            // Date-indexed nested format
+            const dateData = matchesResponse.data[apiDateStr];
+            
+            // Convert the league-grouped data to a single array
+            if (typeof dateData === 'object' && !Array.isArray(dateData)) {
+              matchesData = Object.values(dateData).flat();
+            } else if (Array.isArray(dateData)) {
+              matchesData = dateData;
+            }
+          } else if (typeof matchesResponse.data === 'object') {
+            // League-grouped format without date nesting
+            Object.values(matchesResponse.data).forEach(leagueMatches => {
+              if (Array.isArray(leagueMatches)) {
+                matchesData = [...matchesData, ...leagueMatches];
+              }
+            });
+          }
+          
+          console.log(`Got ${matchesData.length} matches from API response`);
+          
+          // Filter matches for the selected date and group by competition
+          matchesData.forEach(match => {
+            const matchDate = parseISO(match.utcDate);
+            if (isSameDay(matchDate, selectedDate)) {
+              // Use competition ID as the key
+              const compId = match.competition.id;
+              
+              // Ensure the match has necessary data
+              if (compId && match.competition && match.homeTeam && match.awayTeam) {
+                // Add odds data if missing (for testing - should be removed in production)
+                if (!match.odds && process.env.NODE_ENV === 'development') {
+                  match.odds = {
+                    harmonicMeanOdds: {
+                      home: 2.2 + Math.random() * 0.5,
+                      draw: 3.1 + Math.random() * 0.5,
+                      away: 2.8 + Math.random() * 0.5
+                    },
+                    impliedProbabilities: {
+                      home: Math.floor(30 + Math.random() * 20),
+                      draw: Math.floor(20 + Math.random() * 15),
+                      away: Math.floor(25 + Math.random() * 20)
+                    }
+                  };
                 }
-              });
+                
+                if (!processedMatches[compId]) {
+                  processedMatches[compId] = [];
+                }
+                processedMatches[compId].push(match);
+              }
             }
           });
         }
         
+        console.log(`Processed ${Object.values(processedMatches).flat().length} matches for display`);
         setMatches(processedMatches);
         
         // Extract leagues from processed matches
@@ -160,7 +201,7 @@ const OddsPage = () => {
         setLoading(false);
       }
     };
-
+    
     fetchData();
   }, [selectedDate, apiDateStr]);
 

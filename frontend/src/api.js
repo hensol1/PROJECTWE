@@ -75,6 +75,12 @@ const fetchStatsManifest = async () => {
 // Direct fetch from static file with fallback to API
 const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformFn = data => data) => {
   try {
+    // In development, don't even try to fetch static files if we don't have them
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Development mode: Skipping static file fetch for ${fileUrl}`);
+      throw new Error('Development mode - skipping static file fetch');
+    }
+    
     // Try to get cache buster from manifest
     let cacheBuster = '';
     try {
@@ -92,10 +98,23 @@ const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformF
     }
     
     // Fetch the static file
-    const response = await fetch(`${fileUrl}${cacheBuster}`);
+    console.log(`Fetching static file: ${fileUrl}${cacheBuster}`);
+    const response = await fetch(`${fileUrl}${cacheBuster}`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     
     if (!response.ok) {
+      console.warn(`Static file fetch returned status ${response.status}`);
       throw new Error(`Failed to fetch stats file: ${response.status}`);
+    }
+    
+    // Check if content type is actually json
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.warn(`Expected JSON but got ${contentType}`);
+      throw new Error('Non-JSON response received');
     }
     
     const data = await response.json();
@@ -106,11 +125,19 @@ const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformF
     
     // Fallback to API endpoint
     try {
+      // Check if fallbackEndpoint exists
+      if (!fallbackEndpoint) {
+        console.warn('No fallback endpoint provided');
+        // Return default dummy data
+        return transformFn({});
+      }
+      
       const apiResponse = await api.get(fallbackEndpoint);
       return apiResponse.data;
     } catch (apiErr) {
       console.error('API fallback also failed:', apiErr);
-      throw apiErr;
+      // Don't throw, return default empty data
+      return transformFn({});
     }
   }
 };
@@ -333,5 +360,221 @@ api.submitContactForm = (formData) => {
 api.getContactSubmissions = () => api.get('/api/contact/submissions');
 
 api.fixStats = () => api.post('/api/admin/fix-stats');
+
+// =============================================
+// NEW HELPER FUNCTIONS FOR MATCH DATA HANDLING
+// =============================================
+
+// Helper to normalize match data format regardless of source
+api.normalizeMatchData = (responseData, dateKey = null) => {
+  // If there's no data, return empty array
+  if (!responseData) return [];
+  
+  // Handle case where response is already a matches array
+  if (responseData.matches && Array.isArray(responseData.matches)) {
+    return responseData.matches;
+  }
+  
+  // Handle case where response is indexed by date
+  if (dateKey && responseData[dateKey]) {
+    const dateData = responseData[dateKey];
+    
+    // Date key points to array of matches
+    if (Array.isArray(dateData)) {
+      return dateData;
+    }
+    
+    // Date key points to object with league keys
+    if (typeof dateData === 'object') {
+      const allMatches = [];
+      Object.values(dateData).forEach(leagueMatches => {
+        if (Array.isArray(leagueMatches)) {
+          allMatches.push(...leagueMatches);
+        }
+      });
+      return allMatches;
+    }
+  }
+  
+  // Handle case where response is indexed by league
+  if (typeof responseData === 'object' && !Array.isArray(responseData)) {
+    const allMatches = [];
+    Object.values(responseData).forEach(leagueMatches => {
+      if (Array.isArray(leagueMatches)) {
+        allMatches.push(...leagueMatches);
+      }
+    });
+    return allMatches;
+  }
+  
+  // Fallback: if responseData is already an array, return it
+  if (Array.isArray(responseData)) {
+    return responseData;
+  }
+  
+  // Cannot determine format, return empty array
+  console.warn('Unknown match data format:', responseData);
+  return [];
+};
+
+// Add development-only placeholder odds when needed
+api.addPlaceholderOdds = (match) => {
+  if (process.env.NODE_ENV === 'development' && !match.odds) {
+    match.odds = {
+      harmonicMeanOdds: {
+        home: 2.0 + Math.random() * 1.0,
+        draw: 3.0 + Math.random() * 0.5,
+        away: 2.5 + Math.random() * 0.8
+      },
+      impliedProbabilities: {
+        home: Math.floor(35 + Math.random() * 15),
+        draw: Math.floor(25 + Math.random() * 10),
+        away: Math.floor(30 + Math.random() * 15)
+      }
+    };
+  }
+  return match;
+};
+
+// Group matches by league (for UI components)
+api.groupMatchesByLeague = (matches) => {
+  const grouped = {};
+  
+  matches.forEach(match => {
+    if (match.competition?.id) {
+      const leagueKey = `${match.competition.name}_${match.competition.id}`;
+      if (!grouped[leagueKey]) {
+        grouped[leagueKey] = [];
+      }
+      grouped[leagueKey].push(match);
+    }
+  });
+  
+  // Sort matches within each league by kickoff time
+  Object.values(grouped).forEach(leagueMatches => {
+    leagueMatches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+  });
+  
+  return grouped;
+};
+
+// New function to fetch and prepare matches for display
+api.fetchMatchesForDisplay = async (date) => {
+  try {
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    console.log(`Fetching matches for display on ${formattedDate}`);
+    
+    const response = await api.fetchMatches(formattedDate);
+    
+    if (!response?.data) return {};
+    
+    // Normalize the data structure
+    let allMatches = api.normalizeMatchData(response.data, formattedDate);
+    
+    // Filter to include only matches for the specific date
+    allMatches = allMatches.filter(match => {
+      if (!match.utcDate) return false;
+      const matchDate = new Date(match.utcDate);
+      const matchDateStr = format(matchDate, 'yyyy-MM-dd');
+      return matchDateStr === formattedDate;
+    });
+    
+    console.log(`Filtered to ${allMatches.length} matches for ${formattedDate}`);
+    
+    // Add placeholder odds in development mode
+    const matchesWithOdds = allMatches.map(api.addPlaceholderOdds);
+    
+    // Group by league for display
+    return api.groupMatchesByLeague(matchesWithOdds);
+  } catch (error) {
+    console.error('Error fetching matches for display:', error);
+    return {};
+  }
+};
+
+// Fetch live matches for display (with consistent format)
+api.fetchLiveMatchesForDisplay = async () => {
+  try {
+    const response = await api.fetchLiveMatches();
+    
+    if (!response?.data) return {};
+    
+    // Normalize the data structure
+    const liveMatches = api.normalizeMatchData(response.data);
+    
+    // Add placeholder odds in development mode
+    const matchesWithOdds = liveMatches.map(api.addPlaceholderOdds);
+    
+    // Group by league for display
+    return api.groupMatchesByLeague(matchesWithOdds);
+  } catch (error) {
+    console.error('Error fetching live matches for display:', error);
+    return {};
+  }
+};
+
+// Optimized version of fetchTeamStats using static file
+api.fetchTeamStats = async () => {
+  try {
+    return await fetchStaticFileWithFallback(
+      '/stats/team-stats.json',
+      '/api/team-stats',
+      data => data || { topTeams: [], bottomTeams: [], lastUpdated: null, totalTeamsAnalyzed: 0 }
+    );
+  } catch (error) {
+    console.error('Error fetching team stats:', error);
+    
+    // Fallback to the original endpoint if all else fails
+    try {
+      console.log('Falling back to direct API endpoint for team stats');
+      const fallbackResponse = await api.get('/api/team-stats');
+      return fallbackResponse.data;
+    } catch (fallbackError) {
+      console.error('All team stats endpoints failed:', fallbackError);
+      throw error; // Throw the original error
+    }
+  }
+};
+
+// If you're an admin, you might want to manually refresh the team stats
+api.refreshTeamStats = async () => {
+  try {
+    const response = await api.post('/api/team-stats/refresh');
+    return response.data;
+  } catch (error) {
+    console.error('Error refreshing team stats:', error);
+    throw error;
+  }
+};
+
+// Add this to your api.js file
+
+// Fetch all teams for searching
+api.fetchAllTeams = async () => {
+  try {
+    console.log('Fetching all team stats for search...');
+    return await fetchStaticFileWithFallback(
+      '/stats/all-teams.json',
+      '/api/team-stats/all',
+      data => {
+        console.log(`Fetched ${data?.teams?.length || 0} teams for search`);
+        return data || { teams: [] };
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching all teams:', error);
+    
+    // Fallback to direct API call if all else fails
+    try {
+      console.log('Falling back to direct API endpoint for all teams');
+      const response = await axios.get(`${config.apiUrl}/team-stats/all`);
+      return response.data;
+    } catch (fallbackError) {
+      console.error('All team search endpoints failed:', fallbackError);
+      // Return an empty structure instead of throwing
+      return { teams: [] };
+    }
+  }
+};
 
 export default api;

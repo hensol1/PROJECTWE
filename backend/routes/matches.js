@@ -1,3 +1,4 @@
+// In backend/routes/matches.js
 const express = require('express');
 const router = express.Router();
 const Match = require('../models/Match');
@@ -124,11 +125,11 @@ const getAIAccuracy = async () => {
 // Routes
 router.get('/', async (req, res) => {
   try {
-    // Add cache control headers to prevent caching
+    // Add cache control headers for browser caching (5 minutes) with proper validation
     res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
+      'Cache-Control': 'public, max-age=300',
+      'Vary': 'x-timezone',
+      'ETag': new Date().toISOString() // Simple ETag for validation
     });
     
     const { date } = req.query;
@@ -150,6 +151,7 @@ router.get('/', async (req, res) => {
     const start = subHours(startOfDay(userDate), tzOffset + 12);
     const end = subHours(endOfDay(userDate), tzOffset);
 
+    // Use lean() for better performance and projection for smaller payload
     const matches = await Match.find({
       $or: [
         { 
@@ -168,13 +170,28 @@ router.get('/', async (req, res) => {
           }
         }
       ]
-    }).sort({ utcDate: 1 });
+    }, {
+      // Use projection to only return fields we need
+      'id': 1, 
+      'utcDate': 1, 
+      'status': 1, 
+      'minute': 1,
+      'score': 1,
+      'homeTeam': 1, 
+      'awayTeam': 1, 
+      'competition': 1,
+      'aiPrediction': 1,
+      'votes': 1,
+      'voteCounts': 1
+    })
+    .lean()
+    .sort({ utcDate: 1 });
 
+    // Batch process all matches for better performance
     const processedMatches = matches.map(match => {
-      const matchObj = match.toObject();
       const matchDate = new Date(match.utcDate);
-      matchObj.localDate = addHours(matchDate, tzOffset);
-      return matchObj;
+      match.localDate = addHours(matchDate, tzOffset);
+      return match;
     });
 
     res.json({ matches: processedMatches });
@@ -187,6 +204,84 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/live', async (req, res) => {
+  try {
+    // Add cache control headers with short TTL for live data
+    res.set({
+      'Cache-Control': 'public, max-age=15', // 15 seconds for live data
+      'Vary': 'x-timezone'
+    });
+    
+    // Use projection and lean for better performance
+    const liveMatches = await Match.find({
+      status: { 
+        $in: ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']
+      }
+    }, {
+      'id': 1, 
+      'utcDate': 1, 
+      'status': 1, 
+      'minute': 1,
+      'score': 1,
+      'homeTeam': 1, 
+      'awayTeam': 1, 
+      'competition': 1,
+      'aiPrediction': 1,
+      'votes': 1,
+      'voteCounts': 1
+    })
+    .lean();
+
+    // Add timezone info if needed
+    const timeZone = req.headers['x-timezone'] || 'UTC';
+    const tzOffset = new Date().getTimezoneOffset() / 60;
+    
+    const processedMatches = liveMatches.map(match => {
+      const matchDate = new Date(match.utcDate);
+      match.localDate = addHours(matchDate, tzOffset);
+      return match;
+    });
+
+    res.json({
+      success: true,
+      matches: processedMatches
+    });
+  } catch (error) {
+    console.error('Error fetching live matches:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching live matches'
+    });
+  }
+});
+
+router.get('/:matchId/events', async (req, res) => {
+  try {
+    // Add short cache control for events
+    res.set({
+      'Cache-Control': 'public, max-age=60', // 1 minute cache for events
+      'Vary': 'Accept-Encoding'
+    });
+    
+    const { matchId } = req.params;
+    
+    // First try to get events from database
+    let events = await Event.find({ matchId }).lean();
+    
+    // If it's a live match, fetch fresh events
+    const match = await Match.findOne({ id: matchId });
+    if (match && ['IN_PLAY', 'PAUSED', 'HALFTIME'].includes(match.status)) {
+      events = await fetchAndStoreEvents(matchId);
+    }
+    
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching match events:', error);
+    res.status(500).json({ error: 'Failed to fetch match events' });
+  }
+});
+
+// Rest of the routes...
 router.get('/all', async (req, res) => {
   try {
     const matches = await Match.find().limit(10);
@@ -224,61 +319,6 @@ router.post('/update-match-status', async (req, res) => {
   } catch (error) {
     console.error('Error updating match:', error);
     res.status(500).json({ message: 'Error updating match' });
-  }
-});
-
-router.get('/live', async (req, res) => {
-  try {
-    // Add cache control headers to prevent caching
-    res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-    
-    const liveMatches = await Match.find({
-      status: { 
-        $in: ['IN_PLAY', 'HALFTIME', 'PAUSED', 'LIVE']
-      }
-    });
-
-    res.json({
-      success: true,
-      matches: liveMatches
-    });
-  } catch (error) {
-    console.error('Error fetching live matches:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching live matches'
-    });
-  }
-});
-
-router.get('/:matchId/events', async (req, res) => {
-  try {
-    // Add cache control headers to prevent caching
-    res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-    
-    const { matchId } = req.params;
-    
-    // First try to get events from database
-    let events = await Event.find({ matchId });
-    
-    // If it's a live match, fetch fresh events
-    const match = await Match.findOne({ id: matchId });
-    if (match && ['IN_PLAY', 'PAUSED', 'HALFTIME'].includes(match.status)) {
-      events = await fetchAndStoreEvents(matchId);
-    }
-    
-    res.json(events);
-  } catch (error) {
-    console.error('Error fetching match events:', error);
-    res.status(500).json({ error: 'Failed to fetch match events' });
   }
 });
 

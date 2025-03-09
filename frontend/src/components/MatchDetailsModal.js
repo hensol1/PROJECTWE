@@ -130,6 +130,16 @@ const FieldVisualization = ({ lineup, teamColor }) => {
       };
       
       const formatEventDetails = (event) => {
+        // Special case for Missed Penalty
+        if (event.type === 'Goal' && event.detail === 'Missed Penalty') {
+          return (
+            <div>
+              <span>{event.player?.name}</span>
+              <span className="text-red-400 ml-2">(Missed Penalty)</span>
+            </div>
+          );
+        }
+        
         // For substitutions
         if (event.type === 'subst') {
           return (
@@ -156,14 +166,19 @@ const FieldVisualization = ({ lineup, teamColor }) => {
         return (
           <div>
             <span>{event.player?.name}</span>
-            {event.assist?.name && (
+            {event.assist?.name && event.player?.name !== event.assist?.name && (
               <span className="text-gray-400"> (assist: {event.assist.name})</span>
             )}
           </div>
         );
       };
-            
+                  
       const getEventIcon = (type, detail) => {
+        // Special case for Missed Penalty
+        if (type?.toLowerCase() === 'goal' && detail === 'Missed Penalty') {
+          return '❌⚽'; // Ball with X symbol to indicate missed penalty
+        }
+        
         switch (type?.toLowerCase()) {
           case 'goal':
             return '⚽';
@@ -181,8 +196,7 @@ const FieldVisualization = ({ lineup, teamColor }) => {
             }
             return null;
         }
-      };
-      
+      };            
       
   
     return (

@@ -9,6 +9,8 @@ const { fetchAndStoreAllLiveEvents } = require('./fetchEvents');
 const { recalculateStats } = require('./utils/statsProcessor');
 const { updateStandingsForLeague } = require('./utils/standingsProcessor');
 const generateAllStatsFile = require('./scripts/generateStatsFile');
+const generateTeamStats = require('./scripts/generateTeamStats');
+
 
 // Declare all job variables at the top
 let matchFetchingJob = null;
@@ -419,11 +421,32 @@ function initializeStatsJob() {
             
             if (result.success) {
                 console.log('Daily stats file generation completed successfully:', result);
+                
+                // Generate team stats after general stats are updated
+                console.log('Generating team stats...');
+                try {
+                    const teamStatsResult = await generateTeamStats();
+                    console.log(`Team stats generated: ${teamStatsResult.totalTeamsAnalyzed} teams analyzed`);
+                } catch (teamStatsError) {
+                    console.error('Error generating team stats:', teamStatsError);
+                }
             } else {
                 console.error('Daily stats file generation failed:', result.error);
             }
         } catch (error) {
             console.error('Error in daily stats file generation:', error);
+        }
+    });
+    
+    // Add a separate job to update team stats weekly (every Sunday at 4:00 AM)
+    // This is a deep analysis that doesn't need to run daily
+    const teamStatsJob = cron.schedule('0 4 * * 0', async () => {
+        try {
+            console.log('Starting weekly team stats generation...');
+            const teamStatsResult = await generateTeamStats();
+            console.log(`Weekly team stats generated: ${teamStatsResult.totalTeamsAnalyzed} teams analyzed`);
+        } catch (error) {
+            console.error('Error in weekly team stats generation:', error);
         }
     });
 }

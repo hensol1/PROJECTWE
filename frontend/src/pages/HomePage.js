@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AccuracyComparison from '../components/AccuracyComparison';
-import Matches, { useMatchesData } from '../components/matches/Matches';
+import Matches from '../components/matches/Matches';
+import { useMatchesData } from '../hooks/useMatchesData'; // Import as named export
 import TodaysOdds from '../components/TodaysOdds';
 import TopLeaguesPerformance from '../components/TopLeaguesPerformance';
 import { BlogPreview } from '../components/blog/BlogPreview';
@@ -11,58 +12,209 @@ import api from '../api';
 
 // TodaysOdds wrapper component
 function HomePageOdds({ navigateToOddsPage }) {
-    const [todaysMatches, setTodaysMatches] = useState({});
-    
-    useEffect(() => {
-      const fetchTodaysMatches = async () => {
+  const [todaysMatches, setTodaysMatches] = useState({});
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchTodaysMatches = async () => {
+      setLoading(true);
+      try {
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0];
+        
+        console.log('Fetching matches for Today\'s Odds component:', formattedDate);
+        
+        // Direct API call to fetch match data
         try {
-          // Get today's date in YYYY-MM-DD format
-          const today = new Date();
-          const formattedDate = today.toISOString().split('T')[0];
+          // Try using our new helper method first
+          if (typeof api.fetchMatchesForDisplay === 'function') {
+            const matches = await api.fetchMatchesForDisplay(today);
+            console.log('Got matches from fetchMatchesForDisplay:', Object.keys(matches).length);
+            
+            // Filter matches to include only today's matches
+            const todayOnlyMatches = {};
+            
+            Object.entries(matches).forEach(([leagueKey, leagueMatches]) => {
+              // Filter matches for today's date only
+              const todayMatches = leagueMatches.filter(match => {
+                const matchDate = new Date(match.utcDate);
+                return matchDate.toISOString().split('T')[0] === formattedDate;
+              });
+              
+              // Only include leagues that have matches today
+              if (todayMatches.length > 0) {
+                todayOnlyMatches[leagueKey] = todayMatches;
+              }
+            });
+            
+            console.log(`Filtered to ${Object.values(todayOnlyMatches).flat().length} matches for today's date`);
+            
+            // Check if we have any matches with odds
+            const hasOddsMatches = Object.values(todayOnlyMatches).some(leagueMatches => 
+              leagueMatches.some(match => match.odds?.harmonicMeanOdds)
+            );
+            
+            if (hasOddsMatches) {
+              setTodaysMatches(todayOnlyMatches);
+              setLoading(false);
+              return;
+            }
+          }
           
-          console.log('Fetching odds for date:', formattedDate);
+          // Fallback to direct API call
           const response = await api.fetchMatches(formattedDate);
           
           if (response && response.data) {
+            // Process the raw response
+            let matchData = [];
+            
+            // Different possible response structures
             if (response.data.matches) {
-              const matchesByLeague = {};
-              
-              // Filter matches to only include those from today
-              response.data.matches.forEach(match => {
-                // Extract date from match (match.utcDate should be in ISO format)
-                const matchDate = new Date(match.utcDate);
-                const matchDateStr = matchDate.toISOString().split('T')[0];
-                
-                // Only process matches from today
-                if (matchDateStr === formattedDate) {
-                  const leagueId = match.competition?.id || 'unknown';
-                  const leagueKey = `${match.competition?.name || 'Unknown'}_${leagueId}`;
-                  
-                  if (!matchesByLeague[leagueKey]) {
-                    matchesByLeague[leagueKey] = [];
-                  }
-                  
-                  matchesByLeague[leagueKey].push(match);
+              matchData = response.data.matches;
+            } else if (response.data[formattedDate]) {
+              const dateData = response.data[formattedDate];
+              if (typeof dateData === 'object' && !Array.isArray(dateData)) {
+                matchData = Object.values(dateData).flat();
+              } else {
+                matchData = dateData;
+              }
+            } else if (typeof response.data === 'object') {
+              Object.values(response.data).forEach(matches => {
+                if (Array.isArray(matches)) {
+                  matchData = [...matchData, ...matches];
                 }
               });
-              
-              console.log(`Found ${Object.values(matchesByLeague).flat().length} matches for today`);
-              setTodaysMatches(matchesByLeague);
-            } else {
-              setTodaysMatches(response.data);
             }
+            
+            // Filter to include only matches scheduled for today
+            matchData = matchData.filter(match => {
+              if (!match.utcDate) return false;
+              const matchDate = new Date(match.utcDate);
+              return matchDate.toISOString().split('T')[0] === formattedDate;
+            });
+            
+            console.log(`Processing ${matchData.length} matches for Today's Odds (date: ${formattedDate})`);
+            
+            // Group by league
+            const matchesByLeague = {};
+            
+            // Add dummy odds data in development mode
+            const matchesWithOdds = matchData.map(match => {
+              // Add development dummy odds if missing
+              if (!match.odds && process.env.NODE_ENV === 'development') {
+                match.odds = {
+                  harmonicMeanOdds: {
+                    home: 2.0 + Math.random() * 1.0,
+                    draw: 3.0 + Math.random() * 0.5,
+                    away: 2.5 + Math.random() * 0.8
+                  },
+                  impliedProbabilities: {
+                    home: Math.floor(35 + Math.random() * 15),
+                    draw: Math.floor(25 + Math.random() * 10),
+                    away: Math.floor(30 + Math.random() * 15)
+                  }
+                };
+              }
+              return match;
+            });
+            
+            // Group matches by league
+            matchesWithOdds.forEach(match => {
+              if (match.competition?.id) {
+                const leagueKey = `${match.competition.name}_${match.competition.id}`;
+                if (!matchesByLeague[leagueKey]) {
+                  matchesByLeague[leagueKey] = [];
+                }
+                matchesByLeague[leagueKey].push(match);
+              }
+            });
+            
+            console.log(`Processed ${Object.values(matchesByLeague).flat().length} matches with odds for today`);
+            setTodaysMatches(matchesByLeague);
+          } else {
+            console.warn('No data in response');
+            setTodaysMatches({});
           }
-        } catch (error) {
-          console.error('Error fetching today\'s matches:', error);
+        } catch (apiError) {
+          console.error('API error:', apiError);
+          
+          // Create dummy matches for development
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Creating dummy matches for development');
+            const dummyMatches = {
+              'Premier League_1': Array(3).fill().map((_, i) => createDummyMatch(i, 'Premier League', formattedDate)),
+              'La Liga_2': Array(2).fill().map((_, i) => createDummyMatch(i, 'La Liga', formattedDate)),
+              'Bundesliga_3': Array(2).fill().map((_, i) => createDummyMatch(i, 'Bundesliga', formattedDate))
+            };
+            setTodaysMatches(dummyMatches);
+          } else {
+            setTodaysMatches({});
+          }
+        }
+      } catch (error) {
+        console.error('Error in Today\'s Odds component:', error);
+        setTodaysMatches({});
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Helper to create dummy match data for development
+    const createDummyMatch = (index, leagueName, dateStr) => {
+      const id = `dummy_${index}`;
+      const homeTeam = { id: `home_${index}`, name: `Home Team ${index}`, crest: 'https://via.placeholder.com/30' };
+      const awayTeam = { id: `away_${index}`, name: `Away Team ${index}`, crest: 'https://via.placeholder.com/30' };
+      
+      // Create a date for today at a reasonable match time
+      const matchDate = new Date(dateStr);
+      matchDate.setHours(15 + index); // Set hours to afternoon
+      matchDate.setMinutes(0);
+      matchDate.setSeconds(0);
+      
+      return {
+        id,
+        utcDate: matchDate.toISOString(),
+        status: 'TIMED',
+        homeTeam,
+        awayTeam,
+        competition: {
+          id: leagueName === 'Premier League' ? 1 : leagueName === 'La Liga' ? 2 : 3,
+          name: leagueName,
+          emblem: 'https://via.placeholder.com/30'
+        },
+        odds: {
+          harmonicMeanOdds: {
+            home: 2.0 + Math.random() * 1.0,
+            draw: 3.0 + Math.random() * 0.5,
+            away: 2.5 + Math.random() * 0.8
+          },
+          impliedProbabilities: {
+            home: Math.floor(35 + Math.random() * 15),
+            draw: Math.floor(25 + Math.random() * 10),
+            away: Math.floor(30 + Math.random() * 15)
+          }
         }
       };
-      
-      fetchTodaysMatches();
-    }, []);
+    };
     
-    return <TodaysOdds allMatches={todaysMatches} onClick={navigateToOddsPage} />;
+    fetchTodaysMatches();
+  }, []);
+  
+  if (loading) {
+    return (
+      <div className="w-full rounded-xl shadow-lg overflow-hidden bg-[#1a1f2b] p-4 text-center">
+        <div className="animate-pulse flex flex-col items-center justify-center py-8">
+          <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+        </div>
+      </div>
+    );
   }
   
+  return <TodaysOdds allMatches={todaysMatches} onClick={navigateToOddsPage} />;
+}
+
 export default function HomePage({ user, setAuthModalOpen }) {
   const navigate = useNavigate();
   const oddsRef = useRef(null);

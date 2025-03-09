@@ -3,7 +3,8 @@ import { format, addDays, subDays, parseISO } from 'date-fns';
 import { utcToZonedTime } from 'date-fns-tz';
 import api from '../api';  // adjust the path based on your file structure
 
-export const useMatchData = (userTimeZone) => {
+// Export default with a named function to avoid confusion
+export default function useMatchData(userTimeZone) {
   const [matches, setMatches] = useState({});
   const [allLiveMatches, setAllLiveMatches] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -168,4 +169,4 @@ export const useMatchData = (userTimeZone) => {
     setAllLiveMatches,
     initializeData
   };
-};
+}
