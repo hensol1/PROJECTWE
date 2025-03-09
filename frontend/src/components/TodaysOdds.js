@@ -106,9 +106,9 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
       if (todayMatches.length === 0) return; // Skip leagues with no matches today
   
       todayMatches.forEach(match => {
-        // Generate placeholder odds data for development
-        if (process.env.NODE_ENV === 'development' && !match.odds) {
-          // Create placeholder odds data for testing purposes
+        // Generate placeholder odds data if missing (works in any environment)
+        if (!match.odds) {
+          // Create placeholder odds data
           match.odds = {
             harmonicMeanOdds: {
               home: 2.2 + Math.random() * 0.5,
@@ -135,7 +135,7 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
           groupedMatches.get(compId).matches.push(match);
         }
       });
-    });
+        });
   
     // Sort matches within each competition by kickoff time
     groupedMatches.forEach(group => {

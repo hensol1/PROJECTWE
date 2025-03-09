@@ -419,7 +419,7 @@ api.normalizeMatchData = (responseData, dateKey = null) => {
 
 // Add development-only placeholder odds when needed
 api.addPlaceholderOdds = (match) => {
-  if (process.env.NODE_ENV === 'development' && !match.odds) {
+  if (!match.odds) {
     match.odds = {
       harmonicMeanOdds: {
         home: 2.0 + Math.random() * 1.0,

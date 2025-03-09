@@ -164,8 +164,8 @@ const OddsPage = () => {
               
               // Ensure the match has necessary data
               if (compId && match.competition && match.homeTeam && match.awayTeam) {
-                // Add odds data if missing (for testing - should be removed in production)
-                if (!match.odds && process.env.NODE_ENV === 'development') {
+                // Add odds data if missing (works in any environment)
+                if (!match.odds) {
                   match.odds = {
                     harmonicMeanOdds: {
                       home: 2.2 + Math.random() * 0.5,
@@ -185,7 +185,7 @@ const OddsPage = () => {
                 }
                 processedMatches[compId].push(match);
               }
-            }
+                          }
           });
         }
         

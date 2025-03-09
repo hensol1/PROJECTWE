@@ -101,8 +101,8 @@ function HomePageOdds({ navigateToOddsPage }) {
             
             // Add dummy odds data in development mode
             const matchesWithOdds = matchData.map(match => {
-              // Add development dummy odds if missing
-              if (!match.odds && process.env.NODE_ENV === 'development') {
+              // Add dummy odds if missing
+              if (!match.odds) {
                 match.odds = {
                   harmonicMeanOdds: {
                     home: 2.0 + Math.random() * 1.0,
@@ -118,7 +118,7 @@ function HomePageOdds({ navigateToOddsPage }) {
               }
               return match;
             });
-            
+                        
             // Group matches by league
             matchesWithOdds.forEach(match => {
               if (match.competition?.id) {
