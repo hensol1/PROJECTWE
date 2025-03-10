@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
 // Lazy load components that don't need to be instantly visible
-const PredictionTicker = lazy(() => import('./PredictionTicker'));
 const NextMatchCountdown = lazy(() => import('./NextMatchCountdown'));
 
 const RacingBarDisplay = ({ score }) => {
@@ -431,13 +430,7 @@ export default function AccuracyComparison({ user, onSignInClick }) {
         </div>
   
         {shouldLoadSecondary && (
-          <>
-            <div className="mb-2">
-              <Suspense fallback={<div className="h-8 bg-gray-800 animate-pulse rounded"></div>}>
-                <PredictionTicker />
-              </Suspense>
-            </div>
-              
+          <>              
             <div className="mb-6">
               <Suspense fallback={<div className="h-10 bg-gray-800 animate-pulse rounded"></div>}>
                 <NextMatchCountdown scheduledMatches={scheduledMatches} />

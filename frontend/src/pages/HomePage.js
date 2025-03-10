@@ -260,60 +260,105 @@ export default function HomePage({ user, setAuthModalOpen }) {
   }, []);
     
   return (
-    <>
-      <SEO 
-        title="Football Predictions - We Know Better"
-        description="Make and compare football predictions with AI. Join We Know Better to track your prediction accuracy and compete with fans worldwide."
-        path="/"
-      />
-      
-      <div className="max-w-6xl mx-auto px-2">
-        {/* Desktop row with perfect alignment */}
-        <div className="hidden md:flex space-x-4">
-          {/* Left sidebar - Top Performing Leagues */}
-          <div className="mt-4">
-          <div className="w-[280px] flex-shrink-0">
-            <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
-              <TopLeaguesPerformance displayMode="desktop" />
-            </div>
-            </div>
-          </div>
-
-          {/* Center column - AccuracyComparison */}
-          <div className="flex-grow">
-            <div className="mt-0">
-              <AccuracyComparison 
-                user={user} 
-                onSignInClick={() => setAuthModalOpen(true)}
-              />
-            </div>
-          </div>
-
-          {/* Right sidebar - Blog Preview */}
-          <div className="mt-4">
-          <div className="w-[280px] flex-shrink-0">
-            <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
-              <BlogPreview />
-            </div>
-            </div>
-          </div>
+<>
+  <SEO 
+    title="Football Predictions - We Know Better"
+    description="Make and compare football predictions with AI. Join We Know Better to track your prediction accuracy and compete with fans worldwide."
+    path="/"
+  />
+  
+  <div className="max-w-6xl mx-auto px-2">
+    {/* Desktop row with perfect alignment */}
+    <div className="hidden md:flex space-x-4">
+      {/* Left sidebar - Top Performing Leagues */}
+      <div className="mt-4">
+      <div className="w-[280px] flex-shrink-0">
+        <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
+          <TopLeaguesPerformance displayMode="desktop" />
         </div>
-        
-        {/* Mobile components - THIS IS THE ONLY PLACE WE RENDER MOBILE COMPONENTS */}
-        <div className="md:hidden">
+        </div>
+      </div>
+
+      {/* Center column - AccuracyComparison */}
+      <div className="flex-grow">
+        <div className="mt-0">
           <AccuracyComparison 
             user={user} 
             onSignInClick={() => setAuthModalOpen(true)}
           />
-          
-          <div className="mt-4">
-            <TopLeaguesPerformance displayMode="mobile" />
-          </div>
-          
-          <div className="mt-4 mb-6">
-            <HomePageOdds navigateToOddsPage={navigateToOddsPage} />
-          </div>
-          
+        </div>
+        {/* Add the Data Hub button here, after the AccuracyComparison component */}
+        <div className="mt-4 mb-4">
+  <button
+    onClick={() => navigate('/stats')}
+    className="w-full bg-[#1a1f2b] hover:bg-[#242938] rounded-lg shadow-md transition-all duration-200 overflow-hidden group"
+  >
+    <div className="flex items-center justify-center py-4 px-6 relative">
+      {/* Background highlight effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      
+      {/* Left border accent */}
+      <div className="absolute left-0 top-0 h-full w-0.5 bg-emerald-500"></div>
+      
+      <div className="flex items-center space-x-3 relative z-10">
+        {/* Chart icon */}
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 3v18h18"></path>
+          <path d="M18 9l-5 5-4-4-5 5"></path>
+        </svg>
+        
+        <span className="text-emerald-400 text-base font-medium">Enter the Data Hub</span>
+      </div>
+    </div>
+  </button>
+</div>
+      </div>
+
+      {/* Right sidebar - Blog Preview */}
+      <div className="mt-4">
+      <div className="w-[280px] flex-shrink-0">
+        <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
+          <BlogPreview />
+        </div>
+        </div>
+      </div>
+    </div>
+    
+    {/* Mobile components */}
+    <div className="md:hidden">
+      <AccuracyComparison 
+        user={user} 
+        onSignInClick={() => setAuthModalOpen(true)}
+      />
+      
+      {/* Add the Data Hub button for mobile view too */}
+      <div className="mt-4 mb-4">
+  <button
+    onClick={() => navigate('/stats')}
+    className="w-full bg-[#242938] hover:bg-[#2c3344] border border-[#2d364a] rounded-lg shadow-md transition-all duration-200 flex items-center justify-center py-4 group overflow-hidden relative"
+  >
+    <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600"></div>
+    <div className="flex items-center space-x-3">
+      {/* Chart icon with glow effect on hover */}
+      <div className="relative">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-400 group-hover:text-emerald-300 transition-all duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 3v18h18"></path>
+          <path d="M18 9l-5 5-4-4-5 5"></path>
+        </svg>
+        <div className="absolute inset-0 bg-emerald-400 blur-md opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-full"></div>
+      </div>
+      <span className="text-emerald-400 text-base font-medium group-hover:text-emerald-300 transition-colors duration-300">Enter the Data Hub</span>
+    </div>
+  </button>
+</div>
+      
+      <div className="mt-4">
+        <TopLeaguesPerformance displayMode="mobile" />
+      </div>
+      
+      <div className="mt-4 mb-6">
+        <HomePageOdds navigateToOddsPage={navigateToOddsPage} />
+      </div>          
           <div className="mt-4">
             <BlogPreview />
           </div>

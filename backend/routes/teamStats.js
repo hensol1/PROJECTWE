@@ -312,4 +312,110 @@ async function getTeamsWithStats() {
   }
 }
 
+/**
+ * GET /api/team-stats/:teamId
+ * Retrieves match history and predictions for a specific team
+ */
+router.get('/:teamId', async (req, res) => {
+  try {
+    const teamId = parseInt(req.params.teamId);
+    console.log(`Fetching match history for team ID: ${teamId}`);
+    
+    if (isNaN(teamId)) {
+      return res.status(400).json({ 
+        error: 'Invalid team ID',
+        message: 'Team ID must be a number'
+      });
+    }
+    
+    // Get the Match model
+    const Match = require('../models/Match');
+    
+    // Find all matches where this team played (either home or away)
+    const matches = await Match.find({
+      $or: [
+        { 'homeTeam.id': teamId },
+        { 'awayTeam.id': teamId }
+      ],
+      status: 'FINISHED',
+      aiPrediction: { $exists: true, $ne: null }
+    }).sort({ utcDate: -1 }) // Sort by date, newest first
+      .lean();
+    
+    console.log(`Found ${matches.length} matches for team ID ${teamId}`);
+    
+    // Process matches to add whether prediction was correct
+    const processedMatches = matches.map(match => {
+      let actualResult = null;
+      
+      // Determine actual match result
+      if (match.score && match.score.fullTime) {
+        const homeScore = match.score.fullTime.home;
+        const awayScore = match.score.fullTime.away;
+        
+        if (homeScore > awayScore) {
+          actualResult = 'HOME_TEAM';
+        } else if (awayScore > homeScore) {
+          actualResult = 'AWAY_TEAM';
+        } else {
+          actualResult = 'DRAW';
+        }
+      } else if (match.score && match.score.winner) {
+        actualResult = match.score.winner;
+      }
+      
+      // Check if prediction was correct
+      const predictionCorrect = match.aiPrediction === actualResult;
+      
+      // Find the team name for easier display
+      const teamName = match.homeTeam.id === teamId ? match.homeTeam.name : match.awayTeam.name;
+      
+      // Mark if team is home or away
+      const isHomeTeam = match.homeTeam.id === teamId;
+      
+      return {
+        id: match.id,
+        date: match.utcDate,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        score: match.score,
+        prediction: match.aiPrediction,
+        actualResult,
+        predictionCorrect,
+        teamIsHome: isHomeTeam,
+        competition: match.competition
+      };
+    });
+    
+    // Calculate overall stats
+    const correctPredictions = processedMatches.filter(m => m.predictionCorrect).length;
+    const totalMatches = processedMatches.length;
+    const accuracy = totalMatches > 0 ? (correctPredictions / totalMatches) * 100 : 0;
+    
+    // Get team details from first match
+    const team = processedMatches.length > 0 ? 
+      (processedMatches[0].teamIsHome ? processedMatches[0].homeTeam : processedMatches[0].awayTeam) : 
+      { id: teamId, name: 'Unknown Team' };
+    
+    const result = {
+      team,
+      stats: {
+        correctPredictions,
+        totalMatches,
+        accuracy
+      },
+      matches: processedMatches
+    };
+    
+    console.log(`Sending match history for ${team.name} (ID: ${teamId}), ${processedMatches.length} matches`);
+    res.json(result);
+  } catch (error) {
+    console.error('Error retrieving team match history:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve team match history',
+      message: error.message 
+    });
+  }
+});
+
 module.exports = router;

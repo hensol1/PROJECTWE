@@ -1,6 +1,7 @@
-// frontend/src/components/TeamStats.js
+// Modified TeamStats.js for inline match details
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
+import TeamMatchDetails from './TeamMatchDetails';
 
 const TeamStats = () => {
   const [teamStats, setTeamStats] = useState(null);
@@ -9,6 +10,12 @@ const TeamStats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // State for managing match details
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [matchHistory, setMatchHistory] = useState(null);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [matchError, setMatchError] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -72,6 +79,53 @@ const TeamStats = () => {
     };
   }, [teamStats, searchTerm, allTeams]);
 
+  // Handler for team selection to show match details
+  const handleTeamClick = async (team) => {
+    try {
+      console.log('Team clicked:', team.id, team.name);
+      
+      // If the same team is clicked, just toggle the view
+      if (selectedTeam && selectedTeam.id === team.id) {
+        console.log('Same team clicked, toggling view');
+        setSelectedTeam(null);
+        setMatchHistory(null);
+        return;
+      }
+      
+      // Set new team and loading state
+      setSelectedTeam(team);
+      setLoadingMatches(true);
+      setMatchError(null);
+      setMatchHistory(null); // Clear previous data
+      
+      console.log(`Fetching match history for team ID: ${team.id}`);
+      
+      // Fetch match history with the explicit team ID and cache busting
+      const timestamp = Date.now();
+      const history = await api.fetchTeamMatchHistory(team.id, timestamp);
+      console.log('Received match history for team ID ' + team.id + ':', history);
+      
+      // Check if the received data matches the requested team
+      if (history?.team?.id !== team.id) {
+        console.error(`Team ID mismatch! Requested: ${team.id}, Received: ${history?.team?.id}`);
+        throw new Error('Server returned data for the wrong team');
+      }
+      
+      setMatchHistory(history);
+    } catch (err) {
+      console.error(`Error fetching match history for team ${team.id}:`, err);
+      setMatchError(`Failed to load match history for ${team.name}. Please try again later.`);
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
+
+  // Handler to close match details
+  const handleCloseDetails = () => {
+    setSelectedTeam(null);
+    setMatchHistory(null);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -113,6 +167,86 @@ const TeamStats = () => {
   const teamsToDisplay = searchTerm.trim() 
     ? filteredTeams.topTeams 
     : (activeTab === 'top' ? filteredTeams.topTeams : filteredTeams.bottomTeams);
+
+  // Function to render match history for a team
+  const renderMatchHistory = (team) => {
+    if (selectedTeam?.id !== team.id) return null;
+
+    if (loadingMatches) {
+      return (
+        <tr className="bg-white">
+          <td colSpan="5" className="px-4 py-4">
+            <div className="flex justify-center items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    if (matchError) {
+      return (
+        <tr className="bg-white">
+          <td colSpan="5" className="px-4 py-4">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{matchError}</span>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    return (
+      <tr className="bg-white">
+        <td colSpan="5" className="p-0">
+          <div className="border-t border-gray-200">
+            <TeamMatchDetails 
+              matchHistory={matchHistory} 
+              onClose={handleCloseDetails}
+              isInline={true}
+            />
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  // Function to render mobile match history for a team
+  const renderMobileMatchHistory = (team) => {
+    if (selectedTeam?.id !== team.id) return null;
+
+    if (loadingMatches) {
+      return (
+        <div className="bg-white p-4 border-t border-gray-200">
+          <div className="flex justify-center items-center p-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+          </div>
+        </div>
+      );
+    }
+
+    if (matchError) {
+      return (
+        <div className="bg-white p-4 border-t border-gray-200">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{matchError}</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white border-t border-gray-200">
+        <TeamMatchDetails 
+          matchHistory={matchHistory} 
+          onClose={handleCloseDetails}
+          isInline={true}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -199,39 +333,46 @@ const TeamStats = () => {
         <div className="divide-y divide-gray-200">
           {teamsToDisplay.length > 0 ? (
             teamsToDisplay.map((team, index) => (
-              <div key={team.id} className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <span className="text-sm font-bold w-6">
-                      {searchTerm ? index + 1 : activeTab === 'top' ? index + 1 : totalTeamsAnalyzed - index}
-                    </span>
-                    {team.crest && (
-                      <div className="flex-shrink-0 h-6 w-6 mr-2">
-                        <img className="h-6 w-6" src={team.crest} alt={`${team.name} logo`} />
-                      </div>
-                    )}
-                    <div className="text-sm font-medium truncate max-w-[120px]">{team.name}</div>
-                  </div>
-                  <div className="text-xs font-medium text-gray-500">
-                    {team.correctPredictions}/{team.totalMatches}
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex-grow">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${
-                          searchTerm ? 
-                            (team.accuracy > 50 ? 'bg-green-600' : 'bg-red-600') :
-                            (activeTab === 'top' ? 'bg-green-600' : 'bg-red-600')
-                        }`}
-                        style={{ width: `${team.accuracy}%` }}
-                      ></div>
+              <React.Fragment key={team.id}>
+                <div 
+                  className={`p-3 ${selectedTeam?.id === team.id ? 'bg-green-50' : ''} cursor-pointer hover:bg-gray-50`}
+                  onClick={() => handleTeamClick(team)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <span className="text-sm font-bold w-6">
+                        {searchTerm ? index + 1 : activeTab === 'top' ? index + 1 : totalTeamsAnalyzed - index}
+                      </span>
+                      {team.crest && (
+                        <div className="flex-shrink-0 h-6 w-6 mr-2">
+                          <img className="h-6 w-6" src={team.crest} alt={`${team.name} logo`} />
+                        </div>
+                      )}
+                      <div className="text-sm font-medium truncate max-w-[120px]">{team.name}</div>
+                    </div>
+                    <div className="text-xs font-medium text-gray-500">
+                      {team.correctPredictions}/{team.totalMatches}
                     </div>
                   </div>
-                  <div className="ml-2 text-xs text-gray-900">{team.accuracy.toFixed(1)}%</div>
+                  <div className="flex items-center">
+                    <div className="flex-grow">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${
+                            searchTerm ? 
+                              (team.accuracy > 50 ? 'bg-green-600' : 'bg-red-600') :
+                              (activeTab === 'top' ? 'bg-green-600' : 'bg-red-600')
+                          }`}
+                          style={{ width: `${team.accuracy}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="ml-2 text-xs text-gray-900">{team.accuracy.toFixed(1)}%</div>
+                  </div>
                 </div>
-              </div>
+                {/* Render match history inline for this team */}
+                {renderMobileMatchHistory(team)}
+              </React.Fragment>
             ))
           ) : (
             <div className="p-6 text-center text-gray-500">
@@ -270,46 +411,66 @@ const TeamStats = () => {
               >
                 Correct / Total
               </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {teamsToDisplay.length > 0 ? (
               teamsToDisplay.map((team, index) => (
-                <tr key={team.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {searchTerm ? index + 1 : activeTab === 'top' ? index + 1 : totalTeamsAnalyzed - index}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {team.crest && (
-                        <div className="flex-shrink-0 h-8 w-8 mr-3">
-                          <img className="h-8 w-8" src={team.crest} alt={`${team.name} logo`} />
-                        </div>
-                      )}
-                      <div className="text-sm font-medium text-gray-900">{team.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div
-                        className={`h-2.5 rounded-full ${
-                          searchTerm ? 
-                            (team.accuracy > 50 ? 'bg-green-600' : 'bg-red-600') :
-                            (activeTab === 'top' ? 'bg-green-600' : 'bg-red-600')
-                        }`}
-                        style={{ width: `${team.accuracy}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-sm text-gray-900 mt-1">{team.accuracy.toFixed(1)}%</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {team.correctPredictions} / {team.totalMatches}
-                  </td>
-                </tr>
+                <React.Fragment key={team.id}>
+                  <tr 
+                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${selectedTeam?.id === team.id ? 'bg-green-50' : ''}`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {searchTerm ? index + 1 : activeTab === 'top' ? index + 1 : totalTeamsAnalyzed - index}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {team.crest && (
+                          <div className="flex-shrink-0 h-8 w-8 mr-3">
+                            <img className="h-8 w-8" src={team.crest} alt={`${team.name} logo`} />
+                          </div>
+                        )}
+                        <div className="text-sm font-medium text-gray-900">{team.name}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div
+                          className={`h-2.5 rounded-full ${
+                            searchTerm ? 
+                              (team.accuracy > 50 ? 'bg-green-600' : 'bg-red-600') :
+                              (activeTab === 'top' ? 'bg-green-600' : 'bg-red-600')
+                          }`}
+                          style={{ width: `${team.accuracy}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-sm text-gray-900 mt-1">{team.accuracy.toFixed(1)}%</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {team.correctPredictions} / {team.totalMatches}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handleTeamClick(team)}
+                        className="text-green-600 hover:text-green-900 focus:outline-none"
+                      >
+                        {selectedTeam?.id === team.id ? 'Hide Details' : 'View Matches'}
+                      </button>
+                    </td>
+                  </tr>
+                  {/* Render match history inline for this team */}
+                  {renderMatchHistory(team)}
+                </React.Fragment>
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="px-6 py-10 text-center text-gray-500">
+                <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
                   No teams found matching your search
                 </td>
               </tr>

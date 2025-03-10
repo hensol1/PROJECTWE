@@ -297,17 +297,17 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
            onMouseLeave={() => setIsPaused(false)}>
         <div className="w-full rounded-xl shadow-lg relative" 
              style={{ background: websiteColors.background, overflow: 'visible' }}>
-          <div className="p-2 md:p-4 border-b border-gray-800">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm md:text-lg font-medium" style={{ color: websiteColors.primary }}>
-                Today's Odds
-              </h2>
-              {/* Info icon with appropriate tooltips for desktop and mobile */}
-              <div className="relative group">
-                <Info 
-                  className="w-3 h-3 md:w-4 md:h-4 text-gray-400 hover:text-gray-300 cursor-help"
-                  onClick={handleInfoClick}
-                />
+<div className="bg-[#242938] p-3 border-b border-gray-700">
+  <div className="flex items-center gap-2 justify-between">
+    <h2 className="text-emerald-400 text-sm font-medium">
+      Today's Odds
+    </h2>
+    {/* Info icon with appropriate tooltips for desktop and mobile */}
+    <div className="relative group">
+      <Info 
+        className="w-3 h-3 md:w-4 md:h-4 text-gray-400 hover:text-gray-300 cursor-help"
+        onClick={handleInfoClick}
+      />
                 
                 {/* Mobile tooltip - only shown when clicked */}
                 {showTooltip && (

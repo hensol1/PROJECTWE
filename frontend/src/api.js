@@ -197,20 +197,6 @@ api.fetchLatestSuccessfulPrediction = async () => {
   }
 };
 
-// Ticker
-api.fetchLastTwoDaysStats = async () => {
-  try {
-    const response = await api.get('/api/accuracy/ai/two-days');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching last two days stats:', error);
-    return {
-      today: { total: 0, correct: 0 },
-      yesterday: { total: 0, correct: 0 }
-    };
-  }
-};
-
 // Optimized version of fetchAIHistory that uses static files
 api.fetchAIHistory = async () => {
   try {
@@ -574,6 +560,17 @@ api.fetchAllTeams = async () => {
       // Return an empty structure instead of throwing
       return { teams: [] };
     }
+  }
+};
+
+// Fetch team match history
+api.fetchTeamMatchHistory = async (teamId) => {
+  try {
+    const response = await api.get(`/api/team-stats/${teamId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching team match history:', error);
+    throw error;
   }
 };
 
