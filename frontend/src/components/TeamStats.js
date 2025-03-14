@@ -252,7 +252,7 @@ const TeamStats = () => {
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-3 py-3 sm:px-4 sm:py-5 border-b border-gray-200">
         <div className="flex flex-wrap items-center justify-between">
-          <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-1">
             Team Prediction Performance
           </h3>
           <p className="w-full sm:w-auto mt-1 max-w-2xl text-xs sm:text-sm text-gray-500">

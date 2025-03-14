@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import MatchDetailsModal from './MatchDetailsModal';
 import StandingsModal from './StandingsModal';
+import { GiPodium } from "react-icons/gi";
 
 const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
   const [selectedMatch, setSelectedMatch] = useState(null);
@@ -111,7 +112,7 @@ const APIStyleMatches = ({ matches, activeTab, onVote, selectedLeague }) => {
                 {isStandingsLoading && selectedLeagueForStandings?.id === league.matches[0].competition.id ? (
                   <span className="inline-block w-3 h-3 mr-1 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin"></span>
                 ) : null}
-                ❯Standings
+                <GiPodium />
               </button>
               {collapsedLeagues[leagueKey] ? (
                 <ChevronRight size={20} className="text-gray-400" />

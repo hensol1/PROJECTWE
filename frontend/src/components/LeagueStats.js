@@ -12,6 +12,10 @@ const LeagueStats = () => {
     direction: 'desc'
   });
 
+  // Minimum matches threshold for display
+  const DISPLAY_THRESHOLD = 15;
+  const ANALYSIS_THRESHOLD = 5;
+
   useEffect(() => {
     const fetchLeagueStats = async () => {
       try {
@@ -48,7 +52,7 @@ const LeagueStats = () => {
           throw new Error('Unexpected data format from API');
         }
         
-        // Save to state
+        // Save to state (store the complete data, don't filter here)
         setLeagueStats(statsData);
         setIsLoading(false);
         
@@ -83,7 +87,12 @@ const LeagueStats = () => {
   const getSortedData = () => {
     if (!leagueStats || !leagueStats.length) return [];
     
-    const sortedData = [...leagueStats].sort((a, b) => {
+    // Filter leagues with at least DISPLAY_THRESHOLD matches - only for display
+    const filteredData = leagueStats.filter(league => 
+      parseInt(league.totalPredictions) >= DISPLAY_THRESHOLD
+    );
+    
+    const sortedData = [...filteredData].sort((a, b) => {
       if (sortConfig.key === 'name') {
         return sortConfig.direction === 'asc'
           ? a.name.localeCompare(b.name)
@@ -147,7 +156,12 @@ const LeagueStats = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6">
-      <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-4">League Performance</h2>
+      <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-1">League Performance</h2>
+      
+      {/* Analysis note positioned right after the header */}
+      <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600">
+        Analysis based on leagues with {ANALYSIS_THRESHOLD}+ matches.
+      </div>
       
       <div className="overflow-x-auto">
         <table className="w-full min-w-full table-auto">
@@ -217,7 +231,7 @@ const LeagueStats = () => {
             ) : (
               <tr>
                 <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                  No league stats available
+                  No league stats available with {DISPLAY_THRESHOLD}+ matches
                 </td>
               </tr>
             )}

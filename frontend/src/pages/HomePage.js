@@ -307,7 +307,7 @@ export default function HomePage({ user, setAuthModalOpen }) {
           <path d="M18 9l-5 5-4-4-5 5"></path>
         </svg>
         
-        <span className="text-emerald-400 text-base font-medium">Enter the Data Hub</span>
+        <span className="text-emerald-400 text-base font-medium">WKB DataHub</span>
       </div>
     </div>
   </button>
@@ -347,7 +347,7 @@ export default function HomePage({ user, setAuthModalOpen }) {
         </svg>
         <div className="absolute inset-0 bg-emerald-400 blur-md opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-full"></div>
       </div>
-      <span className="text-emerald-400 text-base font-medium group-hover:text-emerald-300 transition-colors duration-300">Enter the Data Hub</span>
+      <span className="text-emerald-400 text-base font-medium group-hover:text-emerald-300 transition-colors duration-300">WKB DataHub</span>
     </div>
   </button>
 </div>
