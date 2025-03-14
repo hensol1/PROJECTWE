@@ -107,7 +107,8 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   
       todayMatches.forEach(match => {
         // Generate placeholder odds data if missing (works in any environment)
-        if (!match.odds) {
+        if (!match.odds || !match.odds.harmonicMeanOdds) {
+
           // Create placeholder odds data
           match.odds = {
             harmonicMeanOdds: {

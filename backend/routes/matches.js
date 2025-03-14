@@ -182,11 +182,12 @@ router.get('/', async (req, res) => {
       'competition': 1,
       'aiPrediction': 1,
       'votes': 1,
-      'voteCounts': 1
+      'voteCounts': 1,
+      'odds': 1  // Add this line to include odds data
     })
     .lean()
     .sort({ utcDate: 1 });
-
+    
     // Batch process all matches for better performance
     const processedMatches = matches.map(match => {
       const matchDate = new Date(match.utcDate);
@@ -228,10 +229,11 @@ router.get('/live', async (req, res) => {
       'competition': 1,
       'aiPrediction': 1,
       'votes': 1,
-      'voteCounts': 1
+      'voteCounts': 1,
+      'odds': 1  // Add this line to include odds data
     })
     .lean();
-
+    
     // Add timezone info if needed
     const timeZone = req.headers['x-timezone'] || 'UTC';
     const tzOffset = new Date().getTimezoneOffset() / 60;

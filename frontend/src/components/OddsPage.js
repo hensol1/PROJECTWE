@@ -165,7 +165,9 @@ const OddsPage = () => {
               // Ensure the match has necessary data
               if (compId && match.competition && match.homeTeam && match.awayTeam) {
                 // Add odds data if missing (works in any environment)
-                if (!match.odds) {
+                console.log('Match odds before check:', match.id, match.odds);
+                if (!match.odds || !match.odds.harmonicMeanOdds) {
+                  console.log('Creating placeholder odds for:', match.id);
                   match.odds = {
                     harmonicMeanOdds: {
                       home: 2.2 + Math.random() * 0.5,
@@ -178,6 +180,7 @@ const OddsPage = () => {
                       away: Math.floor(25 + Math.random() * 20)
                     }
                   };
+                  console.log('After creating placeholder odds:', match.id, match.odds);
                 }
                 
                 if (!processedMatches[compId]) {
@@ -185,10 +188,10 @@ const OddsPage = () => {
                 }
                 processedMatches[compId].push(match);
               }
-                          }
+            }
           });
         }
-        
+
         console.log(`Processed ${Object.values(processedMatches).flat().length} matches for display`);
         setMatches(processedMatches);
         
