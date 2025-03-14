@@ -450,7 +450,7 @@ const OddsPage = () => {
                                 </span>
                               </div>
                               
-{/* Teams */}
+{/* Teams with scores always visible */}
 <div className="flex-1">
   <div className="flex items-center justify-between mb-1 md:mb-2">
     <div className="flex items-center gap-1 md:gap-2">
@@ -464,12 +464,9 @@ const OddsPage = () => {
       )}
       <span className="text-xs md:text-sm">{match.homeTeam.name}</span>
     </div>
-    {/* Only show score if we don't have odds or if match is in progress */}
-    {(!hasOdds || match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME') && (
-      <span className="text-xs md:text-sm font-semibold">
-        {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.home !== null ? match.score.fullTime.home : '-'}
-      </span>
-    )}
+    <span className="text-xs md:text-sm font-semibold">
+      {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.home !== null ? match.score.fullTime.home : '-'}
+    </span>
   </div>
   <div className="flex items-center justify-between">
     <div className="flex items-center gap-1 md:gap-2">
@@ -483,16 +480,13 @@ const OddsPage = () => {
       )}
       <span className="text-xs md:text-sm">{match.awayTeam.name}</span>
     </div>
-    {/* Only show score if we don't have odds or if match is in progress */}
-    {(!hasOdds || match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME') && (
-      <span className="text-xs md:text-sm font-semibold">
-        {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.away !== null ? match.score.fullTime.away : '-'}
-      </span>
-    )}
+    <span className="text-xs md:text-sm font-semibold">
+      {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.away !== null ? match.score.fullTime.away : '-'}
+    </span>
   </div>
 </div>
 
-{/* Odds display with highlighting for finished matches */}
+{/* Odds display with explicit styling to ensure visibility */}
 {hasOdds && (
   <div className="flex items-center justify-end gap-1" style={{ display: 'flex', minWidth: '90px' }}>
     <div 
