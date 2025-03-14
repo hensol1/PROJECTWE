@@ -160,7 +160,7 @@ const LeagueStats = () => {
       
       {/* Analysis note positioned right after the header */}
       <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600">
-        Analysis based on leagues with {ANALYSIS_THRESHOLD}+ matches.
+        Analysis based on leagues with {DISPLAY_THRESHOLD}+ matches.
       </div>
       
       <div className="overflow-x-auto">
