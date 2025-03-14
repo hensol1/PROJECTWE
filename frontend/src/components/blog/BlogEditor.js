@@ -137,7 +137,11 @@ const TeamSelector = ({ onSelect, onClose }) => {
     { id: "79", name: "Lille" },
     { id: "168", name: "Bayer Leverkusen" },
     { id: "209", name: "Feyenoord" },
-
+    { id: "534", name: "Las Palmas" },
+    { id: "542", name: "Alaves" },
+    { id: "1005", name: "Antalyaspor" },
+    { id: "174", name: "FC Schalke 04" },
+    { id: "166", name: "Hannover 96" },
 
 
 
@@ -166,6 +170,7 @@ const CompetitionSelector = ({ onSelect, onClose }) => {
     { id: "61", name: "Ligue 1" },
     { id: "62", name: "Ligue 2" },
     { id: "203", name: "Süper Lig" },
+    { id: "79", name: "2. Bundesliga" },
 
   ];
 
