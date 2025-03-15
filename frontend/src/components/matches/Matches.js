@@ -191,13 +191,16 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     const scheduledMatches = filterMatchesByStatus(matchesForCurrentDate, ['TIMED', 'SCHEDULED'], userTimeZone, selectedDate) || {};
     const finishedMatches = filterMatchesByStatus(matchesForCurrentDate, ['FINISHED'], userTimeZone, selectedDate) || {};
     
-    // 1. First add leagues with live matches
-    Object.entries(liveMatches).forEach(([leagueKey, matches]) => {
-      if (!combinedMatches[leagueKey]) {
-        combinedMatches[leagueKey] = [];
-      }
-      combinedMatches[leagueKey] = [...matches];
-    });
+    // Only include live matches if we're looking at today
+    if (selectedDay === 'today') {
+      // 1. First add leagues with live matches
+      Object.entries(liveMatches).forEach(([leagueKey, matches]) => {
+        if (!combinedMatches[leagueKey]) {
+          combinedMatches[leagueKey] = [];
+        }
+        combinedMatches[leagueKey] = [...matches];
+      });
+    }
     
     // 2. Add leagues with scheduled matches
     Object.entries(scheduledMatches).forEach(([leagueKey, matches]) => {
@@ -232,7 +235,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     }
     
     return combinedMatches;
-  }, [allLiveMatches, matchesForCurrentDate, selectedDate, userTimeZone, selectedLeague]);
+  }, [allLiveMatches, matchesForCurrentDate, selectedDate, userTimeZone, selectedLeague, selectedDay]);
   
   // Show loading state
   if (isLoading && !isInitialized) {
