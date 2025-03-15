@@ -136,21 +136,31 @@ const APIStyleMatches = ({ matches, onVote, selectedLeague }) => {
     }
   }, [selectedLeagueForStandings]);
 
-  // Auto-expand leagues with live matches
-  useEffect(() => {
-    const initialCollapsedState = {};
+// Auto-expand leagues with live matches - only on initial render
+useEffect(() => {
+  // Only initialize the collapsed state once when the component mounts
+  const initialCollapsedState = {};
+  
+  sortedLeagues.forEach(([leagueKey, league]) => {
+    // If league has live matches, don't collapse it
+    const hasLiveMatches = league.matches.some(match => 
+      match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME'
+    );
     
-    sortedLeagues.forEach(([leagueKey, league]) => {
-      // If league has live matches, don't collapse it
-      const hasLiveMatches = league.matches.some(match => 
-        match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME'
-      );
-      
-      initialCollapsedState[leagueKey] = !hasLiveMatches;
+    initialCollapsedState[leagueKey] = !hasLiveMatches;
+  });
+  
+  setCollapsedLeagues(prevState => {
+    // Only update keys that don't already exist in the state
+    const newState = { ...prevState };
+    Object.entries(initialCollapsedState).forEach(([key, value]) => {
+      if (!(key in prevState)) {
+        newState[key] = value;
+      }
     });
-    
-    setCollapsedLeagues(initialCollapsedState);
-  }, [sortedLeagues]);
+    return newState;
+  });
+}, []); // Empty dependency array means this only runs once on mount
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-lg shadow-lg overflow-hidden">
