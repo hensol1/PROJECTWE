@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import useMatchData from '../../hooks/useMatchData'; // Import as default
+import useMatchData from '../../hooks/useMatchData';
 import { useMatchNotifications } from '../../hooks/useMatchNotifications';
-import { useMatchTabManagement } from '../../hooks/useMatchTabManagement';
-import { filterMatchesByStatus, extractLeagues, getDateForSelection } from '../../utils/matchUtils';
+import { filterMatchesByStatus, getDateForSelection } from '../../utils/matchUtils';
 import { MatchFilters } from './MatchFilters';
 import NotificationQueue from '../NotificationQueue';
 import LoadingLogo from '../LoadingLogo';
 import api from '../../api';
-import _ from 'lodash';
 import APIStyleMatches from '../APIStyleMatches';
-import TodaysOdds from '../TodaysOdds';
 
 const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeague = null }) => {
   // Get navigate function for redirection
@@ -19,9 +16,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
   
   // State declarations
   const [selectedDay, setSelectedDay] = useState('today');
-  const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
-  const [predictionFilter, setPredictionFilter] = useState('all');
   const [isRefreshingData, setIsRefreshingData] = useState(false);
   
   const navigateToOddsPage = useCallback(() => {
@@ -60,52 +55,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
   const selectedDate = getDateForSelection(selectedDay);
   const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
   const matchesForCurrentDate = (matches && matches[currentDateKey]) || {};
-  const filteredMatches = matchesForCurrentDate || {};
     
-  const liveMatches = useMemo(() => 
-    allLiveMatches || {}, 
-    [allLiveMatches]
-  );
-  
-  const finishedMatches = useMemo(() => 
-    filterMatchesByStatus(filteredMatches, ['FINISHED'], userTimeZone, selectedDate),
-    [filteredMatches, userTimeZone, selectedDate]
-  );
-  
-  const scheduledMatches = useMemo(() => 
-    filterMatchesByStatus(filteredMatches, ['TIMED', 'SCHEDULED'], userTimeZone, selectedDate),
-    [filteredMatches, userTimeZone, selectedDate]
-  );
-
-  const determineInitialTab = useCallback(() => {
-    // First priority: Live matches
-    if (allLiveMatches && Object.keys(allLiveMatches).length > 0) {
-      return 'live';
-    }
-    
-    // Second priority: Scheduled matches
-    if (scheduledMatches && Object.keys(scheduledMatches).length > 0) {
-      return 'scheduled';
-    }
-    
-    // Third priority: Finished matches
-    if (finishedMatches && Object.keys(finishedMatches).length > 0) {
-      return 'finished';
-    }
-    
-    // Fallback to scheduled (even if empty)
-    return 'scheduled';
-  }, [allLiveMatches, scheduledMatches, finishedMatches]);
-      
-  const {
-    activeTab,
-    handleTabChange,
-    determineAppropriateTab,
-    setActiveTab,
-    isManualTabSelect,
-    setIsManualTabSelect
-  } = useMatchTabManagement(allLiveMatches, scheduledMatches, finishedMatches);
-
   // Progressive loading implementation
   useEffect(() => {
     if (!userTimeZone || isInitialized) return;
@@ -118,10 +68,6 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
         // Load data in the background
         await initializeData();
         
-        // Determine and set the most appropriate tab after data is loaded
-        const initialTab = determineInitialTab();
-        setActiveTab(initialTab);
-        
         // Immediately perform a soft update to get latest data
         await softUpdateMatches();
       } catch (error) {
@@ -130,7 +76,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     };
   
     initialize();
-  }, [userTimeZone, isInitialized, initializeData, determineInitialTab, setActiveTab]);
+  }, [userTimeZone, isInitialized]);
   
   // Optimized soft update logic
   const softUpdateMatches = useCallback(async () => {
@@ -139,39 +85,21 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     setIsRefreshingData(true);
     
     try {
-      // Prioritize updates based on active tab
-      if (activeTab === 'live') {
-        // For live tab, update live matches first, then regular matches
-        const newLiveMatches = await fetchLiveMatchesSoft();
-        if (newLiveMatches) {
-          setAllLiveMatches(newLiveMatches);
-        }
-        
-        // Then update regular matches
-        const newMatchesData = await fetchMatchesSoft(selectedDate);
-        if (newMatchesData) {
-          setMatches(prev => ({
-            ...prev,
-            [currentDateKey]: newMatchesData
-          }));
-        }
-      } else {
-        // For other tabs, update both in parallel
-        const [newLiveMatches, newMatchesData] = await Promise.all([
-          fetchLiveMatchesSoft(),
-          fetchMatchesSoft(selectedDate)
-        ]);
+      // Update both live matches and regular matches
+      const [newLiveMatches, newMatchesData] = await Promise.all([
+        fetchLiveMatchesSoft(),
+        fetchMatchesSoft(selectedDate)
+      ]);
 
-        if (newLiveMatches) {
-          setAllLiveMatches(newLiveMatches);
-        }
-        
-        if (newMatchesData) {
-          setMatches(prev => ({
-            ...prev,
-            [currentDateKey]: newMatchesData
-          }));
-        }
+      if (newLiveMatches) {
+        setAllLiveMatches(newLiveMatches);
+      }
+      
+      if (newMatchesData) {
+        setMatches(prev => ({
+          ...prev,
+          [currentDateKey]: newMatchesData
+        }));
       }
 
       // Check for goals after updates
@@ -182,8 +110,8 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
 
       const newState = {
         ...matches,
-        [currentDateKey]: await fetchMatchesSoft(selectedDate),
-        live: await fetchLiveMatchesSoft()
+        [currentDateKey]: newMatchesData || {},
+        live: newLiveMatches || {}
       };
 
       checkForGoals(newState, prevState);
@@ -203,7 +131,6 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     matches,
     allLiveMatches,
     checkForGoals,
-    activeTab,
     setAllLiveMatches,
     setMatches
   ]);
@@ -212,17 +139,15 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
   useEffect(() => {
     if (!isInitialized) return;
 
-    const updateTimer = setInterval(softUpdateMatches, activeTab === 'live' ? 15000 : 30000);
+    // More frequent updates for live matches
+    const updateTimer = setInterval(softUpdateMatches, 15000);
     return () => clearInterval(updateTimer);
-  }, [isInitialized, softUpdateMatches, activeTab]);
+  }, [isInitialized, softUpdateMatches]);
 
   // Handle day change
   const handleDayChange = useCallback((newDay) => {
     setSelectedDay(newDay);
-    const appropriateTab = determineAppropriateTab(newDay);
-    setActiveTab(appropriateTab);
-    setIsManualTabSelect(false);
-  }, [determineAppropriateTab, setActiveTab, setIsManualTabSelect]);
+  }, []);
 
   // Vote handler
   const handleVote = async (matchId, vote) => {
@@ -259,70 +184,55 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     }
   };
 
-  // Get current matches based on active tab
-  const getCurrentMatches = useCallback(() => {
-    let matches;
-    switch (activeTab) {
-      case 'live':
-        matches = allLiveMatches || {};
-        break;
-      case 'finished':
-        matches = finishedMatches || {};
-        break;
-      case 'scheduled':
-        matches = scheduledMatches || {};
-        break;
-      default:
-        matches = {};
-    }
-  
-    // If no league is selected, return all matches
-    if (!selectedLeague) {
-      return matches;
-    }
-  
-    // Filter matches for the selected league
-    return Object.entries(matches).reduce((filtered, [leagueId, leagueMatches]) => {
-      if (leagueId === selectedLeague) {  // Use exact match instead of includes
-        filtered[leagueId] = leagueMatches;
+  // Combine all matches with priority ordering
+  const getAllMatches = useCallback(() => {
+    const combinedMatches = {};
+    const liveMatches = allLiveMatches || {};
+    const scheduledMatches = filterMatchesByStatus(matchesForCurrentDate, ['TIMED', 'SCHEDULED'], userTimeZone, selectedDate) || {};
+    const finishedMatches = filterMatchesByStatus(matchesForCurrentDate, ['FINISHED'], userTimeZone, selectedDate) || {};
+    
+    // 1. First add leagues with live matches
+    Object.entries(liveMatches).forEach(([leagueKey, matches]) => {
+      if (!combinedMatches[leagueKey]) {
+        combinedMatches[leagueKey] = [];
       }
-      return filtered;
-    }, {});
-  }, [activeTab, allLiveMatches, finishedMatches, scheduledMatches, selectedLeague]);
-
-  // Apply prediction filtering for finished matches
-  const getFilteredMatches = useCallback(() => {
-    let currentMatches = getCurrentMatches();
-        
-    // Only apply filter when showing finished matches and the toggle is on
-    if (activeTab === 'finished' && predictionFilter !== 'all') {
-      const filteredMatches = {};
-      
-      Object.entries(currentMatches).forEach(([leagueKey, leagueMatches]) => {
-        // Filter matches based on prediction accuracy
-        const filteredLeagueMatches = leagueMatches.filter(match => {
-          const isPredictionCorrect = (
-            (match.aiPrediction === 'HOME_TEAM' && match.score.fullTime.home > match.score.fullTime.away) ||
-            (match.aiPrediction === 'AWAY_TEAM' && match.score.fullTime.away > match.score.fullTime.home) ||
-            (match.aiPrediction === 'DRAW' && match.score.fullTime.home === match.score.fullTime.away)
-          );
-          
-          // Return matches based on the selected filter
-          return predictionFilter === 'correct' ? isPredictionCorrect : !isPredictionCorrect;
-        });
-        
-        // Only include league if it has matches after filtering
-        if (filteredLeagueMatches.length > 0) {
-          filteredMatches[leagueKey] = filteredLeagueMatches;
-        }
-      });
-      
-      return filteredMatches;
+      combinedMatches[leagueKey] = [...matches];
+    });
+    
+    // 2. Add leagues with scheduled matches
+    Object.entries(scheduledMatches).forEach(([leagueKey, matches]) => {
+      if (!combinedMatches[leagueKey]) {
+        combinedMatches[leagueKey] = [];
+      }
+      // Add matches that aren't already included
+      const existingMatchIds = new Set(combinedMatches[leagueKey].map(m => m.id));
+      const newMatches = matches.filter(m => !existingMatchIds.has(m.id));
+      combinedMatches[leagueKey] = [...combinedMatches[leagueKey], ...newMatches];
+    });
+    
+    // 3. Add leagues with finished matches
+    Object.entries(finishedMatches).forEach(([leagueKey, matches]) => {
+      if (!combinedMatches[leagueKey]) {
+        combinedMatches[leagueKey] = [];
+      }
+      // Add matches that aren't already included
+      const existingMatchIds = new Set(combinedMatches[leagueKey].map(m => m.id));
+      const newMatches = matches.filter(m => !existingMatchIds.has(m.id));
+      combinedMatches[leagueKey] = [...combinedMatches[leagueKey], ...newMatches];
+    });
+    
+    // If league is selected, filter for that league only
+    if (selectedLeague) {
+      return Object.entries(combinedMatches)
+        .filter(([leagueKey]) => leagueKey === selectedLeague)
+        .reduce((obj, [key, value]) => {
+          obj[key] = value;
+          return obj;
+        }, {});
     }
     
-    // Return unfiltered matches if not on finished tab or filter is set to 'all'
-    return currentMatches;
-  }, [activeTab, getCurrentMatches, predictionFilter]);  
+    return combinedMatches;
+  }, [allLiveMatches, matchesForCurrentDate, selectedDate, userTimeZone, selectedLeague]);
   
   // Show loading state
   if (isLoading && !isInitialized) {
@@ -341,15 +251,11 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
       />
       
       <div className="relative flex flex-col items-center mb-24">
+        {/* Only date tabs are shown */}
         <MatchFilters
           selectedDay={selectedDay}
           setSelectedDay={handleDayChange}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          hasAnyLiveMatches={allLiveMatches ? Object.keys(allLiveMatches).length > 0 : false}
           getDateForSelection={getDateForSelection}
-          predictionFilter={predictionFilter}
-          setPredictionFilter={setPredictionFilter}
         />
 
         <div className="w-full max-w-5xl relative">
@@ -363,17 +269,13 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
           <div className="flex relative pb-8">
             {/* Main Content Area */}
             <div className="w-full">
-              {Object.keys(getCurrentMatches()).length === 0 ? (
+              {Object.keys(getAllMatches()).length === 0 ? (
                 <div className="text-center py-10 text-gray-500">
-                  {activeTab === 'live' && "No Live matches at the moment"}
-                  {activeTab === 'finished' && "No Finished matches at the moment"}
-                  {activeTab === 'scheduled' && "No Scheduled matches at the moment"}
+                  No matches found for this day
                 </div>
               ) : (
                 <APIStyleMatches
-                  matches={getFilteredMatches()}
-                  activeTab={activeTab}
-                  collapsedLeagues={collapsedLeagues}
+                  matches={getAllMatches()}
                   onVote={handleVote}
                   selectedLeague={selectedLeague}
                 />
