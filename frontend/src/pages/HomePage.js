@@ -288,12 +288,12 @@ export default function HomePage({ user, setAuthModalOpen }) {
           />
         </div>
         {/* Add the Data Hub button here, after the AccuracyComparison component */}
-        <div className="mt-4 mb-4">
+        <div className="mt-0 mb-0">
   <button
     onClick={() => navigate('/stats')}
-    className="w-full bg-[#1a1f2b] hover:bg-[#242938] rounded-lg shadow-md transition-all duration-200 overflow-hidden group"
+    className="w-full max-w-[600px] mx-auto bg-[#1a1f2b] hover:bg-[#242938] rounded-lg shadow-md transition-all duration-200 overflow-hidden group"
   >
-    <div className="flex items-center justify-center py-4 px-6 relative">
+    <div className="flex items-center justify-center py-1 px-5 relative">
       {/* Background highlight effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       
