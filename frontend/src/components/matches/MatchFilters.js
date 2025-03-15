@@ -1,4 +1,4 @@
-// Updated MatchFilters.js - removed status tabs
+// Update MatchFilters.js to use the redesigned TabsSection
 
 import React from 'react';
 import { TabsSection } from './TabsSection';
@@ -7,7 +7,7 @@ export const MatchFilters = ({
   selectedDay,
   setSelectedDay,
   getDateForSelection,
-  // Keeping these props for compatibility but not using them
+  // Keep these props for compatibility
   activeTab,
   onTabChange,
   hasAnyLiveMatches,
@@ -15,7 +15,7 @@ export const MatchFilters = ({
   setPredictionFilter
 }) => {
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="w-full max-w-2xl"> {/* Set the same width as matches component */}
       <TabsSection 
         selectedDay={selectedDay}
         setSelectedDay={setSelectedDay}

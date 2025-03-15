@@ -332,10 +332,10 @@ export default function HomePage({ user, setAuthModalOpen }) {
       />
       
       {/* Add the Data Hub button for mobile view too */}
-      <div className="mt-4 mb-4">
+      <div className="mt-2 mb-2">
   <button
     onClick={() => navigate('/stats')}
-    className="w-full bg-[#242938] hover:bg-[#2c3344] border border-[#2d364a] rounded-lg shadow-md transition-all duration-200 flex items-center justify-center py-4 group overflow-hidden relative"
+    className="w-full bg-[#242938] hover:bg-[#2c3344] border border-[#2d364a] rounded-lg shadow-md transition-all duration-200 flex items-center justify-center py-1 group overflow-hidden relative"
   >
     <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600"></div>
     <div className="flex items-center space-x-3">
@@ -489,36 +489,36 @@ export default function HomePage({ user, setAuthModalOpen }) {
           </button>
         </div>
             
-        {/* Desktop row for matches and filters */}
-        <div className="hidden md:flex mt-8 space-x-4">
-          {/* Left sidebar for league filter */}
-          <div className="w-[280px] flex-shrink-0">
-            <div className="sticky top-4">
-              <NewLeagueFilter 
-                matches={allMatches}
-                onSelectLeague={setSelectedLeague}
-                selectedLeague={selectedLeague}
-              />
-            </div>
-          </div>
-          
-          {/* Matches component */}
-          <div className="flex-grow">
-            <Matches 
-              user={user} 
-              onOpenAuthModal={() => setAuthModalOpen(true)}
-              disableSidebars={true}
-              selectedLeague={selectedLeague}
-            />
-          </div>
-          
-          {/* Today's Odds with custom scrolling behavior */}
-          <div className="w-[280px] flex-shrink-0">
-            <div ref={oddsRef} style={{ position: 'sticky', top: '1rem' }}>
-              <HomePageOdds navigateToOddsPage={navigateToOddsPage} />
-            </div>
-          </div>
-        </div>
+{/* Desktop row for matches and filters - with better alignment */}
+<div className="hidden md:flex mt-4 space-x-4">
+  {/* Left sidebar for league filter */}
+  <div className="w-[280px] flex-shrink-0">
+    <div className="sticky" style={{ top: '1rem' }}> {/* Match the same sticky position */}
+      <NewLeagueFilter 
+        matches={allMatches}
+        onSelectLeague={setSelectedLeague}
+        selectedLeague={selectedLeague}
+      />
+    </div>
+  </div>
+  
+  {/* Matches component */}
+  <div className="flex-grow mt-0">
+    <Matches 
+      user={user} 
+      onOpenAuthModal={() => setAuthModalOpen(true)}
+      disableSidebars={true}
+      selectedLeague={selectedLeague}
+    />
+  </div>
+  
+  {/* Today's Odds with custom scrolling behavior */}
+  <div className="w-[280px] flex-shrink-0">
+    <div ref={oddsRef} style={{ position: 'sticky', top: '1rem' }}>
+      <HomePageOdds navigateToOddsPage={navigateToOddsPage} />
+    </div>
+  </div>
+</div>
       </div>
     </>
   );

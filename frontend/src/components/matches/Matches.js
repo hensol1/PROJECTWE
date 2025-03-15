@@ -247,21 +247,22 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
   }
       
   return (
-    <div className="max-w-6xl mx-auto px-2">
+    <div className="max-w-6xl mx-auto">
       <NotificationQueue 
         notifications={goalNotifications}
         onDismiss={handleNotificationDismiss}
       />
       
-      <div className="relative flex flex-col items-center mb-24">
-        {/* Only date tabs are shown */}
+      <div className="relative flex flex-col items-center">
+        {/* Tabs styled to match the matches component */}
         <MatchFilters
           selectedDay={selectedDay}
           setSelectedDay={handleDayChange}
           getDateForSelection={getDateForSelection}
         />
 
-        <div className="w-full max-w-5xl relative">
+        {/* No margin/padding between tabs and matches */}
+        <div className="w-full">
           {isRefreshingData && isInitialized && (
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-6 flex items-center justify-center bg-emerald-600 text-white text-xs px-3 py-1 rounded-full z-10">
               <div className="w-3 h-3 mr-1 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
@@ -269,21 +270,26 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
             </div>
           )}
           
-          <div className="flex relative pb-8">
-            {/* Main Content Area */}
-            <div className="w-full">
-              {Object.keys(getAllMatches()).length === 0 ? (
+          <div className="w-full">
+            {isLoading && !isInitialized ? (
+              <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
+                <LoadingLogo />
+              </div>
+            ) : Object.keys(getAllMatches()).length === 0 ? (
+              <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
                 <div className="text-center py-10 text-gray-500">
                   No matches found for this day
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <div className="rounded-b-lg overflow-hidden"> {/* This ensures rounded corners only at the bottom */}
                 <APIStyleMatches
                   matches={getAllMatches()}
                   onVote={handleVote}
                   selectedLeague={selectedLeague}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

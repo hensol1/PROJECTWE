@@ -162,8 +162,8 @@ useEffect(() => {
   });
 }, []); // Empty dependency array means this only runs once on mount
 
-  return (
-    <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-lg shadow-lg overflow-hidden">
+return (
+  <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
       {selectedMatch && (
         <MatchDetailsModal
           match={selectedMatch}
