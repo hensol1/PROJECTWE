@@ -30,7 +30,7 @@ const Footer = () => {
 
             {/* Social Media Icons - Mobile */}
             <div className="flex sm:hidden items-center gap-4">
-              <a href="https://www.tiktok.com/@weknowbetter2024?_t=8s6MSbrXfNq&_r=1" 
+              <a href="https://www.tiktok.com/@we.know.better?_t=ZS-8ul4rzl3EDo&_r=1" 
                  className="text-gray-300 hover:text-white"
                  target="_blank"
                  rel="noopener noreferrer">
@@ -47,6 +47,18 @@ const Footer = () => {
                  target="_blank"
                  rel="noopener noreferrer">
                 <Facebook size={20} />
+              </a>
+              <a href="https://x.com/BetterWe49975?t=HeUy_PhnmpLiRwJBz2gAKA&s=08" 
+                 className="text-gray-300 hover:text-white"
+                 target="_blank"
+                 rel="noopener noreferrer">
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
               </a>
               <a href="https://www.instagram.com/weknowbetter2024?igsh=azcwbzkyeDN1ZXJt" 
                  className="text-gray-300 hover:text-white"
@@ -68,7 +80,7 @@ const Footer = () => {
           <div className="hidden sm:flex flex-col items-end">
             <div className="text-sm font-medium mb-2">Connect With Us</div>
             <div className="flex items-center gap-4">
-              <a href="https://www.tiktok.com/@weknowbetter2024?_t=8s6MSbrXfNq&_r=1" 
+              <a href="https://www.tiktok.com/@we.know.better?_t=ZS-8ul4rzl3EDo&_r=1" 
                  className="text-gray-300 hover:text-white"
                  target="_blank"
                  rel="noopener noreferrer">
@@ -85,6 +97,18 @@ const Footer = () => {
                  target="_blank"
                  rel="noopener noreferrer">
                 <Facebook size={20} />
+              </a>
+              <a href="https://x.com/BetterWe49975?t=HeUy_PhnmpLiRwJBz2gAKA&s=08" 
+                 className="text-gray-300 hover:text-white"
+                 target="_blank"
+                 rel="noopener noreferrer">
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
               </a>
               <a href="https://www.instagram.com/weknowbetter2024?igsh=azcwbzkyeDN1ZXJt" 
                  className="text-gray-300 hover:text-white"
