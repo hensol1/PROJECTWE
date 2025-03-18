@@ -267,8 +267,8 @@ export default function HomePage({ user, setAuthModalOpen }) {
     path="/"
   />
   
-  <div className="max-w-6xl mx-auto px-2">
-    {/* Desktop row with perfect alignment */}
+  <div className="max-w-6xl mx-auto px-2 mb-8">
+  {/* Desktop row with perfect alignment */}
     <div className="hidden md:flex space-x-4">
       {/* Left sidebar - Top Performing Leagues */}
       <div className="mt-4">
