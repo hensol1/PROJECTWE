@@ -120,81 +120,11 @@ const OddsPage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch matches for selected date
-        const matchesResponse = await api.fetchMatches(apiDateStr);
+        // Fetch matches using the optimized method that tries static file first
+        const processedMatches = await api.fetchMatchesForDisplay(selectedDate);
         
-        // Process matches by competition
-        const processedMatches = {};
-        
-        // Extract and organize matches by league ID
-        if (matchesResponse.data) {
-          let matchesData = [];
-          
-          // Handle different response formats
-          if (matchesResponse.data.matches) {
-            // Direct matches array format
-            matchesData = matchesResponse.data.matches;
-          } else if (matchesResponse.data[apiDateStr]) {
-            // Date-indexed nested format
-            const dateData = matchesResponse.data[apiDateStr];
-            
-            // Convert the league-grouped data to a single array
-            if (typeof dateData === 'object' && !Array.isArray(dateData)) {
-              matchesData = Object.values(dateData).flat();
-            } else if (Array.isArray(dateData)) {
-              matchesData = dateData;
-            }
-          } else if (typeof matchesResponse.data === 'object') {
-            // League-grouped format without date nesting
-            Object.values(matchesResponse.data).forEach(leagueMatches => {
-              if (Array.isArray(leagueMatches)) {
-                matchesData = [...matchesData, ...leagueMatches];
-              }
-            });
-          }
-          
-          console.log(`Got ${matchesData.length} matches from API response`);
-          
-          // Filter matches for the selected date and group by competition
-          matchesData.forEach(match => {
-            const matchDate = parseISO(match.utcDate);
-            if (isSameDay(matchDate, selectedDate)) {
-              // Use competition ID as the key
-              const compId = match.competition.id;
-              
-              // Ensure the match has necessary data
-              if (compId && match.competition && match.homeTeam && match.awayTeam) {
-                // Add odds data if missing (works in any environment)
-                console.log('Match odds before check:', match.id, match.odds);
-                if (!match.odds || !match.odds.harmonicMeanOdds) {
-                  console.log('Creating placeholder odds for:', match.id);
-                  match.odds = {
-                    harmonicMeanOdds: {
-                      home: 2.2 + Math.random() * 0.5,
-                      draw: 3.1 + Math.random() * 0.5,
-                      away: 2.8 + Math.random() * 0.5
-                    },
-                    impliedProbabilities: {
-                      home: Math.floor(30 + Math.random() * 20),
-                      draw: Math.floor(20 + Math.random() * 15),
-                      away: Math.floor(25 + Math.random() * 20)
-                    }
-                  };
-                  console.log('After creating placeholder odds:', match.id, match.odds);
-                }
-                
-                if (!processedMatches[compId]) {
-                  processedMatches[compId] = [];
-                }
-                processedMatches[compId].push(match);
-              }
-            }
-          });
-        }
-
         console.log(`Processed ${Object.values(processedMatches).flat().length} matches for display`);
         setMatches(processedMatches);
-        console.log("First match odds in production:", Object.values(processedMatches)[0]?.[0]?.odds);
         
         // Extract leagues from processed matches
         const extractedLeagues = extractLeagues(processedMatches);
@@ -207,8 +137,8 @@ const OddsPage = () => {
     };
     
     fetchData();
-  }, [selectedDate, apiDateStr]);
-
+  }, [selectedDate]);
+  
   // Filter matches based on selected league
   const filteredMatches = selectedLeague
     ? { [selectedLeague]: matches[selectedLeague] || [] }

@@ -10,6 +10,7 @@ const { recalculateStats } = require('./utils/statsProcessor');
 const { updateStandingsForLeague } = require('./utils/standingsProcessor');
 const generateAllStatsFile = require('./scripts/generateStatsFile');
 const generateTeamStats = require('./scripts/generateTeamStats');
+const generateOddsFiles = require('./scripts/generateOddsFile');
 
 
 // Declare all job variables at the top
@@ -180,6 +181,7 @@ async function handleMatchFetching() {
                     }
                 }
             }
+
 
             
 
@@ -451,6 +453,31 @@ function initializeStatsJob() {
     });
 }
 
+function initializeOddsJob() {
+    console.log('Initializing odds file generation job...');
+    
+    // Generate odds files every 3 hours
+    const oddsGenerationJob = cron.schedule('0 */3 * * *', async () => {
+        try {
+            console.log('Starting scheduled odds file generation...');
+            const result = await generateOddsFiles();
+            
+            if (result && result.success) {
+                console.log('Odds file generation completed successfully');
+            } else {
+                console.error('Odds file generation failed:', result?.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error in scheduled odds file generation:', error);
+        }
+    });
+    
+    // Also generate odds files after match updates
+    // This gets called in the existing handleMatchFetching function
+    // after the match fetch is completed
+    return oddsGenerationJob;
+}
+
 function initializeCronJobs() {
     // Daily reset job - runs at midnight UTC
     dailyResetJob = cron.schedule('0 0 * * *', async () => {
@@ -507,6 +534,12 @@ function initializeCronJobs() {
 
     // Initialize the stats generation job
     initializeStatsJob();
+    
+    // Initialize the odds generation job
+    const oddsGenerationJob = initializeOddsJob();
+    
+    // Return the new job so we can reference it elsewhere
+    return { dailyResetJob, accuracyStatsJob, statsGenerationJob, oddsGenerationJob };
 }
 
 // Error handling for the cron jobs
@@ -543,5 +576,6 @@ module.exports = {
     updateDailyPredictionStats,
     handleMatchFetching,
     generateAllStatsFile,
-    initializeStatsJob
+    initializeStatsJob,
+    generateOddsFiles // Export the odds generation function
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Info, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 const websiteColors = {
@@ -11,6 +11,15 @@ const websiteColors = {
 };
 
 const Match = ({ match }) => {
+  // Add null check for match data
+  if (!match || !match.homeTeam || !match.awayTeam || !match.odds || !match.odds.harmonicMeanOdds) {
+    return (
+      <div className="p-2 md:p-4 border-b border-gray-800 text-center text-gray-400">
+        Match data incomplete
+      </div>
+    );
+  }
+  
   return (
     <div className="p-2 md:p-4 border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
       <div className="flex items-center gap-2 mb-2">
@@ -19,6 +28,7 @@ const Match = ({ match }) => {
             src={match.homeTeam.crest} 
             alt={match.homeTeam.name}
             className="w-4 h-4 md:w-6 md:h-6 object-contain"
+            onError={(e) => e.target.style.display = 'none'}
           />
           <span className="text-xs md:text-sm text-white ml-1 md:ml-2 truncate">
             {match.homeTeam.name}
@@ -32,6 +42,7 @@ const Match = ({ match }) => {
             src={match.awayTeam.crest} 
             alt={match.awayTeam.name}
             className="w-4 h-4 md:w-6 md:h-6 object-contain"
+            onError={(e) => e.target.style.display = 'none'}
           />
         </div>
       </div>
@@ -76,13 +87,21 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [expandedCompetitions, setExpandedCompetitions] = useState(new Set());
   const [showTooltip, setShowTooltip] = useState(false);
+  const [competitionsData, setCompetitionsData] = useState([]);
 
-  const getMatchesGroupedByCompetition = () => {
-    const groupedMatches = new Map();
+  const getMatchesGroupedByCompetition = useCallback(() => {
+    if (!allMatches || Object.keys(allMatches).length === 0) {
+      console.log("No matches available for grouping");
+      return [];
+    }
     
     // Get today's date for filtering
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
+    console.log(`Filtering matches for today: ${todayStr}`);
+    
+    // Convert the league-grouped matches to a grouped competition data structure
+    const groupedMatches = new Map();
     
     // Process matches by league
     Object.entries(allMatches || {}).forEach(([leagueId, matches]) => {
@@ -99,31 +118,22 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
           const matchDateStr = matchDate.toISOString().split('T')[0];
           return matchDateStr === todayStr;
         } catch (e) {
+          console.error("Error filtering match:", e);
           return false;
         }
       });
       
       if (todayMatches.length === 0) return; // Skip leagues with no matches today
-  
-      todayMatches.forEach(match => {
-        // Generate placeholder odds data if missing (works in any environment)
-        if (!match.odds || !match.odds.harmonicMeanOdds) {
-
-          // Create placeholder odds data
-          match.odds = {
-            harmonicMeanOdds: {
-              home: 2.2 + Math.random() * 0.5,
-              draw: 3.1 + Math.random() * 0.5,
-              away: 2.8 + Math.random() * 0.5
-            },
-            impliedProbabilities: {
-              home: Math.floor(30 + Math.random() * 20),
-              draw: Math.floor(20 + Math.random() * 15),
-              away: Math.floor(25 + Math.random() * 20)
-            }
-          };
-        }
       
+      console.log(`Found ${todayMatches.length} matches for today in league ${leagueId}`);
+      
+      todayMatches.forEach(match => {
+        // Skip matches without the required data
+        if (!match.competition || !match.competition.id) {
+          console.warn("Match missing competition data:", match.id);
+          return;
+        }
+        
         // Only include matches with odds data
         if (match.odds?.harmonicMeanOdds) {
           const compId = match.competition.id;
@@ -134,47 +144,55 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
             });
           }
           groupedMatches.get(compId).matches.push(match);
+        } else {
+          console.warn("Match missing odds data:", match.id);
         }
       });
-        });
-  
+    });
+    
     // Sort matches within each competition by kickoff time
     groupedMatches.forEach(group => {
       group.matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
     });
+    
+    const result = Array.from(groupedMatches.values());
+    console.log(`Grouped ${result.length} competitions for today`);
+    return result;
+  }, [allMatches]);
   
-    return Array.from(groupedMatches.values());
-  };
-        
-  const competitions = getMatchesGroupedByCompetition();
-
+  // Process the matches and store the result
   useEffect(() => {
-    if (currentIndex >= competitions.length) {
+    const competitions = getMatchesGroupedByCompetition();
+    setCompetitionsData(competitions);
+  }, [getMatchesGroupedByCompetition]);
+  
+  useEffect(() => {
+    if (currentIndex >= competitionsData.length && competitionsData.length > 0) {
       setCurrentIndex(0);
     }
-  }, [competitions.length, currentIndex]);
+  }, [competitionsData.length, currentIndex]);
 
   useEffect(() => {
-    if (competitions.length === 0 || isPage) return;
+    if (competitionsData.length === 0 || isPage) return;
 
     const timer = !isPaused && setInterval(() => {
       setCurrentIndex((current) => 
-        current === competitions.length - 1 ? 0 : current + 1
+        current === competitionsData.length - 1 ? 0 : current + 1
       );
     }, 3000);
 
     return () => timer && clearInterval(timer);
-  }, [competitions.length, isPaused, isPage]);
+  }, [competitionsData.length, isPaused, isPage]);
 
   const handlePrevious = () => {
     setCurrentIndex(current => 
-      current === 0 ? competitions.length - 1 : current - 1
+      current === 0 ? competitionsData.length - 1 : current - 1
     );
   };
 
   const handleNext = () => {
     setCurrentIndex(current => 
-      current === competitions.length - 1 ? 0 : current + 1
+      current === competitionsData.length - 1 ? 0 : current + 1
     );
   };
 
@@ -211,7 +229,7 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
     return <>{children}</>;
   };
 
-  if (competitions.length === 0) {
+  if (competitionsData.length === 0) {
     return (
       <WrapperComponent>
         <div className="w-full rounded-xl shadow-lg overflow-hidden bg-gray-900 p-4 text-center text-gray-400 text-xs md:text-sm">
@@ -225,7 +243,12 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   if (isPage) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {competitions.map((competition) => {
+        {competitionsData.map((competition) => {
+          // Add null check
+          if (!competition || !competition.competition) {
+            return null;
+          }
+          
           const displayMatches = expandedCompetitions.has(competition.competition.id) 
             ? competition.matches 
             : competition.matches.slice(0, 1); // Show only 1 match initially
@@ -243,6 +266,7 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
                       src={competition.competition.emblem} 
                       alt={competition.competition.name}
                       className="w-4 h-4 md:w-6 md:h-6 object-contain"
+                      onError={(e) => e.target.style.display = 'none'}
                     />
                   )}
                   <span className="text-xs md:text-sm text-white font-medium">
@@ -286,7 +310,21 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
   }
 
   // For sidebar view (original behavior)
-  const currentCompetition = competitions[currentIndex] || competitions[0];
+  // Add null checks to prevent errors
+  const currentCompetition = competitionsData.length > 0 ? 
+    competitionsData[currentIndex] || competitionsData[0] : null;
+  
+  // If no current competition is available, show empty state
+  if (!currentCompetition || !currentCompetition.competition) {
+    return (
+      <WrapperComponent>
+        <div className="w-full rounded-xl shadow-lg overflow-hidden bg-gray-900 p-4 text-center text-gray-400 text-xs md:text-sm">
+          No competition data available
+        </div>
+      </WrapperComponent>
+    );
+  }
+  
   const displayMatches = expandedCompetitions.has(currentCompetition.competition.id) 
     ? currentCompetition.matches 
     : currentCompetition.matches.slice(0, 1); // Show only 1 match initially
@@ -376,6 +414,7 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
                       src={currentCompetition.competition.emblem} 
                       alt={currentCompetition.competition.name}
                       className="w-4 h-4 md:w-6 md:h-6 object-contain"
+                      onError={(e) => e.target.style.display = 'none'}
                     />
                   )}
                   <span className="text-xs md:text-sm text-white font-medium">
@@ -424,7 +463,7 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
             </div>
 
             <div className="py-2 flex justify-center gap-1 border-t border-gray-800/50">
-              {competitions.map((_, index) => (
+              {competitionsData.map((_, index) => (
                 <div 
                   key={index}
                   className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-colors duration-300 ${

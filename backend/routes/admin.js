@@ -6,6 +6,7 @@ const adminAuth = require('../middleware/admin');
 const bcrypt = require('bcryptjs');
 const AIPredictionStat = require('../models/AIPredictionStat');
 const { processMatchesForDate } = require('../fetchMatches');
+const generateOddsFiles = require('../scripts/generateOddsFile');
 
 // Admin login route (public)
 router.post('/login', async (req, res) => {
@@ -330,5 +331,36 @@ router.post('/fix-stats', async (req, res) => {
     });
   }
 });
+
+router.post('/generate-odds', async (req, res) => {
+  try {
+    console.log('Admin triggered odds file generation');
+    
+    // Run the generate odds script
+    const result = await generateOddsFiles();
+    
+    if (result && result.success) {
+      return res.json({
+        success: true,
+        message: 'Odds files generated successfully',
+        result
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate odds files',
+        error: result?.error || 'Unknown error'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating odds files:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating odds files',
+      error: error.message
+    });
+  }
+});
+
 
 module.exports = router;

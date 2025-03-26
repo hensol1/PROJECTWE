@@ -8,8 +8,6 @@ import MatchDebugger from './MatchDebugger';
 import { BlogEditor } from './blog/BlogEditor';
 import { useLocation } from 'react-router-dom';
 
-
-
 // Admin action button component
 const AdminButton = ({ onClick, isLoading, label, loadingLabel }) => {
   return (
@@ -42,6 +40,7 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
   const [isGeneratingStatsFiles, setIsGeneratingStatsFiles] = useState(false);
   const [isGeneratingTeamStats, setIsGeneratingTeamStats] = useState(false); // Add this state
   const [lastAction, setLastAction] = useState(null);
+  const [isGeneratingOddsFiles, setIsGeneratingOddsFiles] = useState(false);
 
   const handleFetchMatches = async () => {
     try {
@@ -140,6 +139,27 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
       setIsFixingStats(false);
     }
   };
+
+  const handleGenerateOddsFiles = async () => {
+    try {
+      setIsGeneratingOddsFiles(true);
+      const response = await api.generateOddsFiles();
+      
+      console.log('Generate odds files result:', response.data);
+      setLastAction({ 
+        type: 'success', 
+        message: 'Odds files generated successfully! Updated files for faster odds loading.'
+      });
+    } catch (error) {
+      console.error('Generate odds files error:', error);
+      setLastAction({ 
+        type: 'error', 
+        message: 'Error generating odds files: ' + (error.response?.data?.message || error.message) 
+      });
+    } finally {
+      setIsGeneratingOddsFiles(false);
+    }
+  };  
 
   const handleGenerateStatsFiles = async () => {
     try {
@@ -250,6 +270,13 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
           label="Generate Team Stats"
           loadingLabel="Processing Teams..."
         />
+        <AdminButton
+  onClick={handleGenerateOddsFiles}
+  isLoading={isGeneratingOddsFiles}
+  label="Generate Odds Files"
+  loadingLabel="Generating Odds..."
+/>
+
       </div>
       
       <div className="flex flex-wrap gap-4 mb-4 border-t pt-4">

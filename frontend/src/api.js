@@ -338,6 +338,7 @@ api.getAdminBlogPost = (id) => api.get(`/api/blog/admin/${id}`); // for admin ed
 api.createBlogPost = (data) => api.post('/api/blog', data);
 api.updateBlogPost = (id, data) => api.put(`/api/blog/${id}`, data);
 api.deleteBlogPost = (id) => api.delete(`/api/blog/${id}`);
+api.generateOddsFiles = () => api.post('/api/admin/generate-odds');
 
 // Contact submission
 api.submitContactForm = (formData) => {
@@ -450,11 +451,24 @@ api.fetchMatchesForDisplay = async (date) => {
     const formattedDate = format(date, 'yyyy-MM-dd');
     console.log(`Fetching matches for display on ${formattedDate}`);
     
-    const response = await api.fetchMatches(formattedDate);
+    // Use the static file fetcher instead of the direct API call
+    const response = await api.fetchMatchOddsFromFile(formattedDate);
     
     if (!response?.data) return {};
     
-    // Normalize the data structure
+    // If data comes from static file and is properly formatted, return it directly
+    if (response.source === 'static-file' && typeof response.data === 'object' && !Array.isArray(response.data)) {
+      // Make sure we're not dealing with an API response that happened to have source='static-file'
+      const isStandardApiResponse = response.data.matches || response.data[formattedDate];
+      
+      if (!isStandardApiResponse) {
+        console.log(`Using pre-grouped static file data with ${Object.keys(response.data).length} competitions`);
+        return response.data;
+      }
+    }
+    
+    // Otherwise, process API response as before
+    console.log('Processing API response format data');
     let allMatches = api.normalizeMatchData(response.data, formattedDate);
     
     // Filter to include only matches for the specific date
@@ -467,8 +481,13 @@ api.fetchMatchesForDisplay = async (date) => {
     
     console.log(`Filtered to ${allMatches.length} matches for ${formattedDate}`);
     
-    // Add placeholder odds in development mode
-    const matchesWithOdds = allMatches.map(api.addPlaceholderOdds);
+    // Add placeholder odds in development mode (if needed)
+    const matchesWithOdds = allMatches.map(match => {
+      if (!match.odds || !match.odds.harmonicMeanOdds) {
+        return api.addPlaceholderOdds(match);
+      }
+      return match;
+    });
     
     // Group by league for display
     return api.groupMatchesByLeague(matchesWithOdds);
@@ -573,5 +592,38 @@ api.fetchTeamMatchHistory = async (teamId) => {
     throw error;
   }
 };
+
+// Fetch match odds from static file with API fallback
+api.fetchMatchOddsFromFile = async (date) => {
+  const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+  
+  try {
+    // Use our existing fetchStaticFileWithFallback for consistency
+    const fileUrl = `/stats/odds-${formattedDate}.json`;
+    const fallbackEndpoint = `/api/matches?date=${formattedDate}`;
+    
+    console.log(`Attempting to fetch odds from static file: ${fileUrl}`);
+    
+    const data = await fetchStaticFileWithFallback(
+      fileUrl,
+      fallbackEndpoint,
+      data => data
+    );
+    
+    return {
+      data: data,
+      source: 'static-file'
+    };
+  } catch (err) {
+    console.warn(`All odds fetch methods failed for ${formattedDate}:`, err);
+    
+    // Ultimate fallback - return empty data to prevent crashes
+    return {
+      data: {},
+      source: 'empty-fallback'
+    };
+  }
+};
+
 
 export default api;
