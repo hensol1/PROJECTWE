@@ -6,7 +6,7 @@ import { useMatchNotifications } from '../../hooks/useMatchNotifications';
 import { filterMatchesByStatus, getDateForSelection } from '../../utils/matchUtils';
 import { MatchFilters } from './MatchFilters';
 import NotificationQueue from '../NotificationQueue';
-import LoadingSpinner from '../LoadingSpinner';
+// Removed LoadingLogo import as we'll use a custom spinner
 import api from '../../api';
 import APIStyleMatches from '../APIStyleMatches';
 
@@ -275,8 +275,8 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
   // Show loading state for initial app load
   if (isLoading && !isInitialized) {
     return (
-      <div className="max-w-6xl mx-auto px-2">
-        <LoadingSpinner />
+      <div className="max-w-6xl mx-auto px-2 flex justify-center items-center py-20">
+        <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
       </div>
     );
   }
@@ -307,8 +307,8 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
           
           <div className="w-full">
             {(isLoading || !dataLoadedForCurrentDate) ? (
-              <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
-                <LoadingSpinner />
+              <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden flex justify-center items-center py-16">
+                <div className="w-10 h-10 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
               </div>
             ) : Object.keys(getAllMatches()).length === 0 ? (
               <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
