@@ -6,7 +6,7 @@ import { useMatchNotifications } from '../../hooks/useMatchNotifications';
 import { filterMatchesByStatus, getDateForSelection } from '../../utils/matchUtils';
 import { MatchFilters } from './MatchFilters';
 import NotificationQueue from '../NotificationQueue';
-import LoadingLogo from '../LoadingLogo';
+import LoadingSpinner from '../LoadingSpinner';
 import api from '../../api';
 import APIStyleMatches from '../APIStyleMatches';
 
@@ -276,7 +276,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
   if (isLoading && !isInitialized) {
     return (
       <div className="max-w-6xl mx-auto px-2">
-        <LoadingLogo />
+        <LoadingSpinner />
       </div>
     );
   }
@@ -308,7 +308,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
           <div className="w-full">
             {(isLoading || !dataLoadedForCurrentDate) ? (
               <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
-                <LoadingLogo />
+                <LoadingSpinner />
               </div>
             ) : Object.keys(getAllMatches()).length === 0 ? (
               <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
