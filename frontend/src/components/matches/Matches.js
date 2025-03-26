@@ -18,6 +18,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
   const [selectedDay, setSelectedDay] = useState('today');
   const [isInitialized, setIsInitialized] = useState(false);
   const [isRefreshingData, setIsRefreshingData] = useState(false);
+  const [dataLoadedForCurrentDate, setDataLoadedForCurrentDate] = useState(false);
   
   const navigateToOddsPage = useCallback(() => {
     if (!disableSidebars) {
@@ -70,13 +71,47 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
         
         // Immediately perform a soft update to get latest data
         await softUpdateMatches();
+        
+        // Mark that data has been loaded for the current date
+        setDataLoadedForCurrentDate(true);
       } catch (error) {
         console.error('Error during initialization:', error);
+        // Still mark as loaded even if there was an error, to show "no matches" instead of infinite loading
+        setDataLoadedForCurrentDate(true);
       }
     };
   
     initialize();
   }, [userTimeZone, isInitialized]);
+  
+  // Handle day change
+  const handleDayChange = useCallback((newDay) => {
+    setSelectedDay(newDay);
+    // Reset data loaded flag when changing day
+    setDataLoadedForCurrentDate(false);
+    
+    // Fetch data for the new day
+    const newDate = getDateForSelection(newDay);
+    const newDateKey = format(newDate, 'yyyy-MM-dd');
+    
+    // Check if we already have data for this date
+    if (matches && matches[newDateKey]) {
+      // We already have data for this date, mark as loaded
+      setDataLoadedForCurrentDate(true);
+    } else {
+      // Need to fetch data for this date
+      const fetchNewDayData = async () => {
+        try {
+          await fetchMatches(newDate);
+          setDataLoadedForCurrentDate(true);
+        } catch (error) {
+          console.error('Error fetching data for new day:', error);
+          setDataLoadedForCurrentDate(true);
+        }
+      };
+      fetchNewDayData();
+    }
+  }, [matches, fetchMatches]);
   
   // Optimized soft update logic
   const softUpdateMatches = useCallback(async () => {
@@ -115,9 +150,14 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
       };
 
       checkForGoals(newState, prevState);
+      
+      // Mark that data has been loaded
+      setDataLoadedForCurrentDate(true);
 
     } catch (error) {
       console.error('Error in soft update:', error);
+      // Still mark as loaded even if there was an error
+      setDataLoadedForCurrentDate(true);
     } finally {
       setIsRefreshingData(false);
     }
@@ -143,11 +183,6 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     const updateTimer = setInterval(softUpdateMatches, 15000);
     return () => clearInterval(updateTimer);
   }, [isInitialized, softUpdateMatches]);
-
-  // Handle day change
-  const handleDayChange = useCallback((newDay) => {
-    setSelectedDay(newDay);
-  }, []);
 
   // Vote handler
   const handleVote = async (matchId, vote) => {
@@ -237,7 +272,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
     return combinedMatches;
   }, [allLiveMatches, matchesForCurrentDate, selectedDate, userTimeZone, selectedLeague, selectedDay]);
   
-  // Show loading state
+  // Show loading state for initial app load
   if (isLoading && !isInitialized) {
     return (
       <div className="max-w-6xl mx-auto px-2">
@@ -271,7 +306,7 @@ const Matches = ({ user, onOpenAuthModal, disableSidebars = false, selectedLeagu
           )}
           
           <div className="w-full">
-            {isLoading && !isInitialized ? (
+            {(isLoading || !dataLoadedForCurrentDate) ? (
               <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
                 <LoadingLogo />
               </div>
