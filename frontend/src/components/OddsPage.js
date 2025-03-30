@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import LeagueFilter from './LeagueFilter';
+import OddsBreakdownModal from './OddsBreakdownModal'; // Import the new component
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import { Calendar, Loader, ChevronLeft, ChevronRight, ChevronDown, Filter, Info, X } from 'lucide-react';
@@ -14,6 +15,8 @@ const OddsPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [showTooltip, setShowTooltip] = useState(false);
+  // New state for the odds breakdown modal
+  const [selectedMatch, setSelectedMatch] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -113,6 +116,16 @@ const OddsPage = () => {
     if (homeScore > awayScore) return 'home';
     if (awayScore > homeScore) return 'away';
     return 'draw';
+  };
+
+  // Handle click on a match to show odds breakdown
+  const handleMatchClick = (match) => {
+    setSelectedMatch(match);
+  };
+
+  // Close the odds breakdown modal
+  const closeOddsBreakdown = () => {
+    setSelectedMatch(null);
   };
 
   // Fetch matches and leagues data
@@ -362,6 +375,7 @@ const OddsPage = () => {
                           <div 
                             key={match.id} 
                             className="px-2 py-2 md:px-4 md:py-3 hover:bg-[#2a2f3d] transition-colors cursor-pointer"
+                            onClick={() => handleMatchClick(match)}
                           >
                             <div className="flex items-center justify-between gap-2 md:gap-4">
                               {/* Match time */}
@@ -380,83 +394,83 @@ const OddsPage = () => {
                                 </span>
                               </div>
                               
-{/* Teams with scores always visible */}
-<div className="flex-1">
-  <div className="flex items-center justify-between mb-1 md:mb-2">
-    <div className="flex items-center gap-1 md:gap-2">
-      {match.homeTeam?.crest && (
-        <img 
-          src={match.homeTeam.crest} 
-          alt={match.homeTeam.name} 
-          className="w-3 h-3 md:w-4 md:h-4 object-contain"
-          onError={(e) => e.target.style.display = 'none'}
-        />
-      )}
-      <span className="text-xs md:text-sm">{match.homeTeam.name}</span>
-    </div>
-    <span className="text-xs md:text-sm font-semibold">
-      {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.home !== null ? match.score.fullTime.home : '-'}
-    </span>
-  </div>
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-1 md:gap-2">
-      {match.awayTeam?.crest && (
-        <img 
-          src={match.awayTeam.crest} 
-          alt={match.awayTeam.name} 
-          className="w-3 h-3 md:w-4 md:h-4 object-contain"
-          onError={(e) => e.target.style.display = 'none'}
-        />
-      )}
-      <span className="text-xs md:text-sm">{match.awayTeam.name}</span>
-    </div>
-    <span className="text-xs md:text-sm font-semibold">
-      {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.away !== null ? match.score.fullTime.away : '-'}
-    </span>
-  </div>
-</div>
+                              {/* Teams with scores always visible */}
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1 md:mb-2">
+                                  <div className="flex items-center gap-1 md:gap-2">
+                                    {match.homeTeam?.crest && (
+                                      <img 
+                                        src={match.homeTeam.crest} 
+                                        alt={match.homeTeam.name} 
+                                        className="w-3 h-3 md:w-4 md:h-4 object-contain"
+                                        onError={(e) => e.target.style.display = 'none'}
+                                      />
+                                    )}
+                                    <span className="text-xs md:text-sm">{match.homeTeam.name}</span>
+                                  </div>
+                                  <span className="text-xs md:text-sm font-semibold">
+                                    {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.home !== null ? match.score.fullTime.home : '-'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1 md:gap-2">
+                                    {match.awayTeam?.crest && (
+                                      <img 
+                                        src={match.awayTeam.crest} 
+                                        alt={match.awayTeam.name} 
+                                        className="w-3 h-3 md:w-4 md:h-4 object-contain"
+                                        onError={(e) => e.target.style.display = 'none'}
+                                      />
+                                    )}
+                                    <span className="text-xs md:text-sm">{match.awayTeam.name}</span>
+                                  </div>
+                                  <span className="text-xs md:text-sm font-semibold">
+                                    {match.status !== 'TIMED' && match.status !== 'SCHEDULED' && match.score.fullTime.away !== null ? match.score.fullTime.away : '-'}
+                                  </span>
+                                </div>
+                              </div>
 
-{/* Odds display with explicit styling to ensure visibility */}
-{hasOdds && (
-  <div className="flex items-center justify-end gap-1" style={{ display: 'flex', minWidth: '90px' }}>
-    <div 
-      className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
-        matchWinner === 'home' 
-          ? 'bg-emerald-600' 
-          : 'bg-gray-700'
-      }`}
-    >
-      <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.home.toFixed(2)}</span>
-      <span className={`text-[8px] md:text-[10px] ${matchWinner === 'home' ? 'text-emerald-200' : 'text-gray-400'}`}>
-        {match.odds.impliedProbabilities.home}%
-      </span>
-    </div>
-    <div 
-      className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
-        matchWinner === 'draw' 
-          ? 'bg-emerald-600' 
-          : 'bg-gray-700'
-      }`}
-    >
-      <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.draw.toFixed(2)}</span>
-      <span className={`text-[8px] md:text-[10px] ${matchWinner === 'draw' ? 'text-emerald-200' : 'text-gray-400'}`}>
-        {match.odds.impliedProbabilities.draw}%
-      </span>
-    </div>
-    <div 
-      className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
-        matchWinner === 'away' 
-          ? 'bg-emerald-600' 
-          : 'bg-gray-700'
-      }`}
-    >
-      <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.away.toFixed(2)}</span>
-      <span className={`text-[8px] md:text-[10px] ${matchWinner === 'away' ? 'text-emerald-200' : 'text-gray-400'}`}>
-        {match.odds.impliedProbabilities.away}%
-      </span>
-    </div>
-  </div>
-)}
+                              {/* Odds display with explicit styling to ensure visibility */}
+                              {hasOdds && (
+                                <div className="flex items-center justify-end gap-1" style={{ display: 'flex', minWidth: '90px' }}>
+                                  <div 
+                                    className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
+                                      matchWinner === 'home' 
+                                        ? 'bg-emerald-600' 
+                                        : 'bg-gray-700'
+                                    }`}
+                                  >
+                                    <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.home.toFixed(2)}</span>
+                                    <span className={`text-[8px] md:text-[10px] ${matchWinner === 'home' ? 'text-emerald-200' : 'text-gray-400'}`}>
+                                      {match.odds.impliedProbabilities.home}%
+                                    </span>
+                                  </div>
+                                  <div 
+                                    className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
+                                      matchWinner === 'draw' 
+                                        ? 'bg-emerald-600' 
+                                        : 'bg-gray-700'
+                                    }`}
+                                  >
+                                    <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.draw.toFixed(2)}</span>
+                                    <span className={`text-[8px] md:text-[10px] ${matchWinner === 'draw' ? 'text-emerald-200' : 'text-gray-400'}`}>
+                                      {match.odds.impliedProbabilities.draw}%
+                                    </span>
+                                  </div>
+                                  <div 
+                                    className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
+                                      matchWinner === 'away' 
+                                        ? 'bg-emerald-600' 
+                                        : 'bg-gray-700'
+                                    }`}
+                                  >
+                                    <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.away.toFixed(2)}</span>
+                                    <span className={`text-[8px] md:text-[10px] ${matchWinner === 'away' ? 'text-emerald-200' : 'text-gray-400'}`}>
+                                      {match.odds.impliedProbabilities.away}%
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -480,6 +494,14 @@ const OddsPage = () => {
           onClose={() => setIsMobileFilterOpen(false)}
         />
       </div>
+      
+      {/* Odds Breakdown Modal */}
+      {selectedMatch && (
+        <OddsBreakdownModal 
+          match={selectedMatch} 
+          onClose={closeOddsBreakdown} 
+        />
+      )}
     </div>
   );
 };
