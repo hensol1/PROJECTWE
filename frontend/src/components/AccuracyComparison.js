@@ -86,7 +86,7 @@ const RacingBarDisplay = ({ score }) => {
   );
 };
 
-export default function AccuracyComparison({ user, onSignInClick }) {
+export default function AccuracyComparison({ user, onSignInClick, onAccuracyUpdate }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [accuracyData, setAccuracyData] = useState({
     aiAccuracy: 0,
@@ -104,6 +104,13 @@ export default function AccuracyComparison({ user, onSignInClick }) {
     accuracy: 0,
     matches: 0
   });
+
+    // Notify parent component when accuracy data changes
+    useEffect(() => {
+      if (onAccuracyUpdate && accuracyData.aiAccuracy) {
+        onAccuracyUpdate(accuracyData.aiAccuracy);
+      }
+    }, [accuracyData.aiAccuracy, onAccuracyUpdate]);
   
   // Minimum time between updates (in ms)
   const MIN_UPDATE_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -385,19 +392,46 @@ export default function AccuracyComparison({ user, onSignInClick }) {
   // Animation effect for the accuracy score
   useEffect(() => {
     const targetAi = accuracyData?.aiAccuracy || 0;
-    const duration = 1500;
-    const steps = 60;
+    // Very short duration (500ms)
+    const duration = 500;
+    // Fewer steps for faster movement
+    const steps = 20;
+    
+    let latestAnimatedValue = 0;
     
     const interval = setInterval(() => {
       setAnimatedAiAccuracy(prev => {
+        // Make larger jumps per step
         const next = prev + (targetAi / steps);
-        return next >= targetAi ? targetAi : next;
+        latestAnimatedValue = next >= targetAi ? targetAi : next;
+        
+        // Update parent with the animated value
+        if (onAccuracyUpdate) {
+          onAccuracyUpdate(latestAnimatedValue);
+        }
+        
+        return latestAnimatedValue;
       });
     }, duration / steps);
   
     return () => clearInterval(interval);
-  }, [accuracyData?.aiAccuracy]);
-
+  }, [accuracyData?.aiAccuracy, onAccuracyUpdate]);
+  
+  // Or if you want an immediate update with no animation:
+  
+  useEffect(() => {
+    const targetAi = accuracyData?.aiAccuracy || 0;
+    
+    // Set the value immediately
+    setAnimatedAiAccuracy(targetAi);
+    
+    // Update parent with the value
+    if (onAccuracyUpdate) {
+      onAccuracyUpdate(targetAi);
+    }
+    
+  }, [accuracyData?.aiAccuracy, onAccuracyUpdate]);
+    
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-24 mt-4">

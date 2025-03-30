@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useLocation } from 'react-router-dom';
 import PerformanceGraph from './PerformanceGraph';
 import LeagueStats from './LeagueStats';
 import TeamStats from './TeamStats';
@@ -26,10 +27,19 @@ const usePrefetchData = () => {
 };
 
 const StatsPage = () => {
+  const location = useLocation();
+  // Set default tab or get tab from navigation state
   const [activeTab, setActiveTab] = useState('overall');
   
   // Start prefetching as soon as the page loads
   usePrefetchData();
+
+  // Set the active tab based on navigation state
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   const TabButton = ({ tab, label }) => (
     <button

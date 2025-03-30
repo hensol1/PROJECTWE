@@ -75,74 +75,83 @@ function App() {
               <SEO />
               <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
               <div className="min-h-screen flex flex-col bg-gray-100">
-                <header className="bg-[#1a1f2b] py-2 px-3 md:py-4 md:px-4">
-                  <div className="container mx-auto">
-                    <div className="grid grid-cols-3 items-center gap-2">
-                      <div className="flex items-center">
-                        <Link to="/" className="flex items-center space-x-1 md:space-x-2">
-                          <div className="w-6 md:w-8">
-                            <HeaderLogo />
-                          </div>
-                          <div className="flex flex-col md:hidden leading-tight">
-                            <div className="flex space-x-1">
-                              <span className="font-sans text-[10px] font-extrabold tracking-tight text-[#40c456]">
-                                WE
-                              </span>
-                              <span className="font-sans text-[10px] font-extrabold tracking-tight text-[#40c456]">
-                                KNOW
-                              </span>
-                            </div>
-                            <span className="font-sans text-[10px] font-extrabold tracking-tight text-[#40c456]">
-                              BETTER
-                            </span>
-                          </div>
-                          <div className="hidden md:flex items-center space-x-1">
-                            <span className="font-sans text-xl font-extrabold tracking-tight text-[#40c456]">
-                              WE KNOW BETTER
-                            </span>
-                          </div>
-                        </Link>
-                      </div>
-  
-                      <div className="flex justify-center items-center space-x-4">
-                        <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
-                          <IconMenu user={user} />
-                        </div>
-                        <button
-                          onClick={() => setWelcomeSlidesOpen(true)}
-                          className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
-                        >
-                          <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
-                        </button>
-                        <Link
-                          to="/stats"
-                          className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
-                        >
-                          <LineChart className="w-5 h-5 md:w-6 md:h-6" />
-                        </Link>
-                        <Link
-                          to="/blog"
-                          className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
-                        >
-                          <FileText className="w-5 h-5 md:w-6 md:h-6" />
-                        </Link>
-                        <Link
-                          to="/odds"
-                          className="flex items-center space-x-2 text-[#40c456] hover:text-[#3ab04e] transition-colors"
-                        >
-                          <Dices className="w-5 h-5 md:w-6 md:h-6" />
-                        </Link>
-                      </div>
-  
-                      <div className="flex justify-end">
-                        <div className="[&_svg]:text-[#40c456] [&_svg]:w-5 [&_svg]:h-5 md:[&_svg]:w-6 md:[&_svg]:h-6">
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </header>
-  
-                <main className="flex-1">
+              <header className="bg-gradient-to-r from-[#1a1f2b] to-[#242938] py-2 px-3 md:py-4 md:px-4 shadow-md">
+  <div className="container mx-auto">
+    {/* Change the layout to prevent text overlap */}
+    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2"> {/* Changed grid layout */}
+      <div className="flex items-center">
+        <Link to="/" className="flex items-center space-x-2 md:space-x-3 group">
+          <div className="w-8 md:w-10 h-8 md:h-10 flex items-center justify-center flex-shrink-0">
+            <HeaderLogo />
+          </div>
+          <div className="hidden sm:flex flex-col md:hidden leading-tight"> {/* Hide on very small screens */}
+            <div className="flex items-center space-x-1">
+              <span className="font-sans text-[12px] font-bold tracking-wide text-[#40c456]">WE</span>
+              <span className="font-sans text-[12px] font-bold tracking-wide text-[#40c456]">KNOW</span>
+            </div>
+            <span className="font-sans text-[12px] font-bold tracking-wide text-[#40c456]">BETTER</span>
+          </div>
+
+          {/* Desktop version */}
+          <div className="hidden md:flex items-center space-x-2">
+            <span className="font-sans text-xl font-bold tracking-wide text-[#40c456]">
+              WE KNOW BETTER
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      <div className="flex justify-center items-center">
+        {/* Center navigation icons with proper spacing */}
+        <div className="flex space-x-3 md:space-x-6"> {/* Adjusted spacing */}
+          <Link to="/" 
+            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+            title="Home"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </Link>
+          
+          <button
+            onClick={() => setWelcomeSlidesOpen(true)}
+            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+            title="About"
+          >
+            <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+          </button>
+          
+          <Link
+            to="/stats"
+            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+            title="Stats"
+          >
+            <LineChart className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+          </Link>
+          
+          <Link
+            to="/blog"
+            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+            title="Blog"
+          >
+            <FileText className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+          </Link>
+          
+          <Link
+            to="/odds"
+            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+            title="Odds"
+          >
+            <Dices className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+          </Link>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</header>
+<main className="flex-1 pt-4">
                   <Routes>
                     <Route 
                       path="/" 
