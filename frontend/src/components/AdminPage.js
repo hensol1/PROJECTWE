@@ -316,6 +316,41 @@ const Notification = ({ message, type, onClose }) => {
 };
 
 const MatchCard = ({ match, onPrediction }) => {
+  const [homePosition, setHomePosition] = useState(null);
+  const [awayPosition, setAwayPosition] = useState(null);
+  
+  // Fetch team positions when component mounts
+  useEffect(() => {
+    const fetchTeamPositions = async () => {
+      try {
+        if (match.competition && match.competition.id) {
+          const response = await api.getStandings(match.competition.id, new Date().getFullYear());
+          if (response.data && response.data.standings) {
+            // Find home team position
+            const homeTeamData = response.data.standings.find(
+              team => team.team.id === match.homeTeam.id
+            );
+            if (homeTeamData) {
+              setHomePosition(homeTeamData.rank);
+            }
+            
+            // Find away team position
+            const awayTeamData = response.data.standings.find(
+              team => team.team.id === match.awayTeam.id
+            );
+            if (awayTeamData) {
+              setAwayPosition(awayTeamData.rank);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching team positions:', error);
+      }
+    };
+    
+    fetchTeamPositions();
+  }, [match.competition?.id, match.homeTeam.id, match.awayTeam.id]);
+
   const getStatusClass = (status) => {
     switch (status) {
       case 'LIVE': return 'text-red-500';
@@ -324,15 +359,25 @@ const MatchCard = ({ match, onPrediction }) => {
     }
   };
 
+  // Check if odds are available
+  const hasOdds = match.odds && match.odds.harmonicMeanOdds;
+
   return (
     <div className="bg-white shadow-md rounded-lg p-4 mb-2">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center flex-1">
-          <img 
-            src={match.homeTeam.crest} 
-            alt={match.homeTeam.name}
-            className="w-8 h-8 object-contain mr-2"
-          />
+          <div className="relative">
+            <img 
+              src={match.homeTeam.crest} 
+              alt={match.homeTeam.name}
+              className="w-8 h-8 object-contain mr-2"
+            />
+            {homePosition && (
+              <span className="absolute -bottom-1 -right-1 bg-gray-800 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                {homePosition}
+              </span>
+            )}
+          </div>
           <span className="text-sm md:text-base">{match.homeTeam.name}</span>
         </div>
         <span className={`px-3 text-xs font-semibold ${getStatusClass(match.status)}`}>
@@ -343,13 +388,39 @@ const MatchCard = ({ match, onPrediction }) => {
         </span>
         <div className="flex items-center flex-1 justify-end">
           <span className="text-sm md:text-base mr-2">{match.awayTeam.name}</span>
-          <img 
-            src={match.awayTeam.crest} 
-            alt={match.awayTeam.name}
-            className="w-8 h-8 object-contain"
-          />
+          <div className="relative">
+            <img 
+              src={match.awayTeam.crest} 
+              alt={match.awayTeam.name}
+              className="w-8 h-8 object-contain"
+            />
+            {awayPosition && (
+              <span className="absolute -bottom-1 -left-1 bg-gray-800 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                {awayPosition}
+              </span>
+            )}
+          </div>
         </div>
       </div>
+      
+      {/* Display odds information if available */}
+      {hasOdds && (
+        <div className="flex justify-between mb-2 text-sm text-gray-600">
+          <div className="text-center">
+            <span className="font-semibold">{hasOdds.home.toFixed(2)}</span>
+            <p className="text-xs">({match.odds.impliedProbabilities.home}%)</p>
+          </div>
+          <div className="text-center">
+            <span className="font-semibold">{hasOdds.draw.toFixed(2)}</span>
+            <p className="text-xs">({match.odds.impliedProbabilities.draw}%)</p>
+          </div>
+          <div className="text-center">
+            <span className="font-semibold">{hasOdds.away.toFixed(2)}</span>
+            <p className="text-xs">({match.odds.impliedProbabilities.away}%)</p>
+          </div>
+        </div>
+      )}
+      
       <div className="flex justify-center space-x-2">
         <button
           onClick={() => onPrediction(match.id, 'HOME_TEAM')}
@@ -597,18 +668,18 @@ const AdminPage = ({ defaultTab }) => {
             </div>
           )}
 
-          {!isLoading && Object.entries(matches).map(([competition, competitionMatches]) => (
-            <div key={competition} className="mb-4">
-              <h2 className="text-xl font-semibold mb-2">{competition}</h2>
-              {competitionMatches.map(match => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  onPrediction={handlePrediction}
-                />
-              ))}
-            </div>
-          ))}
+{!isLoading && Object.entries(matches).map(([competition, competitionMatches]) => (
+  <div key={competition} className="mb-4">
+    <h2 className="text-xl font-semibold mb-2">{competition}</h2>
+    {competitionMatches.map(match => (
+      <MatchCard
+        key={match.id}
+        match={match}
+        onPrediction={handlePrediction}
+      />
+    ))}
+  </div>
+))}
         </>
       ) : activeTab === 'contacts' ? (
         <ContactAdmin />
