@@ -180,7 +180,7 @@ export default function HomePage({ user, setAuthModalOpen }) {
   <div className="relative z-10 p-6 md:p-8">
     {/* Mobile layout - more compact with circle beside buttons */}
     <div className="md:hidden">
-      <h1 className="text-2xl font-bold text-white mb-2">Premier Football Predictions</h1>
+      <h1 className="text-2xl font-bold text-white mb-2">We Know Better Football Predictions</h1>
       <p className="text-gray-300 text-sm mb-4">
         Join thousands of football fans making smarter predictions with our cutting-edge AI analysis. Compare your accuracy with others and improve your betting strategy.
       </p>
@@ -221,9 +221,9 @@ export default function HomePage({ user, setAuthModalOpen }) {
     {/* Desktop layout - remains unchanged */}
     <div className="hidden md:flex flex-col md:flex-row items-center">
       <div className="md:w-2/3 mb-6 md:mb-0 md:pr-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Premier Football Predictions</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">We Know Better Football Predictions</h1>
         <p className="text-gray-300 text-sm md:text-base mb-4">
-          Join thousands of football fans making smarter predictions with our cutting-edge AI analysis. Compare your accuracy with others and improve your betting strategy.
+          Join thousands of football fans making smarter predictions with our cutting-edge AI analysis. Help us to Help YOU!
         </p>
         
         <div className="flex flex-wrap gap-3">

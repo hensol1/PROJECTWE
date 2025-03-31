@@ -78,7 +78,7 @@ const StatsPage = () => {
           <div className="flex border-b border-gray-200 mb-4 sm:mb-6 overflow-x-auto pb-1 no-scrollbar">
             <TabButton tab="overall" label="Overall" />
             <TabButton tab="leagues" label="League" />
-            <TabButton tab="teams" label="Teams" />
+            <TabButton tab="teams" label="Clubs" />
           </div>
 
           <ErrorBoundary 
