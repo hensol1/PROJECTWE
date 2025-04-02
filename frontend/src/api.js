@@ -202,51 +202,55 @@ api.fetchAIHistory = async () => {
   try {
     console.log('Fetching AI history...');
     
-    // For development environment, try both approaches
-    let data;
-    if (process.env.NODE_ENV === 'development') {
+    // In production, always use API endpoint
+    if (process.env.NODE_ENV === 'production') {
       try {
-        // First try direct file access
-        const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
-        if (response.ok) {
-          data = await response.json();
-          console.log('Successfully loaded stats from JSON file:', data);
-        } else {
-          throw new Error(`Failed to fetch stats file: ${response.status}`);
-        }
-      } catch (fileError) {
-        console.log('File access failed, using API endpoint');
         const apiResponse = await api.get('/api/accuracy/ai/history');
-        data = apiResponse.data;
-        console.log('Successfully loaded stats from API:', data);
+        return apiResponse.data;
+      } catch (apiError) {
+        console.error('Error in production API call:', apiError);
+        // Return default structure to prevent UI errors
+        return {
+          stats: [],
+          overall: {
+            totalPredictions: 0,
+            correctPredictions: 0,
+            overallAccuracy: 0
+          },
+          generatedAt: new Date().toISOString()
+        };
       }
-    } else {
-      // Production - use file
-      const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.status}`);
-      }
-      data = await response.json();
     }
     
-    // Validate the data structure
-    if (!data || !data.overall) {
-      console.error('Invalid data structure:', data);
-      throw new Error('Invalid data structure');
+    // Development - try file first
+    const cacheBuster = `?t=${Date.now()}`;
+    const response = await fetch(`/stats/ai-history.json${cacheBuster}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stats file: ${response.status}`);
     }
     
-    // Log the exact numbers for debugging
-    console.log('Stats data details:', {
-      totalPredictions: data.overall.totalPredictions,
-      correctPredictions: data.overall.correctPredictions,
-      accuracy: data.overall.overallAccuracy,
-      statsCount: data.stats?.length || 0
-    });
-    
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Error fetching AI history:', error);
-    throw error;
+    
+    // Fallback to API
+    try {
+      const apiResponse = await api.get('/api/accuracy/ai/history');
+      return apiResponse.data;
+    } catch (fallbackError) {
+      console.error('All methods failed:', fallbackError);
+      // Return minimal default data
+      return {
+        stats: [],
+        overall: {
+          totalPredictions: 0,
+          correctPredictions: 0,
+          overallAccuracy: 0
+        },
+        generatedAt: new Date().toISOString()
+      };
+    }
   }
 };
 
