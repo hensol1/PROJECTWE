@@ -30,10 +30,45 @@ const StatsPage = () => {
   const location = useLocation();
   // Set default tab or get tab from navigation state
   const [activeTab, setActiveTab] = useState('overall');
+  const [lastUpdated, setLastUpdated] = useState(null);
   
-  // Start prefetching as soon as the page loads
-  usePrefetchData();
-
+  // Use this effect to fetch data and update lastUpdated state
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Direct fetch to bypass potential API issues
+        const response = await fetch('/stats/ai-history.json?t=' + Date.now());
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Direct fetch result:', data);
+          
+          // Check where the generatedAt field might be
+          if (data?.generatedAt) {
+            setLastUpdated(data.generatedAt);
+          } else {
+            // Try to find it elsewhere in the data structure
+            console.log('No direct generatedAt field, searching deeper...');
+            if (data) {
+              setLastUpdated(new Date().toISOString()); // Use current time as fallback
+            }
+          }
+        } else {
+          console.error('Failed to fetch stats file:', response.status);
+        }
+        
+        // Also prefetch other data
+        await Promise.all([
+          api.fetchLeagueStats(),
+          api.fetchTeamStats()
+        ]);
+      } catch (error) {
+        console.error('Error fetching statistics data:', error);
+      }
+    };
+    
+    fetchData();
+  }, []);
+  
   // Set the active tab based on navigation state
   useEffect(() => {
     if (location.state?.activeTab) {
@@ -80,6 +115,10 @@ const StatsPage = () => {
             <TabButton tab="leagues" label="League" />
             <TabButton tab="teams" label="Clubs" />
           </div>
+
+          <div className="text-xs text-gray-500 text-right mb-4">
+  Last updated: {new Date().toLocaleString()}
+</div>
 
           <ErrorBoundary 
             fallback={

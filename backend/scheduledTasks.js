@@ -567,6 +567,18 @@ generateAllStatsFile().then(result => {
     console.error('Error generating initial stats files:', error);
 });
 
+cron.schedule('0 * * * *', async () => { 
+    console.log('Running scheduled stats generation...');
+    try {
+      const generateStats = require('./scripts/statsGenerator');
+      await generateStats();
+      console.log('Scheduled stats generation completed');
+    } catch (error) {
+      console.error('Error in scheduled stats generation:', error);
+    }
+  });
+  
+
 // Export all necessary functions and jobs
 module.exports = {
     scheduleNextMatchCheck,

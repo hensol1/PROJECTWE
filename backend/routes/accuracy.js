@@ -3,6 +3,7 @@ const router = express.Router();
 const AIPredictionStat = require('../models/AIPredictionStat');
 const Match = require('../models/Match');
 const PREDICTIONS_START_DATE = new Date('2025-01-15T00:00:00Z');
+const { format } = require('date-fns');
 
 async function validateAndFixStats() {
   try {

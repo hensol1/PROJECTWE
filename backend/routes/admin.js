@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const AIPredictionStat = require('../models/AIPredictionStat');
 const { processMatchesForDate } = require('../fetchMatches');
 const generateOddsFiles = require('../scripts/generateOddsFile');
+const generateStats = require('../scripts/statsGenerator');
 
 // Admin login route (public)
 router.post('/login', async (req, res) => {
@@ -357,6 +358,41 @@ router.post('/generate-odds', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error generating odds files',
+      error: error.message
+    });
+  }
+});
+
+// Add the route
+router.post('/generate-stats', async (req, res) => {
+  try {
+    console.log('Admin requested manual stats generation');
+    
+    // Call the generator function
+    const result = await generateStats();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Stats generated successfully',
+        details: {
+          timestamp: new Date().toISOString(),
+          totalMatches: result.totalMatches || 'N/A',
+          totalLeagues: result.totalLeagues || 'N/A'
+        }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Stats generation failed',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error in generate-stats endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating stats',
       error: error.message
     });
   }

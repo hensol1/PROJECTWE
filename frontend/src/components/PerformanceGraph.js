@@ -84,24 +84,20 @@ const usePerformanceData = () => {
 
   useEffect(() => {
     let isMounted = true;
-
+  
     const fetchData = async () => {
       try {
-        // Clear cache to ensure fresh data
-        sessionStorage.removeItem('performanceData');
-        sessionStorage.removeItem('performanceDataTimestamp');
-        
-        if (typeof api.refreshStatsCache === 'function') {
-          api.refreshStatsCache();
-        }
+        console.log('Fetching performance data...');
         
         // Get data from API
         const response = await api.fetchAIHistory();
+        console.log('Raw API response:', response);
         
         if (!response || !response.overall) {
+          console.error('Invalid response format:', response);
           throw new Error('Invalid response from API');
         }
-        
+          
         // Get overall stats
         const overallStats = {
           totalPredictions: response.overall.totalPredictions,

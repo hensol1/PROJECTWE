@@ -45,7 +45,7 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 
-// Connect to MongoDB
+// Connect to MongoDB with persistent connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -56,7 +56,30 @@ mongoose.connect(process.env.MONGODB_URI, {
     serverTime: new Date().toISOString()
   });
 })
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1); // Exit with error if initial connection fails
+});
+
+// Handle connection events
+mongoose.connection.on('error', err => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected');
+  // You could implement auto-reconnect logic here if needed
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('MongoDB reconnected');
+});
+
+// Add this to prevent the Node process from terminating on unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log the error
+});
 
 // Routes
 app.use('/api/matches', matchesRoutes);

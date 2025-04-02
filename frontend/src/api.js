@@ -200,22 +200,53 @@ api.fetchLatestSuccessfulPrediction = async () => {
 // Optimized version of fetchAIHistory that uses static files
 api.fetchAIHistory = async () => {
   try {
-    return await fetchStaticFileWithFallback(
-      '/stats/ai-history.json',
-      '/api/stats/ai/history'
-    );
+    console.log('Fetching AI history...');
+    
+    // For development environment, try both approaches
+    let data;
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        // First try direct file access
+        const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
+        if (response.ok) {
+          data = await response.json();
+          console.log('Successfully loaded stats from JSON file:', data);
+        } else {
+          throw new Error(`Failed to fetch stats file: ${response.status}`);
+        }
+      } catch (fileError) {
+        console.log('File access failed, using API endpoint');
+        const apiResponse = await api.get('/api/accuracy/ai/history');
+        data = apiResponse.data;
+        console.log('Successfully loaded stats from API:', data);
+      }
+    } else {
+      // Production - use file
+      const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stats: ${response.status}`);
+      }
+      data = await response.json();
+    }
+    
+    // Validate the data structure
+    if (!data || !data.overall) {
+      console.error('Invalid data structure:', data);
+      throw new Error('Invalid data structure');
+    }
+    
+    // Log the exact numbers for debugging
+    console.log('Stats data details:', {
+      totalPredictions: data.overall.totalPredictions,
+      correctPredictions: data.overall.correctPredictions,
+      accuracy: data.overall.overallAccuracy,
+      statsCount: data.stats?.length || 0
+    });
+    
+    return data;
   } catch (error) {
     console.error('Error fetching AI history:', error);
-    
-    // Fallback to the original endpoint if all else fails
-    try {
-      console.log('Falling back to legacy endpoint for AI history');
-      const fallbackResponse = await api.get('/api/accuracy/ai/history');
-      return fallbackResponse.data;
-    } catch (fallbackError) {
-      console.error('All AI history endpoints failed:', fallbackError);
-      throw error; // Throw the original error
-    }
+    throw error;
   }
 };
 
@@ -339,6 +370,7 @@ api.createBlogPost = (data) => api.post('/api/blog', data);
 api.updateBlogPost = (id, data) => api.put(`/api/blog/${id}`, data);
 api.deleteBlogPost = (id) => api.delete(`/api/blog/${id}`);
 api.generateOddsFiles = () => api.post('/api/admin/generate-odds');
+api.generateStats = () => api.post('/api/admin/generate-stats');
 
 // Contact submission
 api.submitContactForm = (formData) => {

@@ -41,6 +41,30 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
   const [isGeneratingTeamStats, setIsGeneratingTeamStats] = useState(false); // Add this state
   const [lastAction, setLastAction] = useState(null);
   const [isGeneratingOddsFiles, setIsGeneratingOddsFiles] = useState(false);
+  const [isGeneratingStats, setIsGeneratingStats] = useState(false);
+
+  // Add the handler function
+const handleGenerateStats = async () => {
+  try {
+    setIsGeneratingStats(true);
+    const response = await api.generateStats();
+    
+    console.log('Generate stats result:', response.data);
+    setLastAction({ 
+      type: 'success', 
+      message: 'Stats generated successfully! The latest match data is now available in the stats page.'
+    });
+  } catch (error) {
+    console.error('Generate stats error:', error);
+    setLastAction({ 
+      type: 'error', 
+      message: 'Error generating stats: ' + (error.response?.data?.message || error.message) 
+    });
+  } finally {
+    setIsGeneratingStats(false);
+  }
+};
+
 
   const handleFetchMatches = async () => {
     try {
@@ -161,27 +185,6 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
     }
   };  
 
-  const handleGenerateStatsFiles = async () => {
-    try {
-      setIsGeneratingStatsFiles(true);
-      const response = await api.generateStatsFiles();
-      
-      console.log('Generate stats files result:', response.data);
-      setLastAction({ 
-        type: 'success', 
-        message: 'Stats files generated successfully! Updated files for AI performance and odds calculations.'
-      });
-    } catch (error) {
-      console.error('Generate stats files error:', error);
-      setLastAction({ 
-        type: 'error', 
-        message: 'Error generating stats files: ' + (error.response?.data?.message || error.message) 
-      });
-    } finally {
-      setIsGeneratingStatsFiles(false);
-    }
-  };
-
   const handleResetAIStats = async () => {
     if (!window.confirm('Are you sure you want to reset AI prediction stats? This action cannot be undone.')) {
       return;
@@ -230,73 +233,74 @@ const AdminControls = ({ selectedDate, onRefreshMatches }) => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-      <h2 className="text-xl font-semibold mb-4">Admin Controls</h2>
-      <div className="flex flex-wrap gap-4 mb-4">
-        <AdminButton
-          onClick={handleFetchMatches}
-          isLoading={isFetching}
-          label="Fetch Matches"
-          loadingLabel="Fetching..."
-        />
-        <AdminButton
-          onClick={handleFetchOdds}
-          isLoading={isFetchingOdds}
-          label="Fetch Odds"
-          loadingLabel="Fetching Odds..."
-        />
-        <AdminButton
-          onClick={handleRecalculateStats}
-          isLoading={isRecalculating}
-          label="Recalculate Stats"
-          loadingLabel="Recalculating..."
-        />
-        <AdminButton
-          onClick={handleFixStats}
-          isLoading={isFixingStats}
-          label="Fix Daily Stats"
-          loadingLabel="Fixing Stats..."
-        />
-        <AdminButton
-          onClick={handleGenerateStatsFiles}
-          isLoading={isGeneratingStatsFiles}
-          label="Generate Stats Files"
-          loadingLabel="Generating..."
-        />
-        {/* Add the new button for team stats */}
-        <AdminButton
-          onClick={handleGenerateTeamStats}
-          isLoading={isGeneratingTeamStats}
-          label="Generate Team Stats"
-          loadingLabel="Processing Teams..."
-        />
-        <AdminButton
-  onClick={handleGenerateOddsFiles}
-  isLoading={isGeneratingOddsFiles}
-  label="Generate Odds Files"
-  loadingLabel="Generating Odds..."
-/>
-
-      </div>
-      
-      <div className="flex flex-wrap gap-4 mb-4 border-t pt-4">
-        <AdminButton
-          onClick={handleResetAIStats}
-          isLoading={isResettingAI}
-          label="Reset AI Stats"
-          loadingLabel="Resetting AI..."
-          className="bg-orange-500 hover:bg-orange-600"
-        />
-      </div>
-
-      {lastAction && (
-        <div className={`mt-2 p-2 rounded ${
-          lastAction.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-        }`}>
-          {lastAction.message}
-        </div>
-      )}
+<div className="bg-white shadow-md rounded-lg p-4 mb-6">
+  <h2 className="text-xl font-semibold mb-4">Admin Controls</h2>
+  
+  {/* Match Management Section */}
+  <div className="mb-4">
+    <h3 className="text-lg font-medium mb-2 text-gray-700">Match Management</h3>
+    <div className="flex flex-wrap gap-4 mb-4">
+      <AdminButton
+        onClick={handleFetchMatches}
+        isLoading={isFetching}
+        label="Fetch Matches"
+        loadingLabel="Fetching..."
+      />
+      <AdminButton
+        onClick={handleFetchOdds}
+        isLoading={isFetchingOdds}
+        label="Fetch Odds"
+        loadingLabel="Fetching Odds..."
+      />
     </div>
+  </div>
+  
+  {/* Stats Management Section */}
+  <div className="mb-4 pt-4 border-t border-gray-200">
+  <h3 className="text-lg font-medium mb-2 text-gray-700">Stats Management</h3>
+  <div className="flex flex-wrap gap-4 mb-4">
+    <AdminButton
+      onClick={handleGenerateStats}
+      isLoading={isGeneratingStats}
+      label="Generate Stats"
+      loadingLabel="Generating..."
+    />
+    <AdminButton
+      onClick={handleGenerateTeamStats}
+      isLoading={isGeneratingTeamStats}
+      label="Generate Team Stats"
+      loadingLabel="Processing Teams..."
+    />
+  </div>
+</div>
+  
+  {/* Other Controls Section */}
+  <div className="pt-4 border-t border-gray-200">
+    <h3 className="text-lg font-medium mb-2 text-gray-700">Other Controls</h3>
+    <div className="flex flex-wrap gap-4">
+      <AdminButton
+        onClick={handleResetAIStats}
+        isLoading={isResettingAI}
+        label="Reset AI Stats"
+        loadingLabel="Resetting AI..."
+      />
+      <AdminButton
+        onClick={handleGenerateOddsFiles}
+        isLoading={isGeneratingOddsFiles}
+        label="Generate Odds Files"
+        loadingLabel="Generating Odds..."
+      />
+    </div>
+  </div>
+
+  {lastAction && (
+    <div className={`mt-4 p-3 rounded ${
+      lastAction.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+    }`}>
+      {lastAction.message}
+    </div>
+  )}
+</div>
   );
 };
 
