@@ -79,4 +79,10 @@ const getCacheStats = () => ({
   itemsInCache: cache.keys().length
 });
 
-module.exports = { withCache, getCacheStats };
+// Function to manually clear specific cache keys
+const clearCacheKey = (key) => {
+  return cache.del(key);
+};
+
+
+module.exports = { withCache, getCacheStats, clearCacheKey };

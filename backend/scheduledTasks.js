@@ -570,14 +570,18 @@ generateAllStatsFile().then(result => {
 cron.schedule('0 * * * *', async () => { 
     console.log('Running scheduled stats generation...');
     try {
-      const generateStats = require('./scripts/statsGenerator');
-      await generateStats();
-      console.log('Scheduled stats generation completed');
+      // Use the same method that's used on server start
+      const result = await generateAllStatsFile();
+      if (result.success) {
+        console.log('Scheduled stats file generation completed successfully');
+      } else {
+        console.error('Scheduled stats file generation failed:', result.error);
+      }
     } catch (error) {
       console.error('Error in scheduled stats generation:', error);
     }
   });
-  
+    
 
 // Export all necessary functions and jobs
 module.exports = {
