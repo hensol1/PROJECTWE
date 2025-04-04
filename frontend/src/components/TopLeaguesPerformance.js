@@ -81,17 +81,19 @@ const TopLeaguesPerformance = ({ displayMode = 'desktop' }) => {
   if (displayMode === 'mobile') {
     return (
       <div 
-        className="bg-gray-900 rounded-lg p-3 cursor-pointer transition-all duration-200 hover:bg-gray-800"
+        className="bg-[#1a1f2b] rounded-lg overflow-hidden cursor-pointer"
         onClick={handleTableClick}
       >
-        {/* Title */}
-        <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-2">
-          <Trophy size={14} className="text-emerald-400" />
-          <span className="text-sm font-semibold text-emerald-400">Top Performing Leagues</span>
+        {/* Perfectly matching the Today's Odds mobile header style */}
+        <div className="p-3">
+          <Trophy size={14} className="text-emerald-400 inline-block mr-2" />
+          <span className="text-emerald-400 text-sm">
+            Top Performing Leagues
+          </span>
         </div>
 
         {/* Leagues List */}
-        <div className="space-y-2">
+        <div className="space-y-2 px-3 pb-3">
           {topLeagues.length > 0 ? (
             topLeagues.map((league, index) => (
               <div key={league.id} className="flex items-center justify-between">
@@ -139,15 +141,20 @@ const TopLeaguesPerformance = ({ displayMode = 'desktop' }) => {
   // Desktop layout
   return (
     <div 
-      className="bg-gray-900 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:bg-gray-800"
+      className="bg-gray-900 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-800"
       onClick={handleTableClick}
     >
-      <div className="flex items-center gap-2 mb-3 text-emerald-400">
-        <Trophy size={16} />
-        <span className="text-sm font-medium">Top Performing Leagues</span>
+      {/* Updated header to match Today's Odds style */}
+      <div className="bg-[#242938] p-3 border-b border-gray-700">
+        <div className="flex items-center gap-2 justify-between">
+          <h2 className="text-emerald-400 text-sm font-medium">
+            Top Performing Leagues
+          </h2>
+          <Trophy size={16} className="text-gray-400" />
+        </div>
       </div>
-      
-      <div className="space-y-2">
+        
+      <div className="space-y-2 p-4">
         {topLeagues.length > 0 ? (
           topLeagues.map((league, index) => (
             <div 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Newspaper } from 'lucide-react'; // Import Newspaper icon or any suitable icon
 import api from '../../api';
 import { renderMarkdown } from './MarkdownRenderer';
 
@@ -30,25 +31,31 @@ export const BlogPreview = () => {
     }
   };
 
-  // Set a fixed height container to match TopLeaguesPerformance
+  // Updated container to match Today's Odds style
   return (
     <div 
-      className="cursor-pointer bg-[#1a1f2b] rounded-lg p-4 h-[192px] flex flex-col"
+      className="cursor-pointer bg-gray-900 rounded-lg overflow-hidden flex flex-col"
       onClick={handleClick}
     >
-      <h3 className="text-[#40c456] text-sm font-semibold mb-2">Today's Blog</h3>
+      {/* New header style matching Today's Odds */}
+      <div className="bg-[#242938] p-3 border-b border-gray-700">
+        <div className="flex items-center gap-2 justify-between">
+          <h2 className="text-emerald-400 text-sm font-medium">Today's Blog</h2>
+          <Newspaper size={16} className="text-gray-400" />
+        </div>
+      </div>
       
       {error || !latestPost ? (
-        <div className="flex-grow flex items-center justify-center text-gray-400 text-sm">
+        <div className="flex-grow flex items-center justify-center text-gray-400 text-sm p-4">
           No blog posts available
         </div>
       ) : (
-        <div className="text-white flex flex-col flex-grow">
+        <div className="text-white flex flex-col flex-grow p-4">
           <h4 className="font-semibold text-sm mb-2">{latestPost.title}</h4>
           <div className="text-xs text-gray-400 mb-2 flex-grow overflow-hidden">
             {renderMarkdown(latestPost.content.substring(0, 100), { preview: true })}
           </div>
-          <span className="text-[#40c456] text-xs hover:text-[#3ab04e] mt-auto">
+          <span className="text-emerald-400 text-xs hover:text-emerald-300 mt-auto">
             Read full article →
           </span>
         </div>

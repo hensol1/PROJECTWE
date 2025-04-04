@@ -1,5 +1,6 @@
 // src/components/NewLeagueFilter.js
 import React, { useMemo, useState } from 'react';
+import { Calendar } from 'lucide-react'; // Import Calendar icon or any suitable icon
 
 const NewLeagueFilter = ({ matches, onSelectLeague, selectedLeague }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -59,16 +60,20 @@ const NewLeagueFilter = ({ matches, onSelectLeague, selectedLeague }) => {
   // Return early if no leagues
   if (!leagues || leagues.length === 0) {
     return (
-      <div className="bg-[#1a1f2b] rounded-lg p-4 text-center text-gray-400 text-sm">
+      <div className="bg-gray-900 rounded-lg p-4 text-center text-gray-400 text-sm">
         No leagues available
       </div>
     );
   }
   
   return (
-    <div className="bg-[#1a1f2b] rounded-lg overflow-hidden">
-      <div className="p-4 bg-[#242938] border-b border-gray-700">
-        <h3 className="text-white font-medium text-sm">Today's Events</h3>
+    <div className="bg-gray-900 rounded-lg overflow-hidden">
+      {/* Updated header to match Today's Odds style */}
+      <div className="bg-[#242938] p-3 border-b border-gray-700">
+        <div className="flex items-center gap-2 justify-between">
+          <h2 className="text-emerald-400 text-sm font-medium">Today's Events</h2>
+          <Calendar size={16} className="text-gray-400" />
+        </div>
       </div>
       
       {/* League search */}
