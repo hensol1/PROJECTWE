@@ -19,6 +19,7 @@ const OddsPage = () => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [showOnlyCorrectPredictions, setShowOnlyCorrectPredictions] = useState(false);
 
   // Format date for display
   const formattedDate = useMemo(() => {
@@ -49,17 +50,65 @@ const OddsPage = () => {
     setShowTooltip(!showTooltip);
   };
 
-  // Parse league ID from URL if present
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const leagueId = params.get('league');
-    if (leagueId) {
-      setSelectedLeague(parseInt(leagueId));
-    }
-  }, [location.search]);
+  // Add this function to toggle the filter
+const toggleCorrectPredictions = () => {
+  setShowOnlyCorrectPredictions(prev => !prev);
+};
 
-  // Update URL when league is selected
-  useEffect(() => {
+const hasCorrectPrediction = (match) => {
+  // Only check finished matches
+  if (match.status !== 'FINISHED' || !match.aiPrediction) return false;
+  
+  const homeScore = match.score.fullTime.home;
+  const awayScore = match.score.fullTime.away;
+  
+  if (homeScore > awayScore && match.aiPrediction === 'HOME_TEAM') return true;
+  if (homeScore === awayScore && match.aiPrediction === 'DRAW') return true;
+  if (homeScore < awayScore && match.aiPrediction === 'AWAY_TEAM') return true;
+  
+  return false;
+};
+
+
+  // League selection handler with logging
+  const handleLeagueSelect = (leagueId) => {
+    console.log("League selected:", leagueId);
+    
+    // If league ID is a string that contains an underscore, extract the numeric part
+    if (typeof leagueId === 'string' && leagueId.includes('_')) {
+      const parts = leagueId.split('_');
+      const numericPart = parseInt(parts[1]);
+      if (!isNaN(numericPart)) {
+        setSelectedLeague(numericPart);
+        return;
+      }
+    }
+    
+    // Otherwise, use as-is
+    setSelectedLeague(leagueId);
+  };
+  
+// Parse league ID from URL if present
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const leagueId = params.get('league');
+  // Only update selected league from URL if:
+  // 1. There is a league param in the URL, AND
+  // 2. It's different from the current selection
+  if (leagueId && parseInt(leagueId) !== selectedLeague) {
+    setSelectedLeague(parseInt(leagueId));
+  }
+}, [location.search]); // Dependency only on location.search
+
+// Update URL when league is selected - but ONLY when it changes
+useEffect(() => {
+  // Skip the first render
+  const params = new URLSearchParams(location.search);
+  const currentLeagueParam = params.get('league');
+  const currentLeagueId = currentLeagueParam ? parseInt(currentLeagueParam) : null;
+  
+  // Only update URL if the selection has actually changed
+  if (selectedLeague !== currentLeagueId) {
     const params = new URLSearchParams(location.search);
     
     if (selectedLeague) {
@@ -71,12 +120,12 @@ const OddsPage = () => {
     const newSearch = params.toString();
     const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
     
-    if (newPath !== location.pathname + location.search) {
-      navigate(newPath, { replace: true });
-    }
-  }, [selectedLeague, navigate, location.pathname, location.search]);
+    // Use replace to avoid adding to navigation history
+    navigate(newPath, { replace: true });
+  }
+}, [selectedLeague]); // Only depend on selectedLeague
 
-  // Toggle league collapse
+// Toggle league collapse
   const toggleLeague = (leagueKey) => {
     setCollapsedLeagues(prev => ({
       ...prev,
@@ -89,23 +138,32 @@ const OddsPage = () => {
     const leagueSet = new Set();
     const leagueList = [];
     
+    // Debug the matches data
+    console.log("Extracting leagues from:", matchesData);
+    
     Object.entries(matchesData).forEach(([leagueId, leagueMatches]) => {
       if (leagueMatches && leagueMatches.length > 0 && !leagueSet.has(leagueId)) {
         const firstMatch = leagueMatches[0];
         leagueSet.add(leagueId);
         
+        // Ensure leagueId is a valid number or fallback to a string ID
+        const numericLeagueId = parseInt(leagueId);
+        
         leagueList.push({
-          id: parseInt(leagueId), // Ensure it's a number
-          name: firstMatch.competition.name,
-          emblem: firstMatch.competition.emblem,
-          country: firstMatch.competition.area
+          id: !isNaN(numericLeagueId) ? numericLeagueId : leagueId, // Use numeric ID if valid, otherwise use string
+          name: firstMatch.competition?.name || `League ${leagueId}`,
+          emblem: firstMatch.competition?.emblem || null,
+          country: firstMatch.competition?.area || null
         });
       }
     });
     
+    // Debug the extracted leagues
+    console.log("Extracted leagues:", leagueList);
+    
     return leagueList;
   };
-
+  
   // Function to determine the winner
   const getMatchWinner = (match) => {
     if (match.status !== 'FINISHED') return null;
@@ -117,7 +175,7 @@ const OddsPage = () => {
     if (awayScore > homeScore) return 'away';
     return 'draw';
   };
-
+  
   // Handle click on a match to show odds breakdown
   const handleMatchClick = (match) => {
     setSelectedMatch(match);
@@ -153,10 +211,57 @@ const OddsPage = () => {
   }, [selectedDate]);
   
   // Filter matches based on selected league
-  const filteredMatches = selectedLeague
-    ? { [selectedLeague]: matches[selectedLeague] || [] }
-    : matches;
-
+  const filteredMatches = useMemo(() => {
+    // Start with matches filtered by league
+    let result = {};
+    
+    if (selectedLeague) {
+      // Find the matching league key, handling numeric/string conversion if needed
+      const selectedLeagueStr = selectedLeague.toString();
+      
+      // Look for an exact match first
+      if (matches[selectedLeague]) {
+        result = { [selectedLeague]: matches[selectedLeague] };
+      } else {
+        // Then look for matches where the league ID is in the key
+        const matchingKey = Object.keys(matches).find(key => {
+          // If the key contains an underscore, check if the numeric part matches
+          if (key.includes('_')) {
+            const parts = key.split('_');
+            return parts[1] === selectedLeagueStr;
+          }
+          return key === selectedLeagueStr;
+        });
+        
+        if (matchingKey) {
+          result = { [matchingKey]: matches[matchingKey] };
+        } else {
+          result = {};
+        }
+      }
+    } else {
+      result = matches;
+    }
+    
+    // If we're not filtering for correct predictions, return the league-filtered matches
+    if (!showOnlyCorrectPredictions) {
+      return result;
+    }
+    
+    // Filter to only show matches with correct predictions
+    const correctPredictionsMatches = {};
+    
+    Object.entries(result).forEach(([leagueId, leagueMatches]) => {
+      const correctMatches = leagueMatches.filter(match => hasCorrectPrediction(match));
+      
+      if (correctMatches.length > 0) {
+        correctPredictionsMatches[leagueId] = correctMatches;
+      }
+    });
+    
+    return correctPredictionsMatches;
+  }, [matches, selectedLeague, showOnlyCorrectPredictions]);
+    
   // Group matches by league and sort by earliest match time
   const sortedLeagues = useMemo(() => {
     const leagueGroups = {};
@@ -215,7 +320,7 @@ const OddsPage = () => {
                     setShowTooltip(false);
                   }}
                 >
-                  <div 
+                    <div 
                     className="bg-gray-800 rounded-lg p-4 max-w-xs mx-auto text-xs text-white"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -235,8 +340,8 @@ const OddsPage = () => {
                 </div>
               )}
               
-              {/* Desktop tooltip - shown on hover */}
-              <div className="hidden md:block invisible group-hover:visible absolute left-1/2 -translate-x-1/2 mt-2 w-72 p-3 bg-gray-800 rounded-lg shadow-xl text-xs md:text-sm text-white z-[9999]">
+            {/* Desktop tooltip - shown on hover */}
+            <div className="hidden md:block invisible group-hover:visible absolute left-1/2 -translate-x-1/2 mt-2 w-72 p-3 bg-gray-800 rounded-lg shadow-xl text-xs md:text-sm text-white z-[9999]">
                 <div className="relative">
                   <div className="text-left">
                     <p className="mb-2">
@@ -253,17 +358,17 @@ const OddsPage = () => {
           </h1>
         </div>
         
-        {/* Mobile filter button - positioned absolutely to maintain centering */}
-        <button 
-          className="md:hidden absolute right-4 px-3 py-1 bg-[#40c456] text-white rounded-md flex items-center text-sm"
-          onClick={() => setIsMobileFilterOpen(true)}
-        >
-          <Filter size={16} className="mr-1" /> Filter
-        </button>
-      </div>
+      {/* Mobile filter button - positioned absolutely to maintain centering */}
+      <button 
+        className="md:hidden absolute right-4 px-3 py-1 bg-[#40c456] text-white rounded-md flex items-center text-sm"
+        onClick={() => setIsMobileFilterOpen(true)}
+      >
+        <Filter size={16} className="mr-1" /> Filter
+      </button>
+    </div>
 
-      {/* Date navigation - more compact */}
-      <div className="flex items-center justify-center mb-2 md:mb-4 bg-gray-100 rounded-lg p-1 md:p-2">
+    {/* Date navigation - more compact */}
+    <div className="flex items-center justify-center mb-2 md:mb-4 bg-gray-100 rounded-lg p-1 md:p-2">
         <button 
           onClick={handlePreviousDay}
           className="p-1 md:p-2 text-gray-600 hover:text-[#40c456]"
@@ -295,31 +400,52 @@ const OddsPage = () => {
           <ChevronRight size={18} />
         </button>
       </div>
+
+      <div className="flex justify-center mb-4">
+  <button 
+    onClick={toggleCorrectPredictions}
+    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+      showOnlyCorrectPredictions 
+        ? 'bg-emerald-600 text-white' 
+        : 'bg-gray-200 text-gray-800'
+    }`}
+  >
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 24 24" 
+      fill="currentColor" 
+      className="w-5 h-5"
+    >
+      <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    </svg>
+    {showOnlyCorrectPredictions ? 'Showing Correct Predictions' : 'Show Correct Predictions'}
+  </button>
+</div>
       
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-        {/* Sidebar with league filter - only visible on desktop */}
-        <div className="hidden md:block md:w-64 flex-shrink-0">
-          <LeagueFilter
-            leagues={leagues}
-            selectedLeague={selectedLeague}
-            onLeagueSelect={setSelectedLeague}
-            isMobileOpen={false}
-            onClose={() => {}}
-          />
-        </div>
+      
+      <div className="flex justify-center">
+      <div className="hidden md:block md:w-64 flex-shrink-0 mr-4 md:mr-6">
+      <LeagueFilter
+  leagues={leagues}
+  selectedLeague={selectedLeague}
+  onLeagueSelect={handleLeagueSelect}
+  isMobileOpen={false}
+  onClose={() => {}}
+/>
+      </div>
         
         {/* Main content area */}
-        <div className="flex-1">
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader className="animate-spin text-[#40c456]" size={32} />
-            </div>
-          ) : sortedLeagues.length === 0 ? (
-            <div className="w-full rounded-xl p-8 text-center text-gray-500 bg-white shadow">
-              No odds available for {getDateLabel(selectedDate)}
-            </div>
-          ) : (
-            <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-lg shadow-lg overflow-hidden">
+        <div className="w-full max-w-2xl">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader className="animate-spin text-[#40c456]" size={32} />
+          </div>
+        ) : sortedLeagues.length === 0 ? (
+          <div className="w-full rounded-xl p-8 text-center text-gray-500 bg-white shadow">
+            No odds available for {getDateLabel(selectedDate)}
+          </div>
+        ) : (
+          <div className="w-full bg-[#1a1f2b] text-white rounded-lg shadow-lg overflow-hidden">
               {sortedLeagues.map(([leagueId, league]) => (
                 <div key={leagueId} className="border-b border-gray-700 last:border-b-0">
                   {/* League header */}
@@ -359,6 +485,36 @@ const OddsPage = () => {
                       />
                     </div>
                   </div>
+
+                  {showOnlyCorrectPredictions && (
+  <div className="bg-emerald-100 border-l-4 border-emerald-500 text-emerald-800 p-3 mb-4 rounded shadow">
+    <div className="flex items-center">
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 24 24" 
+        fill="currentColor" 
+        className="w-5 h-5 mr-2"
+      >
+        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+      </svg>
+      <span className="font-small">only matches with correct predictions</span>
+      <button 
+        onClick={toggleCorrectPredictions} 
+        className="ml-auto text-emerald-600 hover:text-emerald-800"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 20 20" 
+          fill="currentColor" 
+          className="w-5 h-5"
+        >
+          <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+        </svg>
+      </button>
+    </div>
+  </div>
+)}
+
                   
                   {/* League matches */}
                   {!collapsedLeagues[leagueId] && (
@@ -430,47 +586,106 @@ const OddsPage = () => {
                                 </div>
                               </div>
 
-                              {/* Odds display with explicit styling to ensure visibility */}
-                              {hasOdds && (
-                                <div className="flex items-center justify-end gap-1" style={{ display: 'flex', minWidth: '90px' }}>
-                                  <div 
-                                    className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
-                                      matchWinner === 'home' 
-                                        ? 'bg-emerald-600' 
-                                        : 'bg-gray-700'
-                                    }`}
-                                  >
-                                    <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.home.toFixed(2)}</span>
-                                    <span className={`text-[8px] md:text-[10px] ${matchWinner === 'home' ? 'text-emerald-200' : 'text-gray-400'}`}>
-                                      {match.odds.impliedProbabilities.home}%
-                                    </span>
-                                  </div>
-                                  <div 
-                                    className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
-                                      matchWinner === 'draw' 
-                                        ? 'bg-emerald-600' 
-                                        : 'bg-gray-700'
-                                    }`}
-                                  >
-                                    <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.draw.toFixed(2)}</span>
-                                    <span className={`text-[8px] md:text-[10px] ${matchWinner === 'draw' ? 'text-emerald-200' : 'text-gray-400'}`}>
-                                      {match.odds.impliedProbabilities.draw}%
-                                    </span>
-                                  </div>
-                                  <div 
-                                    className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
-                                      matchWinner === 'away' 
-                                        ? 'bg-emerald-600' 
-                                        : 'bg-gray-700'
-                                    }`}
-                                  >
-                                    <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.away.toFixed(2)}</span>
-                                    <span className={`text-[8px] md:text-[10px] ${matchWinner === 'away' ? 'text-emerald-200' : 'text-gray-400'}`}>
-                                      {match.odds.impliedProbabilities.away}%
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
+{/* Odds display with enhanced styling for correct outcomes */}
+{hasOdds && (
+  <div className="flex items-center justify-end gap-1" style={{ display: 'flex', minWidth: '90px' }}>
+    {/* HOME ODDS */}
+    <div className="relative">
+      {match.status === 'FINISHED' && matchWinner === 'home' && match.aiPrediction === 'HOME_TEAM' ? (
+        <div 
+          className="px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] transform scale-105 bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white border border-emerald-300 shadow-lg shadow-emerald-500/50"
+        >
+          <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.home.toFixed(2)}</span>
+          <span className="text-[8px] md:text-[10px] text-emerald-200">
+            {match.odds.impliedProbabilities.home}%
+          </span>
+          
+          {/* Checkmark indicator for correct outcome */}
+          <div className="absolute -top-2 -right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center border border-emerald-500 shadow-md">
+            <span className="text-emerald-600 text-[9px] font-bold">✓</span>
+          </div>
+        </div>
+      ) : (
+        <div 
+          className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
+            matchWinner === 'home' 
+              ? 'bg-emerald-600' 
+              : 'bg-gray-700'
+          }`}
+        >
+          <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.home.toFixed(2)}</span>
+          <span className={`text-[8px] md:text-[10px] ${matchWinner === 'home' ? 'text-emerald-200' : 'text-gray-400'}`}>
+            {match.odds.impliedProbabilities.home}%
+          </span>
+        </div>
+      )}
+    </div>
+    
+    {/* DRAW ODDS */}
+    <div className="relative">
+      {match.status === 'FINISHED' && matchWinner === 'draw' && match.aiPrediction === 'DRAW' ? (
+        <div 
+          className="px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] transform scale-105 bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white border border-emerald-300 shadow-lg shadow-emerald-500/50"
+        >
+          <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.draw.toFixed(2)}</span>
+          <span className="text-[8px] md:text-[10px] text-emerald-200">
+            {match.odds.impliedProbabilities.draw}%
+          </span>
+          
+          {/* Checkmark indicator for correct outcome */}
+          <div className="absolute -top-2 -right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center border border-emerald-500 shadow-md">
+            <span className="text-emerald-600 text-[9px] font-bold">✓</span>
+          </div>
+        </div>
+      ) : (
+        <div 
+          className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
+            matchWinner === 'draw' 
+              ? 'bg-emerald-600' 
+              : 'bg-gray-700'
+          }`}
+        >
+          <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.draw.toFixed(2)}</span>
+          <span className={`text-[8px] md:text-[10px] ${matchWinner === 'draw' ? 'text-emerald-200' : 'text-gray-400'}`}>
+            {match.odds.impliedProbabilities.draw}%
+          </span>
+        </div>
+      )}
+    </div>
+    
+    {/* AWAY ODDS */}
+    <div className="relative">
+      {match.status === 'FINISHED' && matchWinner === 'away' && match.aiPrediction === 'AWAY_TEAM' ? (
+        <div 
+          className="px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] transform scale-105 bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white border border-emerald-300 shadow-lg shadow-emerald-500/50"
+        >
+          <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.away.toFixed(2)}</span>
+          <span className="text-[8px] md:text-[10px] text-emerald-200">
+            {match.odds.impliedProbabilities.away}%
+          </span>
+          
+          {/* Checkmark indicator for correct outcome */}
+          <div className="absolute -top-2 -right-2 w-4 h-4 bg-white rounded-full flex items-center justify-center border border-emerald-500 shadow-md">
+            <span className="text-emerald-600 text-[9px] font-bold">✓</span>
+          </div>
+        </div>
+      ) : (
+        <div 
+          className={`px-1 py-1 md:px-2 md:py-1 text-xs md:text-sm rounded flex flex-col items-center min-w-[28px] md:min-w-[32px] ${
+            matchWinner === 'away' 
+              ? 'bg-emerald-600' 
+              : 'bg-gray-700'
+          }`}
+        >
+          <span className="text-white font-semibold">{match.odds.harmonicMeanOdds.away.toFixed(2)}</span>
+          <span className={`text-[8px] md:text-[10px] ${matchWinner === 'away' ? 'text-emerald-200' : 'text-gray-400'}`}>
+            {match.odds.impliedProbabilities.away}%
+          </span>
+        </div>
+      )}
+    </div>
+  </div>
+)}
                             </div>
                           </div>
                         );
@@ -483,27 +698,25 @@ const OddsPage = () => {
           )}
         </div>
       </div>
-      
-      {/* Mobile league filter - only visible on mobile */}
-      <div className="md:hidden">
-        <LeagueFilter
-          leagues={leagues}
-          selectedLeague={selectedLeague}
-          onLeagueSelect={setSelectedLeague}
-          isMobileOpen={isMobileFilterOpen}
-          onClose={() => setIsMobileFilterOpen(false)}
-        />
-      </div>
+      {isMobileFilterOpen && (
+  <LeagueFilter
+    leagues={leagues}
+    selectedLeague={selectedLeague}
+    onLeagueSelect={handleLeagueSelect}
+    isMobileOpen={true}
+    onClose={() => setIsMobileFilterOpen(false)}
+  />
+)}
       
       {/* Odds Breakdown Modal */}
       {selectedMatch && (
-        <OddsBreakdownModal 
-          match={selectedMatch} 
-          onClose={closeOddsBreakdown} 
-        />
-      )}
-    </div>
-  );
+      <OddsBreakdownModal 
+        match={selectedMatch} 
+        onClose={closeOddsBreakdown} 
+      />
+    )}
+  </div>
+);
 };
 
 export default OddsPage;

@@ -234,7 +234,7 @@ export default function HomePage({ user, setAuthModalOpen }) {
     <div className="md:hidden">
       <h1 className="text-2xl font-bold text-white mb-2">We Know Better Football Predictions</h1>
       <p className="text-gray-300 text-sm mb-4">
-        Join thousands of football fans making smarter predictions with our cutting-edge AI analysis. Compare your accuracy with others and improve your betting strategy.
+        Join thousands of football fans making smarter predictions with our cutting-edge AI analysis. Help us to Help YOU!
       </p>
       
       <div className="flex justify-between items-center mb-2">

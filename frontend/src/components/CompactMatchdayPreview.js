@@ -469,7 +469,7 @@ const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
               onClick={handlePrevious}
             />
             <span className="text-gray-300 text-sm">
-              {match.league} ({match.time})
+              {match.league}
             </span>
             <ChevronRight 
               className="w-4 h-4 text-gray-500 hover:text-emerald-400 transition-colors cursor-pointer ml-3" 

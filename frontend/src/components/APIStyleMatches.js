@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import MatchDetailsModal from './MatchDetailsModal';
 import StandingsModal from './StandingsModal';
+import OddsBreakdownModal from './OddsBreakdownModal'; // Import the odds breakdown modal
 import { GiPodium } from "react-icons/gi";
 
 const APIStyleMatches = ({ matches, onVote, selectedLeague }) => {
@@ -9,6 +10,8 @@ const APIStyleMatches = ({ matches, onVote, selectedLeague }) => {
   const [collapsedLeagues, setCollapsedLeagues] = useState({});
   const [selectedLeagueForStandings, setSelectedLeagueForStandings] = useState(null);
   const [isStandingsLoading, setIsStandingsLoading] = useState(false);
+  // New state for the odds breakdown modal
+  const [selectedMatchForOdds, setSelectedMatchForOdds] = useState(null);
   
   const toggleLeague = (leagueKey) => {
     setCollapsedLeagues(prev => ({
@@ -129,6 +132,11 @@ const APIStyleMatches = ({ matches, onVote, selectedLeague }) => {
     setSelectedLeagueForStandings(competition);
   };
 
+  // Close the odds breakdown modal
+  const closeOddsBreakdown = () => {
+    setSelectedMatchForOdds(null);
+  };
+
   // Reset standings loading state when modal closes
   useEffect(() => {
     if (!selectedLeagueForStandings) {
@@ -136,34 +144,34 @@ const APIStyleMatches = ({ matches, onVote, selectedLeague }) => {
     }
   }, [selectedLeagueForStandings]);
 
-// Auto-expand leagues with live matches - only on initial render
-useEffect(() => {
-  // Only initialize the collapsed state once when the component mounts
-  const initialCollapsedState = {};
-  
-  sortedLeagues.forEach(([leagueKey, league]) => {
-    // If league has live matches, don't collapse it
-    const hasLiveMatches = league.matches.some(match => 
-      match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME'
-    );
+  // Auto-expand leagues with live matches - only on initial render
+  useEffect(() => {
+    // Only initialize the collapsed state once when the component mounts
+    const initialCollapsedState = {};
     
-    initialCollapsedState[leagueKey] = !hasLiveMatches;
-  });
-  
-  setCollapsedLeagues(prevState => {
-    // Only update keys that don't already exist in the state
-    const newState = { ...prevState };
-    Object.entries(initialCollapsedState).forEach(([key, value]) => {
-      if (!(key in prevState)) {
-        newState[key] = value;
-      }
+    sortedLeagues.forEach(([leagueKey, league]) => {
+      // If league has live matches, don't collapse it
+      const hasLiveMatches = league.matches.some(match => 
+        match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'HALFTIME'
+      );
+      
+      initialCollapsedState[leagueKey] = !hasLiveMatches;
     });
-    return newState;
-  });
-}, []); // Empty dependency array means this only runs once on mount
+    
+    setCollapsedLeagues(prevState => {
+      // Only update keys that don't already exist in the state
+      const newState = { ...prevState };
+      Object.entries(initialCollapsedState).forEach(([key, value]) => {
+        if (!(key in prevState)) {
+          newState[key] = value;
+        }
+      });
+      return newState;
+    });
+  }, []); // Empty dependency array means this only runs once on mount
 
-return (
-  <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
+  return (
+    <div className="w-full max-w-2xl mx-auto bg-[#1a1f2b] text-white rounded-b-lg shadow-lg overflow-hidden">
       {selectedMatch && (
         <MatchDetailsModal
           match={selectedMatch}
@@ -175,6 +183,14 @@ return (
         <StandingsModal
           league={selectedLeagueForStandings}
           onClose={() => setSelectedLeagueForStandings(null)}
+        />
+      )}
+      
+      {/* Add the Odds Breakdown Modal */}
+      {selectedMatchForOdds && (
+        <OddsBreakdownModal
+          match={selectedMatchForOdds}
+          onClose={closeOddsBreakdown}
         />
       )}
   
@@ -308,69 +324,188 @@ return (
                         <div className="w-24 flex flex-col items-end">
                           <div className="text-xs text-gray-400 mb-1">Our Prediction:</div>
                           <div className="flex gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (match.status !== 'FINISHED') {
-                                  onVote(match.id, 'HOME_TEAM');
-                                }
-                              }}
-                              className={`px-2 py-1 text-xs rounded ${
-                                match.status === 'FINISHED' 
-                                  ? match.score.fullTime.home > match.score.fullTime.away
+                            {/* HOME TEAM BUTTON - FINISHED MATCHES */}
+                            {match.status === 'FINISHED' && (
+                              <div className="relative">
+                                {/* Correct prediction - our AI predicted home win and home team won */}
+                                {match.aiPrediction === 'HOME_TEAM' && match.score.fullTime.home > match.score.fullTime.away ? (
+                                  <div className="transform scale-110">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMatchForOdds(match);
+                                      }}
+                                      className="px-2 py-1 text-xs font-bold rounded animate-pulse bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white border-2 border-emerald-300 shadow-lg shadow-emerald-500/50"
+                                    >
+                                      1
+                                    </button>
+                                    <div className="absolute -top-3 -right-3 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-emerald-500 shadow-md z-10">
+                                      <span className="text-emerald-600 text-[10px] font-bold">✓</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedMatchForOdds(match);
+                                    }}
+                                    className={`px-2 py-1 text-xs rounded ${
+                                      // Correct outcome but not our prediction
+                                      match.score.fullTime.home > match.score.fullTime.away && match.aiPrediction !== 'HOME_TEAM'
+                                        ? 'bg-emerald-500 text-white font-bold border border-emerald-400'
+                                        // Wrong prediction
+                                        : match.aiPrediction === 'HOME_TEAM'
+                                        ? 'bg-red-500 text-white border border-red-400 opacity-85'
+                                        : 'bg-gray-700'
+                                    }`}
+                                  >
+                                    1
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* HOME TEAM BUTTON - ACTIVE MATCHES */}
+                            {match.status !== 'FINISHED' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedMatchForOdds(match);
+                                  if (match.status !== 'FINISHED') {
+                                    onVote(match.id, 'HOME_TEAM');
+                                  }
+                                }}
+                                className={`px-2 py-1 text-xs rounded ${
+                                  match.aiPrediction === 'HOME_TEAM'
                                     ? 'bg-emerald-500 text-white'
-                                    : match.aiPrediction === 'HOME_TEAM'
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-gray-700'
-                                  : match.aiPrediction === 'HOME_TEAM'
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'bg-gray-700 hover:bg-gray-600'
-                              }`}
-                            >
-                              1
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (match.status !== 'FINISHED') {
-                                  onVote(match.id, 'DRAW');
-                                }
-                              }}
-                              className={`px-2 py-1 text-xs rounded ${
-                                match.status === 'FINISHED'
-                                  ? match.score.fullTime.home === match.score.fullTime.away
+                                    : 'bg-gray-700 hover:bg-gray-600'
+                                }`}
+                              >
+                                1
+                              </button>
+                            )}
+                            
+                            {/* DRAW BUTTON - FINISHED MATCHES */}
+                            {match.status === 'FINISHED' && (
+                              <div className="relative">
+                                {/* Correct prediction - our AI predicted draw and it was a draw */}
+                                {match.aiPrediction === 'DRAW' && match.score.fullTime.home === match.score.fullTime.away ? (
+                                  <div className="transform scale-110">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMatchForOdds(match);
+                                      }}
+                                      className="px-2 py-1 text-xs font-bold rounded animate-pulse bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white border-2 border-emerald-300 shadow-lg shadow-emerald-500/50"
+                                    >
+                                      X
+                                    </button>
+                                    <div className="absolute -top-3 -right-3 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-emerald-500 shadow-md z-10">
+                                      <span className="text-emerald-600 text-[10px] font-bold">✓</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedMatchForOdds(match);
+                                    }}
+                                    className={`px-2 py-1 text-xs rounded ${
+                                      // Correct outcome but not our prediction
+                                      match.score.fullTime.home === match.score.fullTime.away && match.aiPrediction !== 'DRAW'
+                                        ? 'bg-emerald-500 text-white font-bold border border-emerald-400'
+                                        // Wrong prediction
+                                        : match.aiPrediction === 'DRAW'
+                                        ? 'bg-red-500 text-white border border-red-400 opacity-85'
+                                        : 'bg-gray-700'
+                                    }`}
+                                  >
+                                    X
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* DRAW BUTTON - ACTIVE MATCHES */}
+                            {match.status !== 'FINISHED' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedMatchForOdds(match);
+                                  if (match.status !== 'FINISHED') {
+                                    onVote(match.id, 'DRAW');
+                                  }
+                                }}
+                                className={`px-2 py-1 text-xs rounded ${
+                                  match.aiPrediction === 'DRAW'
                                     ? 'bg-emerald-500 text-white'
-                                    : match.aiPrediction === 'DRAW'
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-gray-700'
-                                  : match.aiPrediction === 'DRAW'
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'bg-gray-700 hover:bg-gray-600'
-                              }`}
-                            >
-                              X
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (match.status !== 'FINISHED') {
-                                  onVote(match.id, 'AWAY_TEAM');
-                                }
-                              }}
-                              className={`px-2 py-1 text-xs rounded ${
-                                match.status === 'FINISHED'
-                                  ? match.score.fullTime.away > match.score.fullTime.home
+                                    : 'bg-gray-700 hover:bg-gray-600'
+                                }`}
+                              >
+                                X
+                              </button>
+                            )}
+                            
+                            {/* AWAY TEAM BUTTON - FINISHED MATCHES */}
+                            {match.status === 'FINISHED' && (
+                              <div className="relative">
+                                {/* Correct prediction - our AI predicted away win and away team won */}
+                                {match.aiPrediction === 'AWAY_TEAM' && match.score.fullTime.away > match.score.fullTime.home ? (
+                                  <div className="transform scale-110">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMatchForOdds(match);
+                                      }}
+                                      className="px-2 py-1 text-xs font-bold rounded animate-pulse bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 text-white border-2 border-emerald-300 shadow-lg shadow-emerald-500/50"
+                                    >
+                                      2
+                                    </button>
+                                    <div className="absolute -top-3 -right-3 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-emerald-500 shadow-md z-10">
+                                      <span className="text-emerald-600 text-[10px] font-bold">✓</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedMatchForOdds(match);
+                                    }}
+                                    className={`px-2 py-1 text-xs rounded ${
+                                      // Correct outcome but not our prediction
+                                      match.score.fullTime.away > match.score.fullTime.home && match.aiPrediction !== 'AWAY_TEAM'
+                                        ? 'bg-emerald-500 text-white font-bold border border-emerald-400'
+                                        // Wrong prediction
+                                        : match.aiPrediction === 'AWAY_TEAM'
+                                        ? 'bg-red-500 text-white border border-red-400 opacity-85'
+                                        : 'bg-gray-700'
+                                    }`}
+                                  >
+                                    2
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* AWAY TEAM BUTTON - ACTIVE MATCHES */}
+                            {match.status !== 'FINISHED' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedMatchForOdds(match);
+                                  if (match.status !== 'FINISHED') {
+                                    onVote(match.id, 'AWAY_TEAM');
+                                  }
+                                }}
+                                className={`px-2 py-1 text-xs rounded ${
+                                  match.aiPrediction === 'AWAY_TEAM'
                                     ? 'bg-emerald-500 text-white'
-                                    : match.aiPrediction === 'AWAY_TEAM'
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-gray-700'
-                                  : match.aiPrediction === 'AWAY_TEAM'
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'bg-gray-700 hover:bg-gray-600'
-                              }`}
-                            >
-                              2
-                            </button>
+                                    : 'bg-gray-700 hover:bg-gray-600'
+                                }`}
+                              >
+                                2
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
