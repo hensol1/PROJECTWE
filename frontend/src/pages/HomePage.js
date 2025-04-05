@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AccuracyComparison from '../components/AccuracyComparison';
 import Matches from '../components/matches/Matches';
 import { useMatchesData } from '../hooks/useMatchesData';
 import TodaysOdds from '../components/TodaysOdds';
@@ -10,6 +9,63 @@ import NewLeagueFilter from '../components/NewLeagueFilter';
 import SEO from '../components/SEO';
 import api from '../api';
 import { LineChart, Calendar, Award, Trophy, ChevronRight, Search, Filter } from 'lucide-react';
+import CompactMatchdayPreview from '../components/CompactMatchdayPreview';
+
+const useAIAccuracyData = () => {
+  const [accuracyData, setAccuracyData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchAccuracyData = async () => {
+      try {
+        // First check for cached data
+        const cachedData = sessionStorage.getItem('aiAccuracyData');
+        const cachedTimestamp = sessionStorage.getItem('aiAccuracyDataTimestamp');
+        const now = Date.now();
+        const CACHE_VALIDITY = 15 * 60 * 1000; // 15 minutes
+        
+        // Use cached data if it's fresh
+        if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_VALIDITY)) {
+          const parsed = JSON.parse(cachedData);
+          if (isMounted) setAccuracyData(parsed);
+          return;
+        }
+        
+        // Get data from API
+        const response = await api.fetchAIHistory();
+        
+        if (!response || !response.overall) {
+          throw new Error('Invalid response from API');
+        }
+        
+        // Extract the overall accuracy
+        const overallAccuracy = parseFloat(response.overall.overallAccuracy || 0);
+        
+        if (isMounted) {
+          setAccuracyData(overallAccuracy);
+          setIsLoading(false);
+          
+          // Cache the data
+          sessionStorage.setItem('aiAccuracyData', JSON.stringify(overallAccuracy));
+          sessionStorage.setItem('aiAccuracyDataTimestamp', now.toString());
+        }
+      } catch (error) {
+        console.error('Error fetching AI accuracy data:', error);
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    
+    fetchAccuracyData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+  
+  return { accuracyData, isLoading };
+};
 
 // TodaysOdds wrapper component
 function HomePageOdds({ navigateToOddsPage }) {
@@ -119,7 +175,7 @@ export default function HomePage({ user, setAuthModalOpen }) {
   const { getCurrentMatches, isLoading, activeTab } = useMatchesData();
   
   // Add state for AI accuracy
-  const [aiAccuracy, setAiAccuracy] = useState(null);
+  const { accuracyData: aiAccuracy, isLoading: isAccuracyLoading } = useAIAccuracyData();
   
   // State for the league filter
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -146,10 +202,6 @@ export default function HomePage({ user, setAuthModalOpen }) {
     navigate('/stats', { state: { activeTab: 'teams' } });
   };
   
-  // Function to receive accuracy data from AccuracyComparison
-  const handleAccuracyUpdate = (accuracy) => {
-    setAiAccuracy(accuracy);
-  };
   
   // Custom scroll handler for Today's Odds
   useEffect(() => {
@@ -208,9 +260,9 @@ export default function HomePage({ user, setAuthModalOpen }) {
           <div className="absolute inset-0 bg-[#40c456] rounded-full opacity-10 animate-pulse"></div>
           <div className="absolute inset-1 bg-[#1a1f2b] rounded-full flex items-center justify-center">
             <div className="text-center">
-              <div className="text-[#40c456] text-2xl font-bold">
-                {aiAccuracy ? `${aiAccuracy.toFixed(1)}%` : '...'}
-              </div>
+            <div className="text-[#40c456] text-2xl font-bold">
+    {aiAccuracy ? `${aiAccuracy.toFixed(1)}%` : '...'}
+  </div>
               <div className="text-gray-400 text-xs">AI Accuracy</div>
             </div>
           </div>
@@ -250,9 +302,9 @@ export default function HomePage({ user, setAuthModalOpen }) {
           <div className="absolute inset-0 bg-[#40c456] rounded-full opacity-10 animate-pulse"></div>
           <div className="absolute inset-2 bg-[#1a1f2b] rounded-full flex items-center justify-center">
             <div className="text-center">
-              <div className="text-[#40c456] text-3xl md:text-4xl font-bold">
-                {aiAccuracy ? `${aiAccuracy.toFixed(1)}%` : '...'}
-              </div>
+            <div className="text-[#40c456] text-3xl md:text-4xl font-bold">
+    {aiAccuracy ? `${aiAccuracy.toFixed(1)}%` : '...'}
+  </div>
               <div className="text-gray-400 text-xs md:text-sm">AI Accuracy</div>
             </div>
           </div>
@@ -292,37 +344,33 @@ export default function HomePage({ user, setAuthModalOpen }) {
           </div>
         </div>
 
-        {/* Desktop row with perfect alignment */}
-        <div className="hidden md:flex space-x-4">
-          {/* Left sidebar - Top Performing Leagues */}
-          <div className="mt-4">
-            <div className="w-[280px] flex-shrink-0">
-              <div className="bg-[#1a1f2b] rounded-lg overflow-hidden shadow-lg border border-gray-800">
-                <TopLeaguesPerformance displayMode="desktop" />
-              </div>
-            </div>
-          </div>
+{/* Desktop row with perfect alignment */}
+<div className="hidden md:flex space-x-4">
+  {/* Left sidebar - Top Performing Leagues */}
+  <div className="mt-4">
+    <div className="w-[280px] flex-shrink-0">
+      <div className="bg-[#1a1f2b] rounded-lg overflow-hidden shadow-lg border border-gray-800">
+        <TopLeaguesPerformance displayMode="desktop" />
+      </div>
+    </div>
+  </div>
 
-          {/* Center column - AccuracyComparison */}
-          <div className="flex-grow">
-            <div className="mt-0">
-              <AccuracyComparison 
-                user={user} 
-                onSignInClick={() => setAuthModalOpen(true)}
-                onAccuracyUpdate={handleAccuracyUpdate} // Pass the callback to receive accuracy updates
-              />
-            </div>
-          </div>
+  {/* Center column - MatchdayPreview */}
+  <div className="flex-grow">
+    <div className="mt-4"> {/* Changed from mt-0 to mt-4 */}
+      <CompactMatchdayPreview />
+    </div>
+  </div>
 
-          {/* Right sidebar - Blog Preview */}
-          <div className="mt-4">
-            <div className="w-[280px] flex-shrink-0">
-              <div className="bg-[#1a1f2b] rounded-lg overflow-hidden shadow-lg border border-gray-800">
-                <BlogPreview />
-              </div>
-            </div>
-          </div>
-        </div>
+  {/* Right sidebar - Blog Preview */}
+  <div className="mt-4">
+    <div className="w-[280px] flex-shrink-0">
+      <div className="bg-[#1a1f2b] rounded-lg overflow-hidden shadow-lg border border-gray-800">
+        <BlogPreview />
+      </div>
+    </div>
+  </div>
+</div>
         
         {/* Mobile components */}
         <div className="md:hidden">
@@ -357,10 +405,9 @@ export default function HomePage({ user, setAuthModalOpen }) {
   </div>
 </div>
           
-          <AccuracyComparison 
-            user={user} 
-            onSignInClick={() => setAuthModalOpen(true)}
-          />
+<div className="my-4">
+    <CompactMatchdayPreview displayMode="mobile" />
+  </div>
           
           {/* Action buttons for mobile */}
           <div className="grid grid-cols-2 gap-3 my-4">

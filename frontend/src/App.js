@@ -3,9 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate, Link } from 'react-ro
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { HelmetProvider } from 'react-helmet-async';
 import HeaderLogo from './components/HeaderLogo';
-import Matches from './components/matches/Matches';
 import AdminPage from './components/AdminPage';
-import IconMenu from './components/IconMenu';
 import api from './api';
 import config from './config';
 import CookieConsent from './components/CookieConsent.js';
@@ -25,8 +23,6 @@ import { BlogPost } from './components/blog/BlogPost';
 import { BlogEditor } from './components/blog/BlogEditor';
 import { PrivateRoute } from './components/PrivateRoute';
 import LoadingManager from './components/LoadingManager';
-import AccuracyComparison from './components/AccuracyComparison';
-import TodaysOdds from './components/TodaysOdds';
 import HomePage from './pages/HomePage'; 
 
 function App() {
@@ -76,15 +72,16 @@ function App() {
               <WelcomeSlides isOpen={welcomeSlidesOpen} setIsOpen={setWelcomeSlidesOpen} />
               <div className="min-h-screen flex flex-col bg-gray-100">
               <header className="bg-gradient-to-r from-[#1a1f2b] to-[#242938] py-2 px-3 md:py-4 md:px-4 shadow-md">
-  <div className="container mx-auto">
-    {/* Change the layout to prevent text overlap */}
-    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2"> {/* Changed grid layout */}
-      <div className="flex items-center">
+  <div className="container mx-auto relative">
+    {/* Using a more straightforward layout approach */}
+    <div className="flex justify-between items-center">
+      {/* Logo at the left */}
+      <div>
         <Link to="/" className="flex items-center space-x-2 md:space-x-3 group">
           <div className="w-8 md:w-10 h-8 md:h-10 flex items-center justify-center flex-shrink-0">
             <HeaderLogo />
           </div>
-          <div className="hidden sm:flex flex-col md:hidden leading-tight"> {/* Hide on very small screens */}
+          <div className="hidden sm:flex flex-col md:hidden leading-tight">
             <div className="flex items-center space-x-1">
               <span className="font-sans text-[12px] font-bold tracking-wide text-[#40c456]">WE</span>
               <span className="font-sans text-[12px] font-bold tracking-wide text-[#40c456]">KNOW</span>
@@ -101,56 +98,68 @@ function App() {
         </Link>
       </div>
 
-      <div className="flex justify-center items-center">
-        {/* Center navigation icons with proper spacing */}
-        <div className="flex space-x-3 md:space-x-6"> {/* Adjusted spacing */}
-          <Link to="/" 
-            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
-            title="Home"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-          </Link>
-          
-          <button
-            onClick={() => setWelcomeSlidesOpen(true)}
-            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
-            title="About"
-          >
-            <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
-          </button>
-          
-          <Link
-            to="/stats"
-            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
-            title="Stats"
-          >
-            <LineChart className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
-          </Link>
-          
-          <Link
-            to="/blog"
-            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
-            title="Blog"
-          >
-            <FileText className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
-          </Link>
-          
-          <Link
-            to="/odds"
-            className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
-            title="Odds"
-          >
-            <Dices className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
-          </Link>
-        </div>
+      {/* Empty right section for balance */}
+      <div className="invisible">
+        <Link to="/" className="flex items-center space-x-2 md:space-x-3 group">
+          <div className="w-8 md:w-10 h-8 md:h-10"></div>
+          <div className="hidden md:flex items-center space-x-2">
+            <span className="font-sans text-xl font-bold tracking-wide text-[#40c456]">
+              WE KNOW BETTER
+            </span>
+          </div>
+        </Link>
       </div>
+    </div>
 
+    {/* Centered navigation - absolutely positioned */}
+    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="flex space-x-3 md:space-x-6">
+        <Link to="/" 
+          className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+          title="Home"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </Link>
+        
+        <button
+          onClick={() => setWelcomeSlidesOpen(true)}
+          className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+          title="About"
+        >
+          <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+        </button>
+        
+        <Link
+          to="/stats"
+          className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+          title="Stats"
+        >
+          <LineChart className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+        </Link>
+        
+        <Link
+          to="/blog"
+          className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+          title="Blog"
+        >
+          <FileText className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+        </Link>
+        
+        <Link
+          to="/odds"
+          className="group p-2 rounded-lg hover:bg-[#2c3344] transition-all duration-200"
+          title="Odds"
+        >
+          <Dices className="w-5 h-5 md:w-6 md:h-6 text-[#40c456] group-hover:text-white transition-colors duration-200" />
+        </Link>
+      </div>
     </div>
   </div>
 </header>
+
 <main className="flex-1 pt-4">
                   <Routes>
                     <Route 

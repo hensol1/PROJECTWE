@@ -329,19 +329,25 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
     ? currentCompetition.matches 
     : currentCompetition.matches.slice(0, 1); // Show only 1 match initially
 
-  return (
-    <WrapperComponent>
-      <div className="sticky top-4" style={{ overflow: 'visible' }}
-           onMouseEnter={() => setIsPaused(true)}
-           onMouseLeave={() => setIsPaused(false)}>
-        <div className="w-full rounded-xl shadow-lg relative" 
-             style={{ background: websiteColors.background, overflow: 'visible' }}>
-<div className="bg-[#242938] p-3 border-b border-gray-700">
-  <div className="flex items-center gap-2 justify-between">
-    <h2 className="text-emerald-400 text-sm font-medium">
-      Today's Odds
-    </h2>
-    {/* Info icon with appropriate tooltips for desktop and mobile */}
+    return (
+      <WrapperComponent>
+        <div 
+          className="sticky top-4" 
+          style={{ overflow: 'visible' }}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          {/* Add 'overflow-hidden' to ensure child elements respect the rounded corners */}
+          <div 
+            className="w-full rounded-xl shadow-lg relative overflow-hidden" 
+            style={{ background: websiteColors.background }}
+          >
+            <div className="bg-[#242938] p-3 border-b border-gray-700">
+              <div className="flex items-center gap-2 justify-between">
+                <h2 className="text-emerald-400 text-sm font-medium">
+                  Today's Odds
+                </h2>
+        {/* Info icon with appropriate tooltips for desktop and mobile */}
     <div className="relative group">
       <Info 
         className="w-3 h-3 md:w-4 md:h-4 text-gray-400 hover:text-gray-300 cursor-help"
