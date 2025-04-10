@@ -36,13 +36,33 @@ async function connectToMongoDB() {
 
 const ALLOWED_LEAGUE_IDS = [253, 2, 3, 4, 5, 9, 11, 12, 13, 17, 20, 39, 40, 61, 62, 78, 79, 88, 94, 103, 106, 113, 119, 135, 140, 144, 169, 172, 179, 188, 197, 203, 207, 210, 218, 233, 235, 253, 271, 283, 286, 307, 318, 327, 333, 345, 373, 383, 848];
 
-function getCurrentSeason() {
+function getCurrentSeason(leagueId) {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
-    return currentMonth < 8 ? currentDate.getFullYear() - 1 : currentDate.getFullYear();
+    const currentYear = currentDate.getFullYear();
+    
+    // Array of leagues that run in a calendar year format (Apr-Nov)
+    // Scandinavian leagues and others with similar schedules
+    const calendarYearLeagues = [103, 113, 188, 119, 135, 327, 169, 13, 11];
+    
+    if (calendarYearLeagues.includes(leagueId)) {
+        // For calendar year leagues (like Norway, Sweden, etc.)
+        // If it's before April, use previous year
+        return currentMonth < 4 ? currentYear - 1 : currentYear;
+    } else {
+        // For traditional European season format (Aug-May)
+        return currentMonth < 8 ? currentYear - 1 : currentYear;
+    }
 }
 
-async function fetchStandings(leagueId, season = getCurrentSeason()) {
+async function fetchStandings(leagueId, season) {
+    // If no season provided, determine the correct season for this league
+    if (!season) {
+        season = getCurrentSeason(leagueId);
+    }
+    
+    console.log(`Fetching standings for league ${leagueId} season ${season}`);
+    
     // Ensure MongoDB is connected
     await connectToMongoDB();
 
@@ -57,7 +77,7 @@ async function fetchStandings(leagueId, season = getCurrentSeason()) {
 
     try {
         console.log(`Fetching standings for league ${leagueId} season ${season}`);
-
+    
         const response = await axios.get(`${BASE_URL}/standings`, {
             headers: HEADERS,
             params: {
@@ -66,18 +86,18 @@ async function fetchStandings(leagueId, season = getCurrentSeason()) {
             },
             timeout: 10000
         });
-
+    
         console.log(`Raw API response for league ${leagueId}:`, {
             status: response.status,
             hasData: !!response.data,
             results: response.data?.results,
             responseLength: response.data?.response?.length
         });
-
+    
         if (response.data?.errors && Object.keys(response.data.errors).length > 0) {
             throw new Error(`API returned errors: ${JSON.stringify(response.data.errors)}`);
         }
-
+    
         if (!response.data || response.data.results === 0 || !response.data.response[0]) {
             console.log(`No standings data available for league ${leagueId} season ${season}`);
             return {
@@ -86,52 +106,56 @@ async function fetchStandings(leagueId, season = getCurrentSeason()) {
                 details: 'No standings data available'
             };
         }
-
+    
         const standingsData = response.data.response[0].league;
         
-        if (!standingsData.standings || !standingsData.standings[0]) {
+        if (!standingsData.standings || standingsData.standings.length === 0) {
             throw new Error(`Invalid standings data structure for league ${leagueId}`);
         }
-
+    
         const currentTime = new Date();
-
+    
         // Delete existing document if it exists
         await Standing.deleteOne({ leagueId, season });
         console.log(`Deleted existing standings for league ${leagueId}`);
-
-        // Create new document
+    
+        // Detailed logging of standings structure
+        console.log(`Standings structure: ${Array.isArray(standingsData.standings) ? 'Array' : typeof standingsData.standings}`);
+        console.log(`First element type: ${Array.isArray(standingsData.standings[0]) ? 'Array (multiple tables)' : 'Object (single table)'}`);
+        console.log(`Number of tables: ${Array.isArray(standingsData.standings[0]) ? standingsData.standings.length : 1}`);
+    
+        // Create new document - preserve the full structure
         const newStanding = new Standing({
             leagueId,
             season,
             leagueName: standingsData.name,
-            standings: standingsData.standings[0],
+            standings: standingsData.standings, // Save the complete standings structure
             lastUpdated: currentTime,
             lastSuccessfulFetch: currentTime,
             noStandingsAvailable: false
         });
-
+    
         // Save the new document
         await newStanding.save();
         console.log(`Saved new standings for league ${leagueId}`);
-
+    
         // Verify the save
         const verifiedDoc = await Standing.findOne({ leagueId, season });
         if (!verifiedDoc) {
             throw new Error('Standing verification failed - document not found after save');
         }
-
+    
         console.log(`Successfully updated standings for league ${leagueId} season ${season}`);
         console.log(`Verified document updated at: ${verifiedDoc.lastUpdated}`);
-
+    
         return {
             success: true,
             leagueId,
             season,
             updatedAt: currentTime
         };
-
     } catch (error) {
-        const errorDetails = {
+            const errorDetails = {
             message: error.message,
             code: error.code,
             status: error.response?.status,

@@ -15,26 +15,21 @@ const StandingSchema = new mongoose.Schema({
             return !this.noStandingsAvailable;
         }
     },
-    standings: [{
-        rank: Number,
-        team: {
-            id: Number,
-            name: String,
-            logo: String
+    // Use mongoose.Schema.Types.Mixed to allow flexible standings structure
+    // This will support both single tables and multiple tables (arrays of arrays)
+    standings: {
+        type: mongoose.Schema.Types.Mixed,
+        required: function() {
+            return !this.noStandingsAvailable;
         },
-        points: Number,
-        goalsDiff: Number,
-        all: {
-            played: Number,
-            win: Number,
-            draw: Number,
-            lose: Number,
-            goals: {
-                for: Number,
-                against: Number
-            }
+        validate: {
+            validator: function(v) {
+                // Validate that standings is an array (either of team objects or sub-arrays)
+                return Array.isArray(v);
+            },
+            message: 'Standings must be an array'
         }
-    }],
+    },
     noStandingsAvailable: {
         type: Boolean,
         default: false
