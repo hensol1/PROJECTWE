@@ -35,7 +35,7 @@ const StandingsModal = ({ league, onClose }) => {
     
     // Array of leagues that run in a calendar year format (Apr-Nov)
     // Scandinavian leagues and others with similar schedules
-    const calendarYearLeagues = [103, 113, 188, 119, 135, 327, 169, 13, 11];
+    const calendarYearLeagues = [103, 113, 188, 119, 135, 327, 169, 13, 11, 253];
     //103, // Eliteserien (Norway)
     //113, // Allsvenskan (Sweden)
     //188, // Superliga (Denmark)
@@ -45,6 +45,7 @@ const StandingsModal = ({ league, onClose }) => {
     //169  // China Super League (China)
     //13   // Libertadores (South America)
     //11   // Copa Sudamericana (South America)
+    //253  // MLS (USA)
     
     if (calendarYearLeagues.includes(leagueId)) {
       // For calendar year leagues (like Norway, Sweden, etc.)

@@ -43,7 +43,7 @@ function getCurrentSeason(leagueId) {
     
     // Array of leagues that run in a calendar year format (Apr-Nov)
     // Scandinavian leagues and others with similar schedules
-    const calendarYearLeagues = [103, 113, 188, 119, 135, 327, 169, 13, 11];
+    const calendarYearLeagues = [103, 113, 188, 119, 135, 327, 169, 13, 11, 253];
     
     if (calendarYearLeagues.includes(leagueId)) {
         // For calendar year leagues (like Norway, Sweden, etc.)
