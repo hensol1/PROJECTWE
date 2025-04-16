@@ -75,15 +75,33 @@ const fetchStatsManifest = async () => {
 // Direct fetch from static file with fallback to API
 const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformFn = data => data) => {
   try {
-    // Add a cache buster to prevent caching
-    const cacheBuster = `?t=${Date.now()}`;
+    // In development, don't even try to fetch static files if we don't have them
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Development mode: Skipping static file fetch for ${fileUrl}`);
+      throw new Error('Development mode - skipping static file fetch');
+    }
+    
+    // Try to get cache buster from manifest
+    let cacheBuster = '';
+    try {
+      const manifestResponse = await fetch('/stats/manifest.json');
+      if (manifestResponse.ok) {
+        const manifest = await manifestResponse.json();
+        const fileKey = fileUrl.split('/').pop().split('.')[0].replace(/-/g, '');
+        if (manifest && manifest[fileKey] && manifest[fileKey].lastUpdated) {
+          cacheBuster = `?t=${manifest[fileKey].lastUpdated}`;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch manifest for cache busting', err);
+      cacheBuster = `?t=${Date.now()}`;
+    }
     
     // Fetch the static file
     console.log(`Fetching static file: ${fileUrl}${cacheBuster}`);
     const response = await fetch(`${fileUrl}${cacheBuster}`, {
       headers: {
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache'
+        'Accept': 'application/json'
       }
     });
     
@@ -92,85 +110,33 @@ const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformF
       throw new Error(`Failed to fetch stats file: ${response.status}`);
     }
     
-    // Check content type before attempting to parse
+    // Check if content type is actually json
     const contentType = response.headers.get('content-type');
-    
-    // If we receive HTML instead of JSON
-    if (contentType && contentType.includes('text/html')) {
+    if (!contentType || !contentType.includes('application/json')) {
       console.warn(`Expected JSON but got ${contentType}`);
-      
-      // Try to check if the response is HTML by reading the first part
-      const text = await response.text();
-      if (text.trim().toLowerCase().startsWith('<!doctype html') || 
-          text.trim().toLowerCase().startsWith('<html')) {
-        console.error('Received HTML instead of JSON, falling back to API');
-        throw new Error('HTML response received instead of JSON');
-      }
-      
-      // Try to parse it anyway in case content-type is wrong but content is correct
-      try {
-        const data = JSON.parse(text);
-        console.log('Successfully parsed response despite wrong content-type');
-        return transformFn(data);
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError);
-        throw new Error('Non-JSON response received');
-      }
+      throw new Error('Non-JSON response received');
     }
     
-    // Regular JSON parsing
-    try {
-      const data = await response.json();
-      return transformFn(data);
-    } catch (error) {
-      console.error('JSON parsing error:', error);
-      throw new Error('Invalid JSON response');
-    }
-  } catch (error) {
-    console.warn(`Error fetching static file ${fileUrl}:`, error);
-    console.log('Falling back to API endpoint:', fallbackEndpoint);
+    const data = await response.json();
+    return transformFn(data);
+  } catch (err) {
+    console.warn(`Error fetching static file ${fileUrl}:`, err);
+    console.log(`Falling back to API endpoint: ${fallbackEndpoint}`);
     
     // Fallback to API endpoint
     try {
-      const response = await api.get(fallbackEndpoint);
-      return transformFn(response.data);
-    } catch (apiError) {
-      console.error('API fallback also failed:', apiError);
-      
-      // Return default empty data based on file type to prevent UI crashes
-      if (fileUrl.includes('league-stats')) {
-        return transformFn({ stats: [] });
-      } else if (fileUrl.includes('team-stats')) {
-        return transformFn({ 
-          topTeams: [], 
-          bottomTeams: [], 
-          lastUpdated: new Date().toISOString(), 
-          totalTeamsAnalyzed: 0 
-        });
-      } else if (fileUrl.includes('all-teams')) {
-        return transformFn({ teams: [] });
-      } else if (fileUrl.includes('ai-history')) {
-        return transformFn({
-          overall: {
-            totalPredictions: 0,
-            correctPredictions: 0,
-            overallAccuracy: 0
-          },
-          stats: [],
-          generatedAt: new Date().toISOString()
-        });
-      } else if (fileUrl.includes('daily-predictions')) {
-        return transformFn({
-          totalMatches: 0,
-          aiPredictions: 0,
-          completedMatches: 0,
-          totalCorrectToday: 0,
-          totalPredictionsToday: 0,
-          generatedAt: new Date().toISOString()
-        });
+      // Check if fallbackEndpoint exists
+      if (!fallbackEndpoint) {
+        console.warn('No fallback endpoint provided');
+        // Return default dummy data
+        return transformFn({});
       }
       
-      // Generic empty object for other cases
+      const apiResponse = await api.get(fallbackEndpoint);
+      return apiResponse.data;
+    } catch (apiErr) {
+      console.error('API fallback also failed:', apiErr);
+      // Don't throw, return default empty data
       return transformFn({});
     }
   }

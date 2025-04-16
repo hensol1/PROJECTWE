@@ -13,7 +13,6 @@ const adminRouter = require('./routes/admin');
 const blogRoutes = require('./routes/blog');
 const monitoringRoutes = require('./routes/monitoring');
 const teamStatsRoutes = require('./routes/teamStats');
-const fs = require('fs');
 
 dotenv.config();
 require('./scheduledTasks');
@@ -52,77 +51,9 @@ app.use('/stats', express.static(path.join(__dirname, 'public/stats'), {
   setHeaders: (res, path) => {
     if (path.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
     }
   }
 }));
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  const statsDir = path.join(__dirname, 'public/stats');
-  const statsFilesExist = fs.existsSync(statsDir);
-  
-  res.json({
-    status: 'healthy',
-    environment: process.env.NODE_ENV || 'production',
-    timestamp: new Date().toISOString(),
-    mongoStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    statsFiles: statsFilesExist ? fs.readdirSync(statsDir).map(file => ({
-      name: file,
-      size: fs.statSync(path.join(statsDir, file)).size,
-      modified: fs.statSync(path.join(statsDir, file)).mtime
-    })) : []
-  });
-});
-
-// Verify stats directory exists
-const statsDir = path.join(__dirname, 'public/stats');
-if (!fs.existsSync(statsDir)) {
-  console.log(`Creating missing stats directory: ${statsDir}`);
-  fs.mkdirSync(statsDir, { recursive: true });
-}
-
-// Improved static file serving with fallback to API
-app.use('/stats', (req, res, next) => {
-  const filePath = path.join(__dirname, 'public/stats', req.path);
-  
-  // Check if file exists
-  fs.access(filePath, fs.constants.F_OK, (err) => {
-    if (err) {
-      console.warn(`Static file not found: ${filePath}`);
-      
-      // If file doesn't exist, try to redirect to API endpoint
-      const fileName = path.basename(req.path, '.json');
-      
-      // Map file names to API endpoints
-      const apiEndpoints = {
-        'ai-history': '/api/stats/ai/history',
-        'league-stats': '/api/stats/ai/league-stats',
-        'team-stats': '/api/team-stats',
-        'all-teams': '/api/team-stats/all',
-        'daily-predictions': '/api/stats/daily-predictions'
-      };
-      
-      if (apiEndpoints[fileName]) {
-        console.log(`Redirecting to API endpoint: ${apiEndpoints[fileName]}`);
-        return res.redirect(apiEndpoints[fileName]);
-      }
-    }
-    
-    // If file exists or no matching API endpoint, serve it with proper headers
-    if (req.path.endsWith('.json')) {
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-    
-    next();
-  });
-}, express.static(path.join(__dirname, 'public/stats')));
-
 
 // Connect to MongoDB with persistent connection
 mongoose.connect(process.env.MONGODB_URI, {
@@ -199,17 +130,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Add error handling middleware for JSON parsing errors
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ error: 'Invalid JSON' });
-  }
-  next();
-});
-
-// Add a catch-all route for 404s
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
+// 404 Not Found middleware
+app.use((req, res, next) => {
+  res.status(404).send("Sorry, that route doesn't exist.");
 });
 
 const PORT = process.env.PORT || 5000;
