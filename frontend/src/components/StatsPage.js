@@ -6,68 +6,58 @@ import LeagueStats from './LeagueStats';
 import TeamStats from './TeamStats';
 import api from '../api';
 
-// Custom hook to prefetch all data
-const usePrefetchData = () => {
-  useEffect(() => {
-    // Prefetch all datasets immediately
-    const prefetchData = async () => {
-      try {
-        await Promise.all([
-          api.fetchAIHistory(),
-          api.fetchLeagueStats(),
-          api.fetchTeamStats()
-        ]);
-      } catch (error) {
-        console.error('Prefetch error:', error);
-      }
-    };
+// Custom hook to safely fetch data with improved error handling
+const useSafeDataFetch = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  
+  // Fetch data with proper fallback handling
+  const fetchDataSafely = async () => {
+    setIsLoading(true);
+    setError(null);
     
-    prefetchData();
+    try {
+      // First try the API endpoints (more reliable than static files)
+      console.log('Fetching data from API endpoints...');
+      const results = await Promise.allSettled([
+        api.fetchAIHistory(),
+        api.fetchLeagueStats(),
+        api.fetchTeamStats(),
+        api.fetchAllTeams()
+      ]);
+      
+      // Check if any fetches succeeded
+      const anySuccess = results.some(result => result.status === 'fulfilled');
+      
+      if (anySuccess) {
+        console.log('Successfully loaded data from API');
+        setLastUpdated(new Date().toISOString());
+      } else {
+        // All API calls failed, log the errors
+        console.error('All API fetches failed:', 
+          results.map(r => r.status === 'rejected' ? r.reason : null).filter(Boolean));
+        setError('Failed to load AI stats');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to load AI stats');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchDataSafely();
   }, []);
+  
+  return { isLoading, error, lastUpdated, refetch: fetchDataSafely };
 };
 
 const StatsPage = () => {
   const location = useLocation();
-  // Set default tab or get tab from navigation state
   const [activeTab, setActiveTab] = useState('overall');
-  const [lastUpdated, setLastUpdated] = useState(null);
-  
-  // Use this effect to fetch data and update lastUpdated state
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Direct fetch to bypass potential API issues
-        const response = await fetch('/stats/ai-history.json?t=' + Date.now());
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Direct fetch result:', data);
-          
-          // Check where the generatedAt field might be
-          if (data?.generatedAt) {
-            setLastUpdated(data.generatedAt);
-          } else {
-            // Try to find it elsewhere in the data structure
-            console.log('No direct generatedAt field, searching deeper...');
-            if (data) {
-              setLastUpdated(new Date().toISOString()); // Use current time as fallback
-            }
-          }
-        } else {
-          console.error('Failed to fetch stats file:', response.status);
-        }
-        
-        // Also prefetch other data
-        await Promise.all([
-          api.fetchLeagueStats(),
-          api.fetchTeamStats()
-        ]);
-      } catch (error) {
-        console.error('Error fetching statistics data:', error);
-      }
-    };
-    
-    fetchData();
-  }, []);
+  const { isLoading, error, lastUpdated, refetch } = useSafeDataFetch();
   
   // Set the active tab based on navigation state
   useEffect(() => {
@@ -89,20 +79,44 @@ const StatsPage = () => {
     </button>
   );
 
-  // Render components but hide inactive ones
-  const renderContent = () => (
-    <div className="relative">
-      <div className={activeTab === 'overall' ? 'block' : 'hidden'}>
-        <PerformanceGraph />
+  // Render content based on current state
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-pulse text-gray-500">Loading statistics...</div>
+        </div>
+      );
+    }
+    
+    if (error) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-red-600 mb-4">{error}</div>
+          <button 
+            onClick={refetch}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="relative">
+        <div className={activeTab === 'overall' ? 'block' : 'hidden'}>
+          <PerformanceGraph />
+        </div>
+        <div className={activeTab === 'leagues' ? 'block' : 'hidden'}>
+          <LeagueStats />
+        </div>
+        <div className={activeTab === 'teams' ? 'block' : 'hidden'}>
+          <TeamStats />
+        </div>
       </div>
-      <div className={activeTab === 'leagues' ? 'block' : 'hidden'}>
-        <LeagueStats />
-      </div>
-      <div className={activeTab === 'teams' ? 'block' : 'hidden'}>
-        <TeamStats />
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
@@ -117,13 +131,13 @@ const StatsPage = () => {
           </div>
 
           <div className="text-xs text-gray-500 text-right mb-4">
-  Last updated: {new Date().toLocaleString()}
-</div>
+            Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'N/A'}
+          </div>
 
           <ErrorBoundary 
             fallback={
               <div className="text-red-600 p-4">
-                Error loading statistics. Please refresh the page.
+                Error loading statistics. Please refresh the page or try again later.
               </div>
             }
           >
