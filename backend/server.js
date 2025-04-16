@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 const matchesRoutes = require('./routes/matches');
 const adminRoutes = require('./routes/admin');
 const accuracyRouter = require('./routes/accuracy');
@@ -44,6 +45,15 @@ app.use(cors({
 
 // Middleware
 app.use(express.json());
+
+// Serve static files from the public directory
+app.use('/stats', express.static(path.join(__dirname, 'public/stats'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json');
+    }
+  }
+}));
 
 // Connect to MongoDB with persistent connection
 mongoose.connect(process.env.MONGODB_URI, {
