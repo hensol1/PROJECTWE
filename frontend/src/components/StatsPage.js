@@ -26,49 +26,100 @@ const usePrefetchData = () => {
   }, []);
 };
 
+// Loading component
+const LoadingState = () => (
+  <div className="flex flex-col items-center justify-center py-12">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mb-4"></div>
+    <p className="text-gray-600">Loading statistics...</p>
+  </div>
+);
+
+// Error component
+const ErrorState = ({ message, onRetry }) => (
+  <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700">
+    <p className="font-medium">Error</p>
+    <p>{message || 'Failed to load statistics. Please try again later.'}</p>
+    <button 
+      onClick={onRetry}
+      className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+    >
+      Retry
+    </button>
+  </div>
+);
+
 const StatsPage = () => {
   const location = useLocation();
   // Set default tab or get tab from navigation state
   const [activeTab, setActiveTab] = useState('overall');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState(null);
   
   // Use this effect to fetch data and update lastUpdated state
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
+      setLoadingError(null);
+      
       try {
-        // Direct fetch to bypass potential API issues
-        const response = await fetch('/stats/ai-history.json?t=' + Date.now());
-        if (response.ok) {
+        // First try the API endpoint which is more reliable
+        try {
+          const apiResponse = await api.get('/api/stats/ai/history');
+          if (apiResponse?.data?.overall) {
+            setLastUpdated(apiResponse.data.generatedAt || new Date().toISOString());
+            console.log('Successfully loaded stats from API');
+          } else {
+            throw new Error('Invalid API response format');
+          }
+        } catch (apiError) {
+          console.log('API fetch failed, trying direct file access', apiError);
+          
+          // Direct fetch to bypass potential API issues
+          const response = await fetch('/stats/ai-history.json?t=' + Date.now());
+          if (!response.ok) {
+            throw new Error(`Failed to fetch stats file: ${response.status}`);
+          }
+          
+          // Check content type
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('text/html')) {
+            throw new Error('Received HTML instead of JSON');
+          }
+          
           const data = await response.json();
           console.log('Direct fetch result:', data);
           
-          // Check where the generatedAt field might be
           if (data?.generatedAt) {
             setLastUpdated(data.generatedAt);
+          } else if (data?.overall?.lastUpdated) {
+            setLastUpdated(data.overall.lastUpdated);
           } else {
-            // Try to find it elsewhere in the data structure
-            console.log('No direct generatedAt field, searching deeper...');
-            if (data) {
-              setLastUpdated(new Date().toISOString()); // Use current time as fallback
-            }
+            // Use current time as fallback
+            setLastUpdated(new Date().toISOString());
           }
-        } else {
-          console.error('Failed to fetch stats file:', response.status);
         }
         
         // Also prefetch other data
-        await Promise.all([
+        await Promise.allSettled([
           api.fetchLeagueStats(),
           api.fetchTeamStats()
         ]);
+        
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching statistics data:', error);
+        setLoadingError('Failed to load statistics data. Please try again later.');
+        setIsLoading(false);
+        
+        // Still update lastUpdated even on error
+        setLastUpdated(new Date().toISOString());
       }
     };
     
     fetchData();
   }, []);
-  
+    
   // Set the active tab based on navigation state
   useEffect(() => {
     if (location.state?.activeTab) {
