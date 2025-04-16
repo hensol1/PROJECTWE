@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Medal, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api';
+import { format, parseISO } from 'date-fns';
 
 const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -52,8 +53,17 @@ const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
         return aPriority - bPriority;
       }
       
-      // If same league priority, sort by confidence
-      return b.confidence - a.confidence;
+      // If same league priority and both have odds, sort by confidence
+      if (a.odds?.harmonicMeanOdds && b.odds?.harmonicMeanOdds) {
+        return b.confidence - a.confidence;
+      }
+      
+      // If only one has odds, prioritize that one
+      if (a.odds?.harmonicMeanOdds) return -1;
+      if (b.odds?.harmonicMeanOdds) return 1;
+      
+      // If neither has odds, sort by match time
+      return new Date(a.utcDate) - new Date(b.utcDate);
     });
     
     // Group by league priority
@@ -80,8 +90,15 @@ const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
     // First, include one match from each priority level
     for (const priority of priorities) {
       if (matchesByPriority[priority].length > 0 && selectedMatches.length < 5) {
-        // Sort by confidence within the priority
-        matchesByPriority[priority].sort((a, b) => b.confidence - a.confidence);
+        // Sort by confidence within the priority if odds available
+        matchesByPriority[priority].sort((a, b) => {
+          if (a.odds?.harmonicMeanOdds && b.odds?.harmonicMeanOdds) {
+            return b.confidence - a.confidence;
+          }
+          if (a.odds?.harmonicMeanOdds) return -1;
+          if (b.odds?.harmonicMeanOdds) return 1;
+          return new Date(a.utcDate) - new Date(b.utcDate);
+        });
         selectedMatches.push(matchesByPriority[priority][0]);
       }
     }
@@ -116,17 +133,17 @@ const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
           const parsed = JSON.parse(cachedData);
           setKeyMatches(parsed);
           setIsLoading(false);
+          return;
         }
         
         // Get today's date in YYYY-MM-DD format
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const formattedDate = format(today, 'yyyy-MM-dd');
         
         // Fetch matches for today
-        const matches = await api.fetchMatchesForDisplay(today);
+        const matches = await api.fetchMatchesForDisplay(formattedDate);
         
         // Process matches to find key matches
-        // This processing identifies matches with higher importance, better teams, or more exciting odds
         const processedMatches = [];
         
         // Process each league's matches
@@ -136,29 +153,23 @@ const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
           // Keep only today's matches and those with odds
           const filteredMatches = leagueMatches.filter(match => {
             // Filter for today's matches
-            const matchDate = new Date(match.utcDate);
-            const matchDateStr = matchDate.toISOString().split('T')[0];
+            if (!match.utcDate) return false;
+            const matchDate = parseISO(match.utcDate);
+            const matchDateStr = format(matchDate, 'yyyy-MM-dd');
             
-            // Check if match has odds
-            const hasOdds = match.odds?.harmonicMeanOdds;
-            
-            return matchDateStr === todayStr && hasOdds;
+            return matchDateStr === formattedDate;
           });
           
           // Add the matches to our processed list with additional info
           filteredMatches.forEach(match => {
             // Extract match time
-            const matchTime = new Date(match.utcDate).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: false
-            });
+            const matchTime = format(parseISO(match.utcDate), 'HH:mm');
             
             // Determine prediction and confidence based on odds
             let prediction = 'Unknown';
             let confidence = 0;
             
-            if (match.odds && match.odds.harmonicMeanOdds) {
+            if (match.odds?.harmonicMeanOdds) {
               const odds = match.odds.harmonicMeanOdds;
               const homeOdds = parseFloat(odds.home);
               const drawOdds = parseFloat(odds.draw);
@@ -203,11 +214,8 @@ const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
               awayId: match.awayTeam.id,
               leagueId: match.competition?.id,
               prediction,
-              confidence: Math.round(confidence),
-              // These will be populated later
-              homeForm: null,
-              awayForm: null,
-              key_fact: null
+              confidence: parseFloat((confidence * 100).toFixed(2)),
+              utcDate: match.utcDate
             });
           });
         });
@@ -537,7 +545,7 @@ const CompactMatchdayPreview = ({ displayMode = 'desktop' }) => {
             </div>
             <div className="text-[10px]">
               <span className="text-gray-400">Confidence:</span> 
-              <span className="text-emerald-400 font-medium ml-0.5">{match.confidence}%</span>
+              <span className="text-emerald-400 font-medium ml-0.5">{(match.confidence / 100).toFixed(2)}%</span>
             </div>
           </div>
           

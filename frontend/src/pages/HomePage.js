@@ -10,62 +10,8 @@ import SEO from '../components/SEO';
 import api from '../api';
 import { LineChart, Calendar, Award, Trophy, ChevronRight, Search, Filter } from 'lucide-react';
 import CompactMatchdayPreview from '../components/CompactMatchdayPreview';
-
-const useAIAccuracyData = () => {
-  const [accuracyData, setAccuracyData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    let isMounted = true;
-    
-    const fetchAccuracyData = async () => {
-      try {
-        // First check for cached data
-        const cachedData = sessionStorage.getItem('aiAccuracyData');
-        const cachedTimestamp = sessionStorage.getItem('aiAccuracyDataTimestamp');
-        const now = Date.now();
-        const CACHE_VALIDITY = 15 * 60 * 1000; // 15 minutes
-        
-        // Use cached data if it's fresh
-        if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp) < CACHE_VALIDITY)) {
-          const parsed = JSON.parse(cachedData);
-          if (isMounted) setAccuracyData(parsed);
-          return;
-        }
-        
-        // Get data from API
-        const response = await api.fetchAIHistory();
-        
-        if (!response || !response.overall) {
-          throw new Error('Invalid response from API');
-        }
-        
-        // Extract the overall accuracy
-        const overallAccuracy = parseFloat(response.overall.overallAccuracy || 0);
-        
-        if (isMounted) {
-          setAccuracyData(overallAccuracy);
-          setIsLoading(false);
-          
-          // Cache the data
-          sessionStorage.setItem('aiAccuracyData', JSON.stringify(overallAccuracy));
-          sessionStorage.setItem('aiAccuracyDataTimestamp', now.toString());
-        }
-      } catch (error) {
-        console.error('Error fetching AI accuracy data:', error);
-        if (isMounted) setIsLoading(false);
-      }
-    };
-    
-    fetchAccuracyData();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-  
-  return { accuracyData, isLoading };
-};
+import { useAIStats } from '../hooks/useAIStats';
+import { format, parseISO } from 'date-fns';
 
 // TodaysOdds wrapper component
 function HomePageOdds({ navigateToOddsPage }) {
@@ -78,49 +24,39 @@ function HomePageOdds({ navigateToOddsPage }) {
       try {
         // Get today's date in YYYY-MM-DD format
         const today = new Date();
-        const formattedDate = today.toISOString().split('T')[0];
+        // Format using date-fns to ensure consistency
+        const formattedDate = format(today, 'yyyy-MM-dd');
         
         console.log('Fetching matches for Today\'s Odds component:', formattedDate);
         
         // Direct API call to fetch match data
         try {
-          // Try using our new helper method first
-          if (typeof api.fetchMatchesForDisplay === 'function') {
-            const matches = await api.fetchMatchesForDisplay(today);
-            console.log('Got matches from fetchMatchesForDisplay:', Object.keys(matches).length);
-            
-            // Filter matches to include only today's matches
-            const todayOnlyMatches = {};
-            
-            Object.entries(matches).forEach(([leagueKey, leagueMatches]) => {
-              // Filter matches for today's date only
-              const todayMatches = leagueMatches.filter(match => {
-                const matchDate = new Date(match.utcDate);
-                return matchDate.toISOString().split('T')[0] === formattedDate;
-              });
-              
-              // Only include leagues that have matches today
-              if (todayMatches.length > 0) {
-                todayOnlyMatches[leagueKey] = todayMatches;
-              }
+          const matches = await api.fetchMatchesForDisplay(formattedDate);
+          console.log('Got matches from fetchMatchesForDisplay:', Object.keys(matches).length);
+          
+          // Filter matches to include only today's matches
+          const todayOnlyMatches = {};
+          
+          Object.entries(matches).forEach(([leagueKey, leagueMatches]) => {
+            // Filter matches for today's date only
+            const todayMatches = leagueMatches.filter(match => {
+              if (!match.utcDate) return false;
+              const matchDate = parseISO(match.utcDate);
+              const matchDateStr = format(matchDate, 'yyyy-MM-dd');
+              return matchDateStr === formattedDate;
             });
             
-            console.log(`Filtered to ${Object.values(todayOnlyMatches).flat().length} matches for today's date`);
-            
-            // Check if we have any matches with odds
-            const hasOddsMatches = Object.values(todayOnlyMatches).some(leagueMatches => 
-              leagueMatches.some(match => match.odds?.harmonicMeanOdds)
-            );
-            
-            if (hasOddsMatches) {
-              setTodaysMatches(todayOnlyMatches);
-              setLoading(false);
-              return;
+            // Only include leagues that have matches today
+            if (todayMatches.length > 0) {
+              todayOnlyMatches[leagueKey] = todayMatches;
             }
-          }
+          });
           
-          // Fallback implementation remains the same
-          // [Code omitted for brevity]
+          console.log(`Filtered to ${Object.values(todayOnlyMatches).flat().length} matches for today's date`);
+          
+          // Set matches regardless of odds availability
+          setTodaysMatches(todayOnlyMatches);
+          
         } catch (apiError) {
           console.error('API error:', apiError);
           setTodaysMatches({});
@@ -174,8 +110,8 @@ export default function HomePage({ user, setAuthModalOpen }) {
   const oddsRef = useRef(null);
   const { getCurrentMatches, isLoading, activeTab } = useMatchesData();
   
-  // Add state for AI accuracy
-  const { accuracyData: aiAccuracy, isLoading: isAccuracyLoading } = useAIAccuracyData();
+  // Replace useAIAccuracyData with useAIStats
+  const { overallStats, isLoading: isAIStatsLoading } = useAIStats();
   
   // State for the league filter
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -261,7 +197,7 @@ export default function HomePage({ user, setAuthModalOpen }) {
           <div className="absolute inset-1 bg-[#1a1f2b] rounded-full flex items-center justify-center">
             <div className="text-center">
             <div className="text-[#40c456] text-2xl font-bold">
-    {aiAccuracy ? `${aiAccuracy.toFixed(1)}%` : '...'}
+    {!isAIStatsLoading && overallStats ? `${overallStats.overallAccuracy.toFixed(1)}%` : '...'}
   </div>
               <div className="text-gray-400 text-xs">AI Accuracy</div>
             </div>
@@ -303,7 +239,7 @@ export default function HomePage({ user, setAuthModalOpen }) {
           <div className="absolute inset-2 bg-[#1a1f2b] rounded-full flex items-center justify-center">
             <div className="text-center">
             <div className="text-[#40c456] text-3xl md:text-4xl font-bold">
-    {aiAccuracy ? `${aiAccuracy.toFixed(1)}%` : '...'}
+    {!isAIStatsLoading && overallStats ? `${overallStats.overallAccuracy.toFixed(1)}%` : '...'}
   </div>
               <div className="text-gray-400 text-xs md:text-sm">AI Accuracy</div>
             </div>

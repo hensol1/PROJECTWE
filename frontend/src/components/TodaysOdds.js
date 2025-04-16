@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Info, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 const websiteColors = {
   primary: '#2ECC40',
@@ -95,10 +96,10 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
       return [];
     }
     
-    // Get today's date for filtering
+    // Get today's date for filtering using date-fns
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    console.log(`Filtering matches for today: ${todayStr}`);
+    const formattedDate = format(today, 'yyyy-MM-dd');
+    console.log(`Filtering matches for today: ${formattedDate}`);
     
     // Convert the league-grouped matches to a grouped competition data structure
     const groupedMatches = new Map();
@@ -114,9 +115,9 @@ const TodaysOdds = ({ allMatches, isPage = false, onClick }) => {
       const todayMatches = matches.filter(match => {
         try {
           if (!match.utcDate) return false;
-          const matchDate = new Date(match.utcDate);
-          const matchDateStr = matchDate.toISOString().split('T')[0];
-          return matchDateStr === todayStr;
+          const matchDate = parseISO(match.utcDate);
+          const matchDateStr = format(matchDate, 'yyyy-MM-dd');
+          return matchDateStr === formattedDate;
         } catch (e) {
           console.error("Error filtering match:", e);
           return false;

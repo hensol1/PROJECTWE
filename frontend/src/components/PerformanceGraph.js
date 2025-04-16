@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { 
   LineChart, 
   Line, 
@@ -7,11 +7,11 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Legend 
+  Legend,
+  ReferenceLine 
 } from 'recharts';
-import { format, startOfToday, isBefore, subDays } from 'date-fns';
 import { InfoIcon } from 'lucide-react';
-import api from '../api';
+import { useAIStats } from '../hooks/useAIStats';
 
 // Skeleton loader for stats
 const StatCardSkeleton = () => (
@@ -65,113 +65,38 @@ const CustomTooltip = ({ active, payload, label }) => {
     return (
       <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
         <p className="font-semibold">{label}</p>
-        <p className="text-green-600">
-          Accuracy: {payload[0].value.toFixed(1)}%
-        </p>
-        <p className="text-xs text-gray-600">
-          {payload[0].payload.correct} of {payload[0].payload.predictions} predictions
-        </p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }}>
+            {entry.name}: {entry.value.toFixed(1)}%
+            {entry.name === "Daily Accuracy" && (
+              <span className="text-xs text-gray-600 block">
+                {entry.payload.correct} of {entry.payload.predictions} predictions
+              </span>
+            )}
+          </p>
+        ))}
       </div>
     );
   }
   return null;
 };
 
-const usePerformanceData = () => {
-  const [data, setData] = useState({ performanceData: [], overallStats: null });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let isMounted = true;
-  
-    const fetchData = async () => {
-      try {
-        console.log('Fetching performance data...');
-        
-        // Get data from API
-        const response = await api.fetchAIHistory();
-        console.log('Raw API response:', response);
-        
-        if (!response || !response.overall) {
-          console.error('Invalid response format:', response);
-          throw new Error('Invalid response from API');
-        }
-          
-        // Get overall stats
-        const overallStats = {
-          totalPredictions: response.overall.totalPredictions,
-          correctPredictions: response.overall.correctPredictions,
-          overallAccuracy: response.overall.overallAccuracy
-        };
-        
-        // Get today's date
-        const today = startOfToday();
-        const yesterday = subDays(today, 1);
-        
-        // Process daily stats
-        const formattedData = (response.stats || [])
-          .map(stat => {
-            // Parse date properly
-            const statDate = new Date(stat.date);
-            
-            return {
-              date: statDate,
-              displayDate: format(statDate, 'MMM dd'), // Format as Feb 26
-              accuracy: parseFloat(stat.accuracy || 0),
-              predictions: stat.totalPredictions || 0,
-              correct: stat.correctPredictions || 0
-            };
-          })
-          // Filter out today and future dates
-          .filter(stat => isBefore(stat.date, today))
-          // Sort by date (newest first)
-          .sort((a, b) => b.date - a.date);
-        
-        if (!isMounted) return;
-        
-        const processedData = {
-          performanceData: formattedData,
-          overallStats: overallStats
-        };
-        
-        // Cache the data
-        sessionStorage.setItem('performanceData', JSON.stringify(processedData));
-        sessionStorage.setItem('performanceDataTimestamp', Date.now().toString());
-        
-        setData(processedData);
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Error fetching performance data:', err);
-        if (isMounted) {
-          setError('Failed to load performance data');
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  return { ...data, isLoading, error };
-};
-
 const PerformanceGraph = () => {
   const [timeRange, setTimeRange] = useState(7);
-  const { performanceData, overallStats, isLoading, error } = usePerformanceData();
+  const { performanceData, overallStats, isLoading, error } = useAIStats();
 
-  const { filteredData, stats } = useMemo(() => {
+  const { filteredData, stats } = React.useMemo(() => {
     if (!performanceData.length) {
       return { filteredData: [], stats: {} };
     }
 
     const filtered = [...performanceData]
       .slice(0, timeRange)
-      .reverse();
+      .reverse()
+      .map(day => ({
+        ...day,
+        overallAccuracy: overallStats?.overallAccuracy // Add overall accuracy to each data point
+      }));
 
     const daysWithPredictions = filtered.filter(day => day.predictions > 0);
     const stats = {
@@ -271,15 +196,38 @@ const PerformanceGraph = () => {
                   ticks={[0, 25, 50, 75, 100]}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend 
+                  wrapperStyle={{
+                    paddingTop: "20px"
+                  }}
+                  onClick={(e) => {
+                    // Add click handler for future interactivity if needed
+                    console.log('Legend clicked:', e);
+                  }}
+                />
                 <Line
                   type="monotone"
                   dataKey="accuracy"
-                  name="Accuracy"
+                  name="Daily Accuracy"
                   stroke="#2ECC40"
                   strokeWidth={2}
                   dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
+                  animationDuration={1500}
+                  animationBegin={0}
+                  animationEasing="ease-in-out"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="overallAccuracy"
+                  name="Overall Accuracy"
+                  stroke="#FF4136"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  animationDuration={2000}
+                  animationBegin={300}
+                  animationEasing="ease-out"
                 />
               </LineChart>
             </ResponsiveContainer>

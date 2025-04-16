@@ -18,6 +18,7 @@ let matchFetchingJob = null;
 let dailyResetJob = null;
 let accuracyStatsJob = null;
 let statsGenerationJob = null;
+let standingsJob = null;
 
 async function scheduleNextMatchCheck() {
     try {
@@ -117,7 +118,7 @@ async function handleMatchFetching() {
 
         const previousActiveMatchIds = new Set(previousActiveMatches.map(match => match.id));
         
-        const start = subHours(currentDate, 3);
+        let start = subHours(currentDate, 3);
         const end = addHours(currentDate, 3);
 
         if (previousActiveMatches.length > 0) {
@@ -146,101 +147,17 @@ async function handleMatchFetching() {
             
             // Update stats for each finished match individually
             for (const match of justFinishedMatches) {
-                await updateStatsForMatch(match);
-            }        
-            
-            
-            // Keep track of which leagues we've updated to avoid duplicates
-            const updatedLeagues = new Set();
-            
-            for (const match of justFinishedMatches) {
-                console.log(`Match finished: ${match.homeTeam.name} vs ${match.awayTeam.name}`);
-                console.log(`Final score: ${match.score.fullTime.home} - ${match.score.fullTime.away}`);
-                
-                // Get the league ID for this match
-                const leagueId = match.competition.id;
-                
-                // Only update standings for each league once, even if multiple matches finished
-                if (!updatedLeagues.has(leagueId)) {
-                    try {
-                        console.log(`Updating standings for league ${match.competition.name} (ID: ${leagueId})`);
-                        const standingsResult = await updateStandingsForLeague(leagueId);
-                        
-                        if (standingsResult.success) {
-                            console.log(`✓ Successfully updated standings for ${match.competition.name}`);
-                        } else {
-                            console.log(`✗ Failed to update standings for ${match.competition.name}: ${standingsResult.error}`);
-                        }
-                        
-                        updatedLeagues.add(leagueId);
-                        
-                        // Wait 5 seconds between league updates to respect API rate limits
-                        await new Promise(resolve => setTimeout(resolve, 5000));
-                    } catch (error) {
-                        console.error(`Error updating standings for league ${leagueId}:`, error);
-                    }
-                }
-            }
-
-
-            
-
-            async function updateStatsForMatch(match) {
-                if (match.status === 'FINISHED' && match.aiPrediction) {
-                  try {
-                    // Always calculate result based on full time score
-                    const homeScore = match.score.fullTime.home;
-                    const awayScore = match.score.fullTime.away;
-                    const actualResult = homeScore > awayScore ? 'HOME_TEAM' : 
-                                        awayScore > homeScore ? 'AWAY_TEAM' : 'DRAW';
-                    
-                    const isCorrect = match.aiPrediction === actualResult;
-                    
-                    console.log(`Match ${match.id}: ${match.homeTeam.name} ${homeScore}-${awayScore} ${match.awayTeam.name}`);
-                    console.log(`Prediction: ${match.aiPrediction}, Actual: ${actualResult}, Correct: ${isCorrect}`);
-                                                
-                    // Get match date (use start of day)
-                    const matchDate = new Date(match.utcDate);
-                    matchDate.setHours(0, 0, 0, 0);
-                    
-                    // Update AIPredictionStat
-                    const aiStats = await AIPredictionStat.findOne();
-                    if (aiStats) {
-                      // Update total stats
-                      aiStats.totalPredictions += 1;
-                      if (isCorrect) {
-                        aiStats.correctPredictions += 1;
-                      }
-                      
-                      // Find or create the daily stat
-                      let dayStats = aiStats.dailyStats.find(
-                        stat => new Date(stat.date).toDateString() === matchDate.toDateString()
-                      );
-                      
-                      if (dayStats) {
-                        dayStats.totalPredictions += 1;
-                        if (isCorrect) {
-                          dayStats.correctPredictions += 1;
-                        }
-                      } else {
-                        aiStats.dailyStats.push({
-                          date: matchDate,
-                          totalPredictions: 1,
-                          correctPredictions: isCorrect ? 1 : 0
-                        });
-                      }
-                      
-                      await aiStats.save();
-                      console.log(`Updated stats for match ${match.id}: ${match.homeTeam.name} vs ${match.awayTeam.name} - Prediction ${isCorrect ? 'correct' : 'incorrect'}`);
-                    }
+                try {
+                    await updateStatsForMatch(match);
+                    // Schedule standings update for this league
+                    await scheduleStandingsUpdateAfterMatch(match.competition.id);
                 } catch (error) {
                     console.error(`Error updating stats for match ${match.id}:`, error);
-                  }
+                    // Continue with other matches even if one fails
                 }
-              }
-                                          
-        
-            // After updating standings, recalculate stats
+            }        
+
+            // After updating stats, recalculate overall stats
             try {
                 const stats = await recalculateStats();
                 console.log('Stats recalculation completed:', stats);
@@ -250,13 +167,8 @@ async function handleMatchFetching() {
                 }
                 
                 // Generate new stats files after recalculation
-                try {
-                    console.log('Generating new stats files after match completion...');
-                    await generateAllStatsFile();
-                    console.log('Stats files updated successfully');
-                } catch (statsError) {
-                    console.error('Error generating stats files after match completion:', statsError);
-                }
+                await generateAllStatsFile();
+                console.log('Stats files updated successfully');
             } catch (error) {
                 console.error('Error updating stats after match completion:', error);
             }
@@ -268,8 +180,12 @@ async function handleMatchFetching() {
         });
 
         if (currentActiveMatches.length > 0) {
-            await fetchAndStoreAllLiveEvents();
-            console.log(`Fetched events for ${currentActiveMatches.length} active matches with one API call`);
+            try {
+                await fetchAndStoreAllLiveEvents();
+                console.log(`Fetched events for ${currentActiveMatches.length} active matches with one API call`);
+            } catch (error) {
+                console.error('Error fetching live events:', error);
+            }
         }
         
         console.log('Match fetching completed:', {
@@ -285,6 +201,7 @@ async function handleMatchFetching() {
         });
     } catch (error) {
         console.error('Error in match fetching:', error);
+        throw error; // Re-throw to be handled by the caller
     }
 }
 
@@ -478,6 +395,69 @@ function initializeOddsJob() {
     return oddsGenerationJob;
 }
 
+function initializeStandingsJob() {
+    console.log('Initializing standings update job...');
+    
+    // Update standings every 2 hours for active leagues
+    standingsJob = cron.schedule('0 */2 * * *', async () => {
+        try {
+            console.log('Starting periodic standings update...');
+            
+            // Find all leagues with currently active matches
+            const activeMatches = await Match.find({
+                status: { $in: ['IN_PLAY', 'PAUSED', 'HALFTIME', 'SCHEDULED'] }
+            }, 'competition.id');
+            
+            const uniqueLeagueIds = [...new Set(activeMatches.map(match => match.competition.id))];
+            
+            console.log(`Found ${uniqueLeagueIds.length} active leagues to update standings for`);
+            
+            // Update standings for each active league
+            for (const leagueId of uniqueLeagueIds) {
+                try {
+                    console.log(`Updating standings for league ID: ${leagueId}`);
+                    const standingsResult = await updateStandingsForLeague(leagueId);
+                    
+                    if (standingsResult.success) {
+                        console.log(`✓ Successfully updated standings for league ${leagueId}`);
+                    } else {
+                        console.log(`✗ Failed to update standings for league ${leagueId}: ${standingsResult.error}`);
+                    }
+                    
+                    // Wait 5 seconds between league updates to respect API rate limits
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                } catch (error) {
+                    console.error(`Error updating standings for league ${leagueId}:`, error);
+                    // Continue with other leagues even if one fails
+                }
+            }
+            
+            console.log('Periodic standings update completed');
+        } catch (error) {
+            console.error('Error in periodic standings update:', error);
+        }
+    });
+}
+
+// Add a function to schedule standings update after match completion
+async function scheduleStandingsUpdateAfterMatch(leagueId) {
+    // Schedule the update for 1 hour after the match finishes
+    setTimeout(async () => {
+        try {
+            console.log(`Updating standings for league ${leagueId} after match completion`);
+            const standingsResult = await updateStandingsForLeague(leagueId);
+            
+            if (standingsResult.success) {
+                console.log(`✓ Successfully updated standings for league ${leagueId} after match completion`);
+            } else {
+                console.log(`✗ Failed to update standings for league ${leagueId} after match completion: ${standingsResult.error}`);
+            }
+        } catch (error) {
+            console.error(`Error updating standings for league ${leagueId} after match completion:`, error);
+        }
+    }, 60 * 60 * 1000); // 1 hour delay
+}
+
 function initializeCronJobs() {
     // Daily reset job - runs at midnight UTC
     dailyResetJob = cron.schedule('0 0 * * *', async () => {
@@ -538,50 +518,73 @@ function initializeCronJobs() {
     // Initialize the odds generation job
     const oddsGenerationJob = initializeOddsJob();
     
+    // Initialize the standings job
+    initializeStandingsJob();
+    
     // Return the new job so we can reference it elsewhere
-    return { dailyResetJob, accuracyStatsJob, statsGenerationJob, oddsGenerationJob };
+    return { dailyResetJob, accuracyStatsJob, statsGenerationJob, oddsGenerationJob, standingsJob };
+}
+
+// Add a cleanup function for jobs
+function cleanupJobs() {
+    if (matchFetchingJob) {
+        matchFetchingJob.stop();
+        matchFetchingJob = null;
+    }
+    if (dailyResetJob) {
+        dailyResetJob.stop();
+        dailyResetJob = null;
+    }
+    if (accuracyStatsJob) {
+        accuracyStatsJob.stop();
+        accuracyStatsJob = null;
+    }
+    if (statsGenerationJob) {
+        statsGenerationJob.stop();
+        statsGenerationJob = null;
+    }
+    if (standingsJob) {
+        standingsJob.stop();
+        standingsJob = null;
+    }
 }
 
 // Error handling for the cron jobs
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    // Restart all jobs on error
+    // Clean up existing jobs
+    cleanupJobs();
+    // Restart all jobs
+    initializeCronJobs();
     scheduleNextMatchCheck();
-    if (dailyResetJob) dailyResetJob.start();
-    if (accuracyStatsJob) accuracyStatsJob.start();
-    if (statsGenerationJob) statsGenerationJob.start();
 });
 
 // Initialize everything
-initializeCronJobs();
-scheduleNextMatchCheck();
-
-// Generate stats files on server start
-generateAllStatsFile().then(result => {
-    if (result.success) {
-        console.log('Initial stats files generated successfully on server start');
-    } else {
-        console.error('Failed to generate initial stats files:', result.error);
-    }
-}).catch(error => {
-    console.error('Error generating initial stats files:', error);
-});
-
-cron.schedule('0 * * * *', async () => { 
-    console.log('Running scheduled stats generation...');
+function initialize() {
     try {
-      // Use the same method that's used on server start
-      const result = await generateAllStatsFile();
-      if (result.success) {
-        console.log('Scheduled stats file generation completed successfully');
-      } else {
-        console.error('Scheduled stats file generation failed:', result.error);
-      }
+        cleanupJobs(); // Clean up any existing jobs
+        initializeCronJobs();
+        scheduleNextMatchCheck();
+
+        // Generate initial stats files
+        generateAllStatsFile().then(result => {
+            if (result.success) {
+                console.log('Initial stats files generated successfully on server start');
+            } else {
+                console.error('Failed to generate initial stats files:', result.error);
+            }
+        }).catch(error => {
+            console.error('Error generating initial stats files:', error);
+        });
     } catch (error) {
-      console.error('Error in scheduled stats generation:', error);
+        console.error('Error during initialization:', error);
+        // Attempt to restart after a delay
+        setTimeout(initialize, 60000);
     }
-  });
-    
+}
+
+// Start the application
+initialize();
 
 // Export all necessary functions and jobs
 module.exports = {
@@ -589,9 +592,12 @@ module.exports = {
     dailyResetJob,
     accuracyStatsJob,
     statsGenerationJob,
+    standingsJob,
     updateDailyPredictionStats,
     handleMatchFetching,
     generateAllStatsFile,
     initializeStatsJob,
-    generateOddsFiles // Export the odds generation function
+    generateOddsFiles,
+    cleanupJobs,
+    initialize
 };

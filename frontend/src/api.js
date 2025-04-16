@@ -1,6 +1,6 @@
 import axios from 'axios';
 import config from './config';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 const api = axios.create({
   baseURL: config.apiUrl,
@@ -202,55 +202,51 @@ api.fetchAIHistory = async () => {
   try {
     console.log('Fetching AI history...');
     
-    // In production, always use API endpoint
-    if (process.env.NODE_ENV === 'production') {
+    // For development environment, try both approaches
+    let data;
+    if (process.env.NODE_ENV === 'development') {
       try {
+        // First try direct file access
+        const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
+        if (response.ok) {
+          data = await response.json();
+          console.log('Successfully loaded stats from JSON file:', data);
+        } else {
+          throw new Error(`Failed to fetch stats file: ${response.status}`);
+        }
+      } catch (fileError) {
+        console.log('File access failed, using API endpoint');
         const apiResponse = await api.get('/api/accuracy/ai/history');
-        return apiResponse.data;
-      } catch (apiError) {
-        console.error('Error in production API call:', apiError);
-        // Return default structure to prevent UI errors
-        return {
-          stats: [],
-          overall: {
-            totalPredictions: 0,
-            correctPredictions: 0,
-            overallAccuracy: 0
-          },
-          generatedAt: new Date().toISOString()
-        };
+        data = apiResponse.data;
+        console.log('Successfully loaded stats from API:', data);
       }
+    } else {
+      // Production - use file
+      const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch stats: ${response.status}`);
+      }
+      data = await response.json();
     }
     
-    // Development - try file first
-    const cacheBuster = `?t=${Date.now()}`;
-    const response = await fetch(`/stats/ai-history.json${cacheBuster}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch stats file: ${response.status}`);
+    // Validate the data structure
+    if (!data || !data.overall) {
+      console.error('Invalid data structure:', data);
+      throw new Error('Invalid data structure');
     }
     
-    return await response.json();
+    // Log the exact numbers for debugging
+    console.log('Stats data details:', {
+      totalPredictions: data.overall.totalPredictions,
+      correctPredictions: data.overall.correctPredictions,
+      accuracy: data.overall.overallAccuracy,
+      statsCount: data.stats?.length || 0
+    });
+    
+    return data;
   } catch (error) {
     console.error('Error fetching AI history:', error);
-    
-    // Fallback to API
-    try {
-      const apiResponse = await api.get('/api/accuracy/ai/history');
-      return apiResponse.data;
-    } catch (fallbackError) {
-      console.error('All methods failed:', fallbackError);
-      // Return minimal default data
-      return {
-        stats: [],
-        overall: {
-          totalPredictions: 0,
-          correctPredictions: 0,
-          overallAccuracy: 0
-        },
-        generatedAt: new Date().toISOString()
-      };
-    }
+    throw error;
   }
 };
 
@@ -484,7 +480,9 @@ api.groupMatchesByLeague = (matches) => {
 // New function to fetch and prepare matches for display
 api.fetchMatchesForDisplay = async (date) => {
   try {
-    const formattedDate = format(date, 'yyyy-MM-dd');
+    // Parse the date string if it's a string, otherwise use the date object
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    const formattedDate = format(dateObj, 'yyyy-MM-dd');
     console.log(`Fetching matches for display on ${formattedDate}`);
     
     // Use the static file fetcher instead of the direct API call
@@ -510,7 +508,7 @@ api.fetchMatchesForDisplay = async (date) => {
     // Filter to include only matches for the specific date
     allMatches = allMatches.filter(match => {
       if (!match.utcDate) return false;
-      const matchDate = new Date(match.utcDate);
+      const matchDate = parseISO(match.utcDate);
       const matchDateStr = format(matchDate, 'yyyy-MM-dd');
       return matchDateStr === formattedDate;
     });
