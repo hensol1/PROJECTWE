@@ -101,7 +101,8 @@ const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformF
     console.log(`Fetching static file: ${fileUrl}${cacheBuster}`);
     const response = await fetch(`${fileUrl}${cacheBuster}`, {
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache'
       }
     });
     
@@ -119,25 +120,17 @@ const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformF
     
     const data = await response.json();
     return transformFn(data);
-  } catch (err) {
-    console.warn(`Error fetching static file ${fileUrl}:`, err);
-    console.log(`Falling back to API endpoint: ${fallbackEndpoint}`);
+  } catch (error) {
+    console.warn(`Error fetching static file ${fileUrl}:`, error);
+    console.log('Falling back to API endpoint:', fallbackEndpoint);
     
     // Fallback to API endpoint
     try {
-      // Check if fallbackEndpoint exists
-      if (!fallbackEndpoint) {
-        console.warn('No fallback endpoint provided');
-        // Return default dummy data
-        return transformFn({});
-      }
-      
-      const apiResponse = await api.get(fallbackEndpoint);
-      return apiResponse.data;
-    } catch (apiErr) {
-      console.error('API fallback also failed:', apiErr);
-      // Don't throw, return default empty data
-      return transformFn({});
+      const response = await api.get(fallbackEndpoint);
+      return transformFn(response.data);
+    } catch (apiError) {
+      console.error('API fallback also failed:', apiError);
+      throw apiError;
     }
   }
 };
