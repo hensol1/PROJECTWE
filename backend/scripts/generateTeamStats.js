@@ -152,6 +152,13 @@ async function generateTeamStats() {
         fs.mkdirSync(publicDir, { recursive: true });
       }
       
+      // Write team-stats.json for the main stats page
+      const teamStatsPath = path.join(publicDir, 'team-stats.json');
+      console.log(`Attempting to write team-stats.json to ${teamStatsPath}`);
+      fs.writeFileSync(teamStatsPath, JSON.stringify(result, null, 2));
+      console.log(`Successfully wrote team-stats.json to ${teamStatsPath}`);
+      
+      // Write all-teams.json for the search functionality
       const publicFilePath = path.join(publicDir, 'all-teams.json');
       console.log(`Attempting to write all-teams.json to ${publicFilePath}`);
       
@@ -160,13 +167,16 @@ async function generateTeamStats() {
         _id: team.id,
         name: team.name,
         crest: team.crest,
-        id: team.id
+        id: team.id,
+        totalMatches: team.totalMatches,
+        correctPredictions: team.correctPredictions,
+        accuracy: team.accuracy
       }));
       
       fs.writeFileSync(publicFilePath, JSON.stringify(formattedTeams, null, 2));
       console.log(`Successfully wrote all-teams.json to ${publicFilePath}`);
     } catch (error) {
-      console.error(`Error writing all-teams.json: ${error.message}`);
+      console.error(`Error writing public stats files: ${error.message}`);
       throw error;
     }
     

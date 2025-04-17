@@ -543,27 +543,13 @@ api.refreshTeamStats = async () => {
 api.fetchAllTeams = async () => {
   try {
     console.log('Fetching all team stats for search...');
-    return await fetchStaticFileWithFallback(
-      '/stats/all-teams.json',
-      '/api/team-stats/all',
-      data => {
-        console.log(`Fetched ${data?.teams?.length || 0} teams for search`);
-        return data || { teams: [] };
-      }
-    );
+    const response = await api.get('/api/team-stats/all-teams');
+    const teams = response.data;
+    console.log(`Fetched ${teams?.length || 0} teams for search`);
+    return { teams: teams || [] };
   } catch (error) {
     console.error('Error fetching all teams:', error);
-    
-    // Fallback to direct API call if all else fails
-    try {
-      console.log('Falling back to direct API endpoint for all teams');
-      const response = await axios.get(`${config.apiUrl}/team-stats/all`);
-      return response.data;
-    } catch (fallbackError) {
-      console.error('All team search endpoints failed:', fallbackError);
-      // Return an empty structure instead of throwing
-      return { teams: [] };
-    }
+    return { teams: [] };
   }
 };
 
