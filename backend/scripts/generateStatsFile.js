@@ -186,6 +186,137 @@ const generateDailyPredictions = async () => {
   };
 };
 
+// Generate team stats
+const generateTeamStats = async () => {
+  console.log('Generating team stats...');
+  
+  const stats = await Match.aggregate([
+    {
+      $match: {
+        status: 'FINISHED',
+        aiPrediction: { $exists: true }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          teamId: {
+            $cond: [
+              { $eq: ['$score.winner', 'HOME_TEAM'] },
+              '$homeTeam.id',
+              '$awayTeam.id'
+            ]
+          },
+          winner: '$score.winner'
+        },
+        name: {
+          $first: {
+            $cond: [
+              { $eq: ['$score.winner', 'HOME_TEAM'] },
+              '$homeTeam.name',
+              '$awayTeam.name'
+            ]
+          }
+        },
+        crest: {
+          $first: {
+            $cond: [
+              { $eq: ['$score.winner', 'HOME_TEAM'] },
+              '$homeTeam.crest',
+              '$awayTeam.crest'
+            ]
+          }
+        },
+        totalPredictions: { $sum: 1 },
+        correctPredictions: {
+          $sum: {
+            $cond: [
+              { $eq: ['$aiPrediction', '$score.winner'] },
+              1,
+              0
+            ]
+          }
+        }
+      }
+    },
+    {
+      $group: {
+        _id: '$_id.teamId',
+        name: { $first: '$name' },
+        crest: { $first: '$crest' },
+        totalPredictions: { $sum: '$totalPredictions' },
+        correctPredictions: { $sum: '$correctPredictions' }
+      }
+    },
+    {
+      $project: {
+        id: '$_id',
+        name: 1,
+        crest: 1,
+        totalPredictions: 1,
+        correctPredictions: 1,
+        accuracy: {
+          $multiply: [
+            { $divide: ['$correctPredictions', '$totalPredictions'] },
+            100
+          ]
+        }
+      }
+    },
+    { $sort: { totalPredictions: -1 } }
+  ]);
+
+  return {
+    stats,
+    generatedAt: new Date().toISOString()
+  };
+};
+
+// Generate all teams list for search
+const generateAllTeams = async () => {
+  console.log('Generating all teams list...');
+  
+  const teams = await Match.aggregate([
+    {
+      $project: {
+        teams: [
+          {
+            id: '$homeTeam.id',
+            name: '$homeTeam.name',
+            crest: '$homeTeam.crest'
+          },
+          {
+            id: '$awayTeam.id',
+            name: '$awayTeam.name',
+            crest: '$awayTeam.crest'
+          }
+        ]
+      }
+    },
+    { $unwind: '$teams' },
+    {
+      $group: {
+        _id: '$teams.id',
+        name: { $first: '$teams.name' },
+        crest: { $first: '$teams.crest' }
+      }
+    },
+    {
+      $project: {
+        id: '$_id',
+        name: 1,
+        crest: 1
+      }
+    },
+    { $sort: { name: 1 } }
+  ]);
+
+  return {
+    teams,
+    generatedAt: new Date().toISOString()
+  };
+};
+
 // Main function to generate all stat files
 const generateAllStatsFiles = async () => {
   try {
@@ -247,7 +378,21 @@ const generateAllStatsFiles = async () => {
       JSON.stringify(dailyPredictions)
     );
     
-    // Generate manifest file with timestamps for cache invalidation
+    // Generate and save team stats
+    const teamStats = await generateTeamStats();
+    await fs.writeFile(
+      path.join(statsDir, 'team-stats.json'),
+      JSON.stringify(teamStats, null, 2)
+    );
+
+    // Generate and save all teams list
+    const allTeams = await generateAllTeams();
+    await fs.writeFile(
+      path.join(statsDir, 'all-teams.json'),
+      JSON.stringify(allTeams, null, 2)
+    );
+    
+    // Update manifest with new files
     const manifest = {
       aiHistory: {
         path: '/stats/ai-history.json',
@@ -260,12 +405,20 @@ const generateAllStatsFiles = async () => {
       dailyPredictions: {
         path: '/stats/daily-predictions.json',
         lastUpdated: timestamp
+      },
+      teamStats: {
+        path: '/stats/team-stats.json',
+        lastUpdated: timestamp
+      },
+      allTeams: {
+        path: '/stats/all-teams.json',
+        lastUpdated: timestamp
       }
     };
     
     await fs.writeFile(
       path.join(statsDir, 'manifest.json'), 
-      JSON.stringify(manifest)
+      JSON.stringify(manifest, null, 2)
     );
     
     console.log('All stats files generated successfully at:', new Date().toISOString());
@@ -277,6 +430,8 @@ const generateAllStatsFiles = async () => {
         'ai-history.json',
         'league-stats.json',
         'daily-predictions.json',
+        'team-stats.json',
+        'all-teams.json',
         'manifest.json'
       ]
     };
