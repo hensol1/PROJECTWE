@@ -154,7 +154,16 @@ async function generateTeamStats() {
       
       const publicFilePath = path.join(publicDir, 'all-teams.json');
       console.log(`Attempting to write all-teams.json to ${publicFilePath}`);
-      fs.writeFileSync(publicFilePath, JSON.stringify({ teams: processedTeams }, null, 2));
+      
+      // Format the teams data to match the expected structure
+      const formattedTeams = processedTeams.map(team => ({
+        _id: team.id,
+        name: team.name,
+        crest: team.crest,
+        id: team.id
+      }));
+      
+      fs.writeFileSync(publicFilePath, JSON.stringify(formattedTeams, null, 2));
       console.log(`Successfully wrote all-teams.json to ${publicFilePath}`);
     } catch (error) {
       console.error(`Error writing all-teams.json: ${error.message}`);

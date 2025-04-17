@@ -230,8 +230,8 @@ router.get('/all-teams', withCache('all-teams', 300), async (req, res) => {
     
     if (fs.existsSync(filePath)) {
       const fileContent = fs.readFileSync(filePath, 'utf8');
-      const stats = JSON.parse(fileContent);
-      res.json(stats);
+      const teams = JSON.parse(fileContent);
+      res.json(teams); // Send the array directly, not wrapped in an object
     } else {
       res.status(404).json({ error: 'Teams data not found' });
     }
