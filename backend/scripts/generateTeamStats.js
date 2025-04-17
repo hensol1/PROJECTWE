@@ -136,17 +136,30 @@ async function generateTeamStats() {
     
     // Save to a JSON file
     const filePath = path.join(dataDir, 'teamStats.json');
-    fs.writeFileSync(filePath, JSON.stringify(result, null, 2));
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(result, null, 2));
+      console.log(`Successfully wrote teamStats.json to ${filePath}`);
+    } catch (error) {
+      console.error(`Error writing teamStats.json: ${error.message}`);
+      throw error;
+    }
     
     // Also create a file for public access to all teams
     const publicDir = path.join(__dirname, '../public/stats');
-    if (!fs.existsSync(publicDir)) {
-      console.log('Creating public stats directory:', publicDir);
-      fs.mkdirSync(publicDir, { recursive: true });
+    try {
+      if (!fs.existsSync(publicDir)) {
+        console.log('Creating public stats directory:', publicDir);
+        fs.mkdirSync(publicDir, { recursive: true });
+      }
+      
+      const publicFilePath = path.join(publicDir, 'all-teams.json');
+      console.log(`Attempting to write all-teams.json to ${publicFilePath}`);
+      fs.writeFileSync(publicFilePath, JSON.stringify({ teams: processedTeams }, null, 2));
+      console.log(`Successfully wrote all-teams.json to ${publicFilePath}`);
+    } catch (error) {
+      console.error(`Error writing all-teams.json: ${error.message}`);
+      throw error;
     }
-    
-    const publicFilePath = path.join(publicDir, 'all-teams.json');
-    fs.writeFileSync(publicFilePath, JSON.stringify({ teams: processedTeams }, null, 2));
     
     console.log(`Team stats generated and saved: ${processedTeams.length} teams analyzed`);
     
