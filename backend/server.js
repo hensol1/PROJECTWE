@@ -47,17 +47,40 @@ app.use(cors({
 app.use(express.json());
 
 // Serve static files from the public directory
-app.use('/stats', express.static(path.join(__dirname, 'public/stats'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.json')) {
+app.use('/stats', (req, res, next) => {
+  // Validate JSON files before serving
+  if (req.path.endsWith('.json')) {
+    const filePath = path.join(__dirname, 'public/stats', req.path);
+    try {
+      const data = require(filePath);
+      // Ensure numbers are properly formatted
+      if (data.overall && typeof data.overall.overallAccuracy !== 'number') {
+        data.overall.overallAccuracy = parseFloat(data.overall.overallAccuracy) || 0;
+      }
+      if (data.stats && Array.isArray(data.stats)) {
+        data.stats = data.stats.map(stat => ({
+          ...stat,
+          accuracy: typeof stat.accuracy === 'number' ? stat.accuracy : parseFloat(stat.accuracy) || 0
+        }));
+      }
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Access-Control-Allow-Origin', 'https://www.weknowbetter.app');
+      res.setHeader('Access-Control-Allow-Origin', [
+        'https://www.weknowbetter.app',
+        'https://projectwe-tau.vercel.app',
+        'http://localhost:3000'
+      ].join(', '));
       res.setHeader('Access-Control-Allow-Methods', 'GET');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.json(data);
+    } catch (error) {
+      console.error('Error serving stats file:', error);
+      next();
     }
+  } else {
+    next();
   }
-}));
+}, express.static(path.join(__dirname, 'public/stats')));
 
 // Connect to MongoDB with persistent connection
 mongoose.connect(process.env.MONGODB_URI, {

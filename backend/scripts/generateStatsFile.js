@@ -200,16 +200,44 @@ const generateAllStatsFiles = async () => {
     
     // Generate and save AI history stats
     const aiHistoryStats = await generateAIHistoryStats();
+
+    // Ensure numbers are properly formatted
+    if (aiHistoryStats.overall) {
+      aiHistoryStats.overall.overallAccuracy = parseFloat(aiHistoryStats.overall.overallAccuracy) || 0;
+      aiHistoryStats.overall.totalPredictions = parseInt(aiHistoryStats.overall.totalPredictions) || 0;
+      aiHistoryStats.overall.correctPredictions = parseInt(aiHistoryStats.overall.correctPredictions) || 0;
+    }
+
+    if (aiHistoryStats.stats && Array.isArray(aiHistoryStats.stats)) {
+      aiHistoryStats.stats = aiHistoryStats.stats.map(stat => ({
+        ...stat,
+        accuracy: parseFloat(stat.accuracy) || 0,
+        totalPredictions: parseInt(stat.totalPredictions) || 0,
+        correctPredictions: parseInt(stat.correctPredictions) || 0
+      }));
+    }
+
     await fs.writeFile(
       path.join(statsDir, 'ai-history.json'), 
-      JSON.stringify(aiHistoryStats)
+      JSON.stringify(aiHistoryStats, null, 2)
     );
     
     // Generate and save league stats
     const leagueStats = await generateLeagueStats();
+
+    // Ensure league stats numbers are properly formatted
+    if (leagueStats.stats && Array.isArray(leagueStats.stats)) {
+      leagueStats.stats = leagueStats.stats.map(stat => ({
+        ...stat,
+        accuracy: parseFloat(stat.accuracy) || 0,
+        totalPredictions: parseInt(stat.totalPredictions) || 0,
+        correctPredictions: parseInt(stat.correctPredictions) || 0
+      }));
+    }
+
     await fs.writeFile(
       path.join(statsDir, 'league-stats.json'), 
-      JSON.stringify(leagueStats)
+      JSON.stringify(leagueStats, null, 2)
     );
     
     // Generate and save daily predictions

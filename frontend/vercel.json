@@ -15,7 +15,7 @@
     },
     { 
       "src": "/stats/(.*)", 
-      "dest": "https://api.weknowbetter.app/stats/$1"
+      "dest": "https://projectwe-production.up.railway.app/stats/$1"
     },
     { 
       "src": "/(.*)", 

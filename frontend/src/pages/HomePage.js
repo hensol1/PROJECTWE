@@ -197,8 +197,13 @@ export default function HomePage({ user, setAuthModalOpen }) {
           <div className="absolute inset-1 bg-[#1a1f2b] rounded-full flex items-center justify-center">
             <div className="text-center">
             <div className="text-[#40c456] text-2xl font-bold">
-    {!isAIStatsLoading && overallStats ? `${overallStats.overallAccuracy.toFixed(1)}%` : '...'}
-  </div>
+  {!isAIStatsLoading && overallStats ? 
+    (typeof overallStats.overallAccuracy === 'number' ? 
+      `${overallStats.overallAccuracy.toFixed(1)}%` : 
+      '...'
+    ) : '...'
+  }
+</div>
               <div className="text-gray-400 text-xs">AI Accuracy</div>
             </div>
           </div>
@@ -239,8 +244,13 @@ export default function HomePage({ user, setAuthModalOpen }) {
           <div className="absolute inset-2 bg-[#1a1f2b] rounded-full flex items-center justify-center">
             <div className="text-center">
             <div className="text-[#40c456] text-3xl md:text-4xl font-bold">
-    {!isAIStatsLoading && overallStats ? `${overallStats.overallAccuracy.toFixed(1)}%` : '...'}
-  </div>
+  {!isAIStatsLoading && overallStats ? 
+    (typeof overallStats.overallAccuracy === 'number' ? 
+      `${overallStats.overallAccuracy.toFixed(1)}%` : 
+      '...'
+    ) : '...'
+  }
+</div>
               <div className="text-gray-400 text-xs md:text-sm">AI Accuracy</div>
             </div>
           </div>
