@@ -75,12 +75,16 @@ const fetchStatsManifest = async () => {
 // Direct fetch from static file with fallback to API
 const fetchStaticFileWithFallback = async (staticPath, apiPath, transform = data => data) => {
   try {
-    console.log(`Fetching static file: ${staticPath}`);
-    const response = await fetch(staticPath, {
+    // Use the backend API URL for static files
+    const staticFileUrl = `${config.apiUrl}${staticPath}`;
+    console.log(`Fetching static file from: ${staticFileUrl}`);
+    
+    const response = await fetch(staticFileUrl, {
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
-      }
+      },
+      credentials: 'include' // Include credentials if needed
     });
     
     if (response.ok) {
@@ -158,32 +162,23 @@ api.fetchAIHistory = async () => {
   try {
     console.log('Fetching AI history...');
     
-    // For development environment, try both approaches
-    let data;
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        // First try direct file access
-        const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
-        if (response.ok) {
-          data = await response.json();
-          console.log('Successfully loaded stats from JSON file:', data);
-        } else {
-          throw new Error(`Failed to fetch stats file: ${response.status}`);
-        }
-      } catch (fileError) {
-        console.log('File access failed, using API endpoint');
-        const apiResponse = await api.get('/api/accuracy/ai/history');
-        data = apiResponse.data;
-        console.log('Successfully loaded stats from API:', data);
-      }
-    } else {
-      // Production - use file
-      const response = await fetch(`/stats/ai-history.json?t=${Date.now()}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.status}`);
-      }
-      data = await response.json();
+    // Always use the API URL for static files
+    const staticFileUrl = `${config.apiUrl}/stats/ai-history.json?t=${Date.now()}`;
+    console.log(`Fetching from: ${staticFileUrl}`);
+    
+    const response = await fetch(staticFileUrl, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      credentials: 'include' // Include credentials if needed
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stats: ${response.status}`);
     }
+    
+    const data = await response.json();
     
     // Validate the data structure
     if (!data || !data.overall) {

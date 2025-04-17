@@ -15,8 +15,7 @@
     },
     { 
       "src": "/stats/(.*)", 
-      "status": 404,
-      "dest": "/api/stats/$1" 
+      "dest": "https://api.weknowbetter.app/stats/$1"
     },
     { 
       "src": "/(.*)", 

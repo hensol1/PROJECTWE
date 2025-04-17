@@ -51,6 +51,10 @@ app.use('/stats', express.static(path.join(__dirname, 'public/stats'), {
   setHeaders: (res, path) => {
     if (path.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Access-Control-Allow-Origin', 'https://www.weknowbetter.app');
+      res.setHeader('Access-Control-Allow-Methods', 'GET');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
   }
 }));
