@@ -1,0 +1,4644 @@
+{
+  "teams": [
+    {
+      "id": 1579,
+      "name": "Monza",
+      "crest": "https://media.api-sports.io/football/teams/1579.png",
+      "totalMatches": 12,
+      "correctPredictions": 12,
+      "accuracy": 100
+    },
+    {
+      "id": 3619,
+      "name": "Oleksandria",
+      "crest": "https://media.api-sports.io/football/teams/3619.png",
+      "totalMatches": 7,
+      "correctPredictions": 7,
+      "accuracy": 100
+    },
+    {
+      "id": 94,
+      "name": "Rennes",
+      "crest": "https://media.api-sports.io/football/teams/94.png",
+      "totalMatches": 12,
+      "correctPredictions": 11,
+      "accuracy": 91.66666666666666
+    },
+    {
+      "id": 944,
+      "name": "Melbourne Victory",
+      "crest": "https://media.api-sports.io/football/teams/944.png",
+      "totalMatches": 11,
+      "correctPredictions": 10,
+      "accuracy": 90.9090909090909
+    },
+    {
+      "id": 3713,
+      "name": "Baník Ostrava",
+      "crest": "https://media.api-sports.io/football/teams/3713.png",
+      "totalMatches": 10,
+      "correctPredictions": 9,
+      "accuracy": 90
+    },
+    {
+      "id": 327,
+      "name": "Bodo/Glimt",
+      "crest": "https://media.api-sports.io/football/teams/327.png",
+      "totalMatches": 9,
+      "correctPredictions": 8,
+      "accuracy": 88.88888888888889
+    },
+    {
+      "id": 1431,
+      "name": "Qingdao Jonoon",
+      "crest": "https://media.api-sports.io/football/teams/1431.png",
+      "totalMatches": 7,
+      "correctPredictions": 6,
+      "accuracy": 85.71428571428571
+    },
+    {
+      "id": 598,
+      "name": "FK Crvena Zvezda",
+      "crest": "https://media.api-sports.io/football/teams/598.png",
+      "totalMatches": 13,
+      "correctPredictions": 11,
+      "accuracy": 84.61538461538461
+    },
+    {
+      "id": 97,
+      "name": "Lorient",
+      "crest": "https://media.api-sports.io/football/teams/97.png",
+      "totalMatches": 12,
+      "correctPredictions": 10,
+      "accuracy": 83.33333333333334
+    },
+    {
+      "id": 114,
+      "name": "Paris FC",
+      "crest": "https://media.api-sports.io/football/teams/114.png",
+      "totalMatches": 12,
+      "correctPredictions": 10,
+      "accuracy": 83.33333333333334
+    },
+    {
+      "id": 555,
+      "name": "CSKA Moscow",
+      "crest": "https://media.api-sports.io/football/teams/555.png",
+      "totalMatches": 6,
+      "correctPredictions": 5,
+      "accuracy": 83.33333333333334
+    },
+    {
+      "id": 720,
+      "name": "Valladolid",
+      "crest": "https://media.api-sports.io/football/teams/720.png",
+      "totalMatches": 12,
+      "correctPredictions": 10,
+      "accuracy": 83.33333333333334
+    },
+    {
+      "id": 1993,
+      "name": "Fakel",
+      "crest": "https://media.api-sports.io/football/teams/1993.png",
+      "totalMatches": 6,
+      "correctPredictions": 5,
+      "accuracy": 83.33333333333334
+    },
+    {
+      "id": 1994,
+      "name": "Khimki",
+      "crest": "https://media.api-sports.io/football/teams/1994.png",
+      "totalMatches": 6,
+      "correctPredictions": 5,
+      "accuracy": 83.33333333333334
+    },
+    {
+      "id": 4378,
+      "name": "Radomlje",
+      "crest": "https://media.api-sports.io/football/teams/4378.png",
+      "totalMatches": 12,
+      "correctPredictions": 10,
+      "accuracy": 83.33333333333334
+    },
+    {
+      "id": 560,
+      "name": "Slavia Praha",
+      "crest": "https://media.api-sports.io/football/teams/560.png",
+      "totalMatches": 11,
+      "correctPredictions": 9,
+      "accuracy": 81.81818181818183
+    },
+    {
+      "id": 554,
+      "name": "Anderlecht",
+      "crest": "https://media.api-sports.io/football/teams/554.png",
+      "totalMatches": 16,
+      "correctPredictions": 13,
+      "accuracy": 81.25
+    },
+    {
+      "id": 640,
+      "name": "Mlada Boleslav",
+      "crest": "https://media.api-sports.io/football/teams/640.png",
+      "totalMatches": 10,
+      "correctPredictions": 8,
+      "accuracy": 80
+    },
+    {
+      "id": 1176,
+      "name": "Cerro Porteno",
+      "crest": "https://media.api-sports.io/football/teams/1176.png",
+      "totalMatches": 5,
+      "correctPredictions": 4,
+      "accuracy": 80
+    },
+    {
+      "id": 2554,
+      "name": "FBC Melgar",
+      "crest": "https://media.api-sports.io/football/teams/2554.png",
+      "totalMatches": 5,
+      "correctPredictions": 4,
+      "accuracy": 80
+    },
+    {
+      "id": 3563,
+      "name": "Adana Demirspor",
+      "crest": "https://media.api-sports.io/football/teams/3563.png",
+      "totalMatches": 10,
+      "correctPredictions": 8,
+      "accuracy": 80
+    },
+    {
+      "id": 7573,
+      "name": "Western United",
+      "crest": "https://media.api-sports.io/football/teams/7573.png",
+      "totalMatches": 10,
+      "correctPredictions": 8,
+      "accuracy": 80
+    },
+    {
+      "id": 1036,
+      "name": "Pyramids FC",
+      "crest": "https://media.api-sports.io/football/teams/1036.png",
+      "totalMatches": 14,
+      "correctPredictions": 11,
+      "accuracy": 78.57142857142857
+    },
+    {
+      "id": 529,
+      "name": "Barcelona",
+      "crest": "https://media.api-sports.io/football/teams/529.png",
+      "totalMatches": 22,
+      "correctPredictions": 17,
+      "accuracy": 77.27272727272727
+    },
+    {
+      "id": 41,
+      "name": "Southampton",
+      "crest": "https://media.api-sports.io/football/teams/41.png",
+      "totalMatches": 13,
+      "correctPredictions": 10,
+      "accuracy": 76.92307692307693
+    },
+    {
+      "id": 46,
+      "name": "Leicester",
+      "crest": "https://media.api-sports.io/football/teams/46.png",
+      "totalMatches": 13,
+      "correctPredictions": 10,
+      "accuracy": 76.92307692307693
+    },
+    {
+      "id": 575,
+      "name": "AEK Athens FC",
+      "crest": "https://media.api-sports.io/football/teams/575.png",
+      "totalMatches": 13,
+      "correctPredictions": 10,
+      "accuracy": 76.92307692307693
+    },
+    {
+      "id": 2935,
+      "name": "Al-Raed",
+      "crest": "https://media.api-sports.io/football/teams/2935.png",
+      "totalMatches": 13,
+      "correctPredictions": 10,
+      "accuracy": 76.92307692307693
+    },
+    {
+      "id": 2940,
+      "name": "Al Shabab",
+      "crest": "https://media.api-sports.io/football/teams/2940.png",
+      "totalMatches": 13,
+      "correctPredictions": 10,
+      "accuracy": 76.92307692307693
+    },
+    {
+      "id": 6232,
+      "name": "SCM Gloria Buzău",
+      "crest": "https://media.api-sports.io/football/teams/6232.png",
+      "totalMatches": 13,
+      "correctPredictions": 10,
+      "accuracy": 76.92307692307693
+    },
+    {
+      "id": 112,
+      "name": "Metz",
+      "crest": "https://media.api-sports.io/football/teams/112.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 263,
+      "name": "Beerschot Wilrijk",
+      "crest": "https://media.api-sports.io/football/teams/263.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 397,
+      "name": "FC Midtjylland",
+      "crest": "https://media.api-sports.io/football/teams/397.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 490,
+      "name": "Cagliari",
+      "crest": "https://media.api-sports.io/football/teams/490.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 628,
+      "name": "Sparta Praha",
+      "crest": "https://media.api-sports.io/football/teams/628.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 742,
+      "name": "Genk",
+      "crest": "https://media.api-sports.io/football/teams/742.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 844,
+      "name": "Shandong Luneng",
+      "crest": "https://media.api-sports.io/football/teams/844.png",
+      "totalMatches": 8,
+      "correctPredictions": 6,
+      "accuracy": 75
+    },
+    {
+      "id": 867,
+      "name": "Lecce",
+      "crest": "https://media.api-sports.io/football/teams/867.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 1002,
+      "name": "Sivasspor",
+      "crest": "https://media.api-sports.io/football/teams/1002.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 1652,
+      "name": "SSV Ulm 1846",
+      "crest": "https://media.api-sports.io/football/teams/1652.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 4716,
+      "name": "Casa Pia",
+      "crest": "https://media.api-sports.io/football/teams/4716.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 9569,
+      "name": "Nashville SC",
+      "crest": "https://media.api-sports.io/football/teams/9569.png",
+      "totalMatches": 8,
+      "correctPredictions": 6,
+      "accuracy": 75
+    },
+    {
+      "id": 14126,
+      "name": "Omonia 29is Maiou",
+      "crest": "https://media.api-sports.io/football/teams/14126.png",
+      "totalMatches": 12,
+      "correctPredictions": 9,
+      "accuracy": 75
+    },
+    {
+      "id": 14860,
+      "name": "Gareji",
+      "crest": "https://media.api-sports.io/football/teams/14860.png",
+      "totalMatches": 8,
+      "correctPredictions": 6,
+      "accuracy": 75
+    },
+    {
+      "id": 16489,
+      "name": "Austin",
+      "crest": "https://media.api-sports.io/football/teams/16489.png",
+      "totalMatches": 8,
+      "correctPredictions": 6,
+      "accuracy": 75
+    },
+    {
+      "id": 18310,
+      "name": "Charlotte",
+      "crest": "https://media.api-sports.io/football/teams/18310.png",
+      "totalMatches": 8,
+      "correctPredictions": 6,
+      "accuracy": 75
+    },
+    {
+      "id": 85,
+      "name": "Paris Saint Germain",
+      "crest": "https://media.api-sports.io/football/teams/85.png",
+      "totalMatches": 19,
+      "correctPredictions": 14,
+      "accuracy": 73.68421052631578
+    },
+    {
+      "id": 553,
+      "name": "Olympiakos Piraeus",
+      "crest": "https://media.api-sports.io/football/teams/553.png",
+      "totalMatches": 19,
+      "correctPredictions": 14,
+      "accuracy": 73.68421052631578
+    },
+    {
+      "id": 217,
+      "name": "SC Braga",
+      "crest": "https://media.api-sports.io/football/teams/217.png",
+      "totalMatches": 15,
+      "correctPredictions": 11,
+      "accuracy": 73.33333333333333
+    },
+    {
+      "id": 1031,
+      "name": "AL Masry",
+      "crest": "https://media.api-sports.io/football/teams/1031.png",
+      "totalMatches": 15,
+      "correctPredictions": 11,
+      "accuracy": 73.33333333333333
+    },
+    {
+      "id": 82,
+      "name": "Montpellier",
+      "crest": "https://media.api-sports.io/football/teams/82.png",
+      "totalMatches": 11,
+      "correctPredictions": 8,
+      "accuracy": 72.72727272727273
+    },
+    {
+      "id": 833,
+      "name": "Shanghai Shenhua",
+      "crest": "https://media.api-sports.io/football/teams/833.png",
+      "totalMatches": 11,
+      "correctPredictions": 8,
+      "accuracy": 72.72727272727273
+    },
+    {
+      "id": 2099,
+      "name": "Panserraikos",
+      "crest": "https://media.api-sports.io/football/teams/2099.png",
+      "totalMatches": 11,
+      "correctPredictions": 8,
+      "accuracy": 72.72727272727273
+    },
+    {
+      "id": 3573,
+      "name": "Gazişehir Gaziantep",
+      "crest": "https://media.api-sports.io/football/teams/3573.png",
+      "totalMatches": 11,
+      "correctPredictions": 8,
+      "accuracy": 72.72727272727273
+    },
+    {
+      "id": 12360,
+      "name": "Železničar Pančevo",
+      "crest": "https://media.api-sports.io/football/teams/12360.png",
+      "totalMatches": 11,
+      "correctPredictions": 8,
+      "accuracy": 72.72727272727273
+    },
+    {
+      "id": 247,
+      "name": "Celtic",
+      "crest": "https://media.api-sports.io/football/teams/247.png",
+      "totalMatches": 14,
+      "correctPredictions": 10,
+      "accuracy": 71.42857142857143
+    },
+    {
+      "id": 551,
+      "name": "FC Basel 1893",
+      "crest": "https://media.api-sports.io/football/teams/551.png",
+      "totalMatches": 14,
+      "correctPredictions": 10,
+      "accuracy": 71.42857142857143
+    },
+    {
+      "id": 783,
+      "name": "FC Zurich",
+      "crest": "https://media.api-sports.io/football/teams/783.png",
+      "totalMatches": 14,
+      "correctPredictions": 10,
+      "accuracy": 71.42857142857143
+    },
+    {
+      "id": 3632,
+      "name": "Ruh Lviv",
+      "crest": "https://media.api-sports.io/football/teams/3632.png",
+      "totalMatches": 7,
+      "correctPredictions": 5,
+      "accuracy": 71.42857142857143
+    },
+    {
+      "id": 5686,
+      "name": "Sichuan Jiuniu",
+      "crest": "https://media.api-sports.io/football/teams/5686.png",
+      "totalMatches": 7,
+      "correctPredictions": 5,
+      "accuracy": 71.42857142857143
+    },
+    {
+      "id": 611,
+      "name": "Fenerbahce",
+      "crest": "https://media.api-sports.io/football/teams/611.png",
+      "totalMatches": 17,
+      "correctPredictions": 12,
+      "accuracy": 70.58823529411765
+    },
+    {
+      "id": 1346,
+      "name": "Coventry",
+      "crest": "https://media.api-sports.io/football/teams/1346.png",
+      "totalMatches": 17,
+      "correctPredictions": 12,
+      "accuracy": 70.58823529411765
+    },
+    {
+      "id": 211,
+      "name": "Benfica",
+      "crest": "https://media.api-sports.io/football/teams/211.png",
+      "totalMatches": 20,
+      "correctPredictions": 14,
+      "accuracy": 70
+    },
+    {
+      "id": 253,
+      "name": "Dundee",
+      "crest": "https://media.api-sports.io/football/teams/253.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 550,
+      "name": "Shakhtar Donetsk",
+      "crest": "https://media.api-sports.io/football/teams/550.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 836,
+      "name": "SHANGHAI SIPG",
+      "crest": "https://media.api-sports.io/football/teams/836.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 859,
+      "name": "Botev Vratsa",
+      "crest": "https://media.api-sports.io/football/teams/859.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 902,
+      "name": "Ross County",
+      "crest": "https://media.api-sports.io/football/teams/902.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 2390,
+      "name": "Paks",
+      "crest": "https://media.api-sports.io/football/teams/2390.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 3719,
+      "name": "Slovácko",
+      "crest": "https://media.api-sports.io/football/teams/3719.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 3720,
+      "name": "Teplice",
+      "crest": "https://media.api-sports.io/football/teams/3720.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 3724,
+      "name": "Pardubice",
+      "crest": "https://media.api-sports.io/football/teams/3724.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 3736,
+      "name": "České Budějovice",
+      "crest": "https://media.api-sports.io/football/teams/3736.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 4659,
+      "name": "Hebar 1918",
+      "crest": "https://media.api-sports.io/football/teams/4659.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 15570,
+      "name": "National Bank of Egypt",
+      "crest": "https://media.api-sports.io/football/teams/15570.png",
+      "totalMatches": 10,
+      "correctPredictions": 7,
+      "accuracy": 70
+    },
+    {
+      "id": 632,
+      "name": "Universitatea Craiova",
+      "crest": "https://media.api-sports.io/football/teams/632.png",
+      "totalMatches": 13,
+      "correctPredictions": 9,
+      "accuracy": 69.23076923076923
+    },
+    {
+      "id": 3408,
+      "name": "Aris",
+      "crest": "https://media.api-sports.io/football/teams/3408.png",
+      "totalMatches": 13,
+      "correctPredictions": 9,
+      "accuracy": 69.23076923076923
+    },
+    {
+      "id": 10509,
+      "name": "Al Kholood",
+      "crest": "https://media.api-sports.io/football/teams/10509.png",
+      "totalMatches": 13,
+      "correctPredictions": 9,
+      "accuracy": 69.23076923076923
+    },
+    {
+      "id": 10511,
+      "name": "Al Riyadh",
+      "crest": "https://media.api-sports.io/football/teams/10511.png",
+      "totalMatches": 13,
+      "correctPredictions": 9,
+      "accuracy": 69.23076923076923
+    },
+    {
+      "id": 62,
+      "name": "Sheffield Utd",
+      "crest": "https://media.api-sports.io/football/teams/62.png",
+      "totalMatches": 16,
+      "correctPredictions": 11,
+      "accuracy": 68.75
+    },
+    {
+      "id": 209,
+      "name": "Feyenoord",
+      "crest": "https://media.api-sports.io/football/teams/209.png",
+      "totalMatches": 19,
+      "correctPredictions": 13,
+      "accuracy": 68.42105263157895
+    },
+    {
+      "id": 497,
+      "name": "AS Roma",
+      "crest": "https://media.api-sports.io/football/teams/497.png",
+      "totalMatches": 19,
+      "correctPredictions": 13,
+      "accuracy": 68.42105263157895
+    },
+    {
+      "id": 548,
+      "name": "Real Sociedad",
+      "crest": "https://media.api-sports.io/football/teams/548.png",
+      "totalMatches": 22,
+      "correctPredictions": 15,
+      "accuracy": 68.18181818181817
+    },
+    {
+      "id": 49,
+      "name": "Chelsea",
+      "crest": "https://media.api-sports.io/football/teams/49.png",
+      "totalMatches": 15,
+      "correctPredictions": 10,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 118,
+      "name": "Bahia",
+      "crest": "https://media.api-sports.io/football/teams/118.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 131,
+      "name": "Corinthians",
+      "crest": "https://media.api-sports.io/football/teams/131.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 222,
+      "name": "Boavista",
+      "crest": "https://media.api-sports.io/football/teams/222.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 225,
+      "name": "Nacional",
+      "crest": "https://media.api-sports.io/football/teams/225.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 228,
+      "name": "Sporting CP",
+      "crest": "https://media.api-sports.io/football/teams/228.png",
+      "totalMatches": 18,
+      "correctPredictions": 12,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 504,
+      "name": "Verona",
+      "crest": "https://media.api-sports.io/football/teams/504.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 534,
+      "name": "Las Palmas",
+      "crest": "https://media.api-sports.io/football/teams/534.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 572,
+      "name": "Dynamo Kyiv",
+      "crest": "https://media.api-sports.io/football/teams/572.png",
+      "totalMatches": 9,
+      "correctPredictions": 6,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 596,
+      "name": "Zenit",
+      "crest": "https://media.api-sports.io/football/teams/596.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 621,
+      "name": "FC Krasnodar",
+      "crest": "https://media.api-sports.io/football/teams/621.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 734,
+      "name": "Kortrijk",
+      "crest": "https://media.api-sports.io/football/teams/734.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 895,
+      "name": "Como",
+      "crest": "https://media.api-sports.io/football/teams/895.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 1026,
+      "name": "Lask Linz",
+      "crest": "https://media.api-sports.io/football/teams/1026.png",
+      "totalMatches": 9,
+      "correctPredictions": 6,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 1080,
+      "name": "FC Orenburg",
+      "crest": "https://media.api-sports.io/football/teams/1080.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 1088,
+      "name": "Dynamo",
+      "crest": "https://media.api-sports.io/football/teams/1088.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 1405,
+      "name": "Austria Klagenfurt",
+      "crest": "https://media.api-sports.io/football/teams/1405.png",
+      "totalMatches": 9,
+      "correctPredictions": 6,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 3588,
+      "name": "Eyüpspor",
+      "crest": "https://media.api-sports.io/football/teams/3588.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 4505,
+      "name": "Maccabi Netanya",
+      "crest": "https://media.api-sports.io/football/teams/4505.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 6215,
+      "name": "Dender",
+      "crest": "https://media.api-sports.io/football/teams/6215.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 6786,
+      "name": "Akron",
+      "crest": "https://media.api-sports.io/football/teams/6786.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 6813,
+      "name": "Makhachkala",
+      "crest": "https://media.api-sports.io/football/teams/6813.png",
+      "totalMatches": 6,
+      "correctPredictions": 4,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 13819,
+      "name": "Ghazl El Mehalla",
+      "crest": "https://media.api-sports.io/football/teams/13819.png",
+      "totalMatches": 12,
+      "correctPredictions": 8,
+      "accuracy": 66.66666666666666
+    },
+    {
+      "id": 80,
+      "name": "Lyon",
+      "crest": "https://media.api-sports.io/football/teams/80.png",
+      "totalMatches": 17,
+      "correctPredictions": 11,
+      "accuracy": 64.70588235294117
+    },
+    {
+      "id": 194,
+      "name": "Ajax",
+      "crest": "https://media.api-sports.io/football/teams/194.png",
+      "totalMatches": 17,
+      "correctPredictions": 11,
+      "accuracy": 64.70588235294117
+    },
+    {
+      "id": 2929,
+      "name": "Al-Ahli Jeddah",
+      "crest": "https://media.api-sports.io/football/teams/2929.png",
+      "totalMatches": 17,
+      "correctPredictions": 11,
+      "accuracy": 64.70588235294117
+    },
+    {
+      "id": 3403,
+      "name": "Pafos",
+      "crest": "https://media.api-sports.io/football/teams/3403.png",
+      "totalMatches": 17,
+      "correctPredictions": 11,
+      "accuracy": 64.70588235294117
+    },
+    {
+      "id": 39,
+      "name": "Wolves",
+      "crest": "https://media.api-sports.io/football/teams/39.png",
+      "totalMatches": 14,
+      "correctPredictions": 9,
+      "accuracy": 64.28571428571429
+    },
+    {
+      "id": 511,
+      "name": "Empoli",
+      "crest": "https://media.api-sports.io/football/teams/511.png",
+      "totalMatches": 14,
+      "correctPredictions": 9,
+      "accuracy": 64.28571428571429
+    },
+    {
+      "id": 563,
+      "name": "Hapoel Beer Sheva",
+      "crest": "https://media.api-sports.io/football/teams/563.png",
+      "totalMatches": 14,
+      "correctPredictions": 9,
+      "accuracy": 64.28571428571429
+    },
+    {
+      "id": 604,
+      "name": "Maccabi Tel Aviv",
+      "crest": "https://media.api-sports.io/football/teams/604.png",
+      "totalMatches": 14,
+      "correctPredictions": 9,
+      "accuracy": 64.28571428571429
+    },
+    {
+      "id": 1040,
+      "name": "Zamalek SC",
+      "crest": "https://media.api-sports.io/football/teams/1040.png",
+      "totalMatches": 14,
+      "correctPredictions": 9,
+      "accuracy": 64.28571428571429
+    },
+    {
+      "id": 1577,
+      "name": "Al Ahly",
+      "crest": "https://media.api-sports.io/football/teams/1577.png",
+      "totalMatches": 14,
+      "correctPredictions": 9,
+      "accuracy": 64.28571428571429
+    },
+    {
+      "id": 205,
+      "name": "Fortuna Sittard",
+      "crest": "https://media.api-sports.io/football/teams/205.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 419,
+      "name": "Almere City FC",
+      "crest": "https://media.api-sports.io/football/teams/419.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 426,
+      "name": "Sparta Rotterdam",
+      "crest": "https://media.api-sports.io/football/teams/426.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 505,
+      "name": "Inter",
+      "crest": "https://media.api-sports.io/football/teams/505.png",
+      "totalMatches": 22,
+      "correctPredictions": 14,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 699,
+      "name": "Mladost Lucani",
+      "crest": "https://media.api-sports.io/football/teams/699.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 939,
+      "name": "Western Sydney Wanderers",
+      "crest": "https://media.api-sports.io/football/teams/939.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 945,
+      "name": "Melbourne City",
+      "crest": "https://media.api-sports.io/football/teams/945.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 956,
+      "name": "Lamia",
+      "crest": "https://media.api-sports.io/football/teams/956.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 957,
+      "name": "Levadiakos",
+      "crest": "https://media.api-sports.io/football/teams/957.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 996,
+      "name": "Alanyaspor",
+      "crest": "https://media.api-sports.io/football/teams/996.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 998,
+      "name": "Trabzonspor",
+      "crest": "https://media.api-sports.io/football/teams/998.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 1001,
+      "name": "Kayserispor",
+      "crest": "https://media.api-sports.io/football/teams/1001.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 1063,
+      "name": "Saint Etienne",
+      "crest": "https://media.api-sports.io/football/teams/1063.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 2414,
+      "name": "Zalaegerszegi TE",
+      "crest": "https://media.api-sports.io/football/teams/2414.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 4374,
+      "name": "Koper",
+      "crest": "https://media.api-sports.io/football/teams/4374.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 4495,
+      "name": "Maccabi Petah Tikva",
+      "crest": "https://media.api-sports.io/football/teams/4495.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 12319,
+      "name": "Jedinstvo Ub",
+      "crest": "https://media.api-sports.io/football/teams/12319.png",
+      "totalMatches": 11,
+      "correctPredictions": 7,
+      "accuracy": 63.63636363636363
+    },
+    {
+      "id": 47,
+      "name": "Tottenham",
+      "crest": "https://media.api-sports.io/football/teams/47.png",
+      "totalMatches": 19,
+      "correctPredictions": 12,
+      "accuracy": 63.1578947368421
+    },
+    {
+      "id": 34,
+      "name": "Newcastle",
+      "crest": "https://media.api-sports.io/football/teams/34.png",
+      "totalMatches": 16,
+      "correctPredictions": 10,
+      "accuracy": 62.5
+    },
+    {
+      "id": 72,
+      "name": "QPR",
+      "crest": "https://media.api-sports.io/football/teams/72.png",
+      "totalMatches": 16,
+      "correctPredictions": 10,
+      "accuracy": 62.5
+    },
+    {
+      "id": 79,
+      "name": "Lille",
+      "crest": "https://media.api-sports.io/football/teams/79.png",
+      "totalMatches": 16,
+      "correctPredictions": 10,
+      "accuracy": 62.5
+    },
+    {
+      "id": 91,
+      "name": "Monaco",
+      "crest": "https://media.api-sports.io/football/teams/91.png",
+      "totalMatches": 16,
+      "correctPredictions": 10,
+      "accuracy": 62.5
+    },
+    {
+      "id": 398,
+      "name": "FC Nordsjaelland",
+      "crest": "https://media.api-sports.io/football/teams/398.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 401,
+      "name": "Randers FC",
+      "crest": "https://media.api-sports.io/football/teams/401.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 567,
+      "name": "Plzen",
+      "crest": "https://media.api-sports.io/football/teams/567.png",
+      "totalMatches": 16,
+      "correctPredictions": 10,
+      "accuracy": 62.5
+    },
+    {
+      "id": 1393,
+      "name": "Union St. Gilloise",
+      "crest": "https://media.api-sports.io/football/teams/1393.png",
+      "totalMatches": 16,
+      "correctPredictions": 10,
+      "accuracy": 62.5
+    },
+    {
+      "id": 1596,
+      "name": "San Jose Earthquakes",
+      "crest": "https://media.api-sports.io/football/teams/1596.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 1606,
+      "name": "Real Salt Lake",
+      "crest": "https://media.api-sports.io/football/teams/1606.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 1608,
+      "name": "Atlanta United FC",
+      "crest": "https://media.api-sports.io/football/teams/1608.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 1614,
+      "name": "CF Montreal",
+      "crest": "https://media.api-sports.io/football/teams/1614.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 1616,
+      "name": "Los Angeles FC",
+      "crest": "https://media.api-sports.io/football/teams/1616.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 2242,
+      "name": "FC Cincinnati",
+      "crest": "https://media.api-sports.io/football/teams/2242.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 3499,
+      "name": "Dila",
+      "crest": "https://media.api-sports.io/football/teams/3499.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 3505,
+      "name": "Gagra",
+      "crest": "https://media.api-sports.io/football/teams/3505.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 3511,
+      "name": "Telavi",
+      "crest": "https://media.api-sports.io/football/teams/3511.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 10017,
+      "name": "Samgurali",
+      "crest": "https://media.api-sports.io/football/teams/10017.png",
+      "totalMatches": 8,
+      "correctPredictions": 5,
+      "accuracy": 62.5
+    },
+    {
+      "id": 538,
+      "name": "Celta Vigo",
+      "crest": "https://media.api-sports.io/football/teams/538.png",
+      "totalMatches": 13,
+      "correctPredictions": 8,
+      "accuracy": 61.53846153846154
+    },
+    {
+      "id": 644,
+      "name": "FC Luzern",
+      "crest": "https://media.api-sports.io/football/teams/644.png",
+      "totalMatches": 13,
+      "correctPredictions": 8,
+      "accuracy": 61.53846153846154
+    },
+    {
+      "id": 1124,
+      "name": "OFI",
+      "crest": "https://media.api-sports.io/football/teams/1124.png",
+      "totalMatches": 13,
+      "correctPredictions": 8,
+      "accuracy": 61.53846153846154
+    },
+    {
+      "id": 2246,
+      "name": "CFR 1907 Cluj",
+      "crest": "https://media.api-sports.io/football/teams/2246.png",
+      "totalMatches": 13,
+      "correctPredictions": 8,
+      "accuracy": 61.53846153846154
+    },
+    {
+      "id": 2937,
+      "name": "Al Wehda Club",
+      "crest": "https://media.api-sports.io/football/teams/2937.png",
+      "totalMatches": 13,
+      "correctPredictions": 8,
+      "accuracy": 61.53846153846154
+    },
+    {
+      "id": 2938,
+      "name": "Al-Ittihad FC",
+      "crest": "https://media.api-sports.io/football/teams/2938.png",
+      "totalMatches": 13,
+      "correctPredictions": 8,
+      "accuracy": 61.53846153846154
+    },
+    {
+      "id": 50,
+      "name": "Manchester City",
+      "crest": "https://media.api-sports.io/football/teams/50.png",
+      "totalMatches": 18,
+      "correctPredictions": 11,
+      "accuracy": 61.111111111111114
+    },
+    {
+      "id": 531,
+      "name": "Athletic Club",
+      "crest": "https://media.api-sports.io/football/teams/531.png",
+      "totalMatches": 18,
+      "correctPredictions": 11,
+      "accuracy": 61.111111111111114
+    },
+    {
+      "id": 543,
+      "name": "Real Betis",
+      "crest": "https://media.api-sports.io/football/teams/543.png",
+      "totalMatches": 18,
+      "correctPredictions": 11,
+      "accuracy": 61.111111111111114
+    },
+    {
+      "id": 254,
+      "name": "Heart Of Midlothian",
+      "crest": "https://media.api-sports.io/football/teams/254.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 258,
+      "name": "ST Johnstone",
+      "crest": "https://media.api-sports.io/football/teams/258.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 336,
+      "name": "Jagiellonia",
+      "crest": "https://media.api-sports.io/football/teams/336.png",
+      "totalMatches": 15,
+      "correctPredictions": 9,
+      "accuracy": 60
+    },
+    {
+      "id": 348,
+      "name": "Pogon Szczecin",
+      "crest": "https://media.api-sports.io/football/teams/348.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 372,
+      "name": "IF Elfsborg",
+      "crest": "https://media.api-sports.io/football/teams/372.png",
+      "totalMatches": 5,
+      "correctPredictions": 3,
+      "accuracy": 60
+    },
+    {
+      "id": 856,
+      "name": "Septemvri Sofia",
+      "crest": "https://media.api-sports.io/football/teams/856.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 857,
+      "name": "Beroe",
+      "crest": "https://media.api-sports.io/football/teams/857.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 1122,
+      "name": "FK Jablonec",
+      "crest": "https://media.api-sports.io/football/teams/1122.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 1152,
+      "name": "Barcelona SC",
+      "crest": "https://media.api-sports.io/football/teams/1152.png",
+      "totalMatches": 5,
+      "correctPredictions": 3,
+      "accuracy": 60
+    },
+    {
+      "id": 1426,
+      "name": "CSKA 1948",
+      "crest": "https://media.api-sports.io/football/teams/1426.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 2392,
+      "name": "Debreceni VSC",
+      "crest": "https://media.api-sports.io/football/teams/2392.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 3491,
+      "name": "Raków Częstochowa",
+      "crest": "https://media.api-sports.io/football/teams/3491.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 17306,
+      "name": "Levski Krumovgrad",
+      "crest": "https://media.api-sports.io/football/teams/17306.png",
+      "totalMatches": 10,
+      "correctPredictions": 6,
+      "accuracy": 60
+    },
+    {
+      "id": 75,
+      "name": "Stoke City",
+      "crest": "https://media.api-sports.io/football/teams/75.png",
+      "totalMatches": 17,
+      "correctPredictions": 10,
+      "accuracy": 58.82352941176471
+    },
+    {
+      "id": 169,
+      "name": "Eintracht Frankfurt",
+      "crest": "https://media.api-sports.io/football/teams/169.png",
+      "totalMatches": 17,
+      "correctPredictions": 10,
+      "accuracy": 58.82352941176471
+    },
+    {
+      "id": 173,
+      "name": "RB Leipzig",
+      "crest": "https://media.api-sports.io/football/teams/173.png",
+      "totalMatches": 17,
+      "correctPredictions": 10,
+      "accuracy": 58.82352941176471
+    },
+    {
+      "id": 617,
+      "name": "Panathinaikos",
+      "crest": "https://media.api-sports.io/football/teams/617.png",
+      "totalMatches": 17,
+      "correctPredictions": 10,
+      "accuracy": 58.82352941176471
+    },
+    {
+      "id": 2932,
+      "name": "Al-Hilal Saudi FC",
+      "crest": "https://media.api-sports.io/football/teams/2932.png",
+      "totalMatches": 17,
+      "correctPredictions": 10,
+      "accuracy": 58.82352941176471
+    },
+    {
+      "id": 2939,
+      "name": "Al-Nassr",
+      "crest": "https://media.api-sports.io/football/teams/2939.png",
+      "totalMatches": 17,
+      "correctPredictions": 10,
+      "accuracy": 58.82352941176471
+    },
+    {
+      "id": 77,
+      "name": "Angers",
+      "crest": "https://media.api-sports.io/football/teams/77.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 81,
+      "name": "Marseille",
+      "crest": "https://media.api-sports.io/football/teams/81.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 101,
+      "name": "Grenoble",
+      "crest": "https://media.api-sports.io/football/teams/101.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 104,
+      "name": "RED Star FC 93",
+      "crest": "https://media.api-sports.io/football/teams/104.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 110,
+      "name": "Estac Troyes",
+      "crest": "https://media.api-sports.io/football/teams/110.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 116,
+      "name": "Lens",
+      "crest": "https://media.api-sports.io/football/teams/116.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 160,
+      "name": "SC Freiburg",
+      "crest": "https://media.api-sports.io/football/teams/160.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 177,
+      "name": "SSV Jahn Regensburg",
+      "crest": "https://media.api-sports.io/football/teams/177.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 242,
+      "name": "Famalicao",
+      "crest": "https://media.api-sports.io/football/teams/242.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 260,
+      "name": "OH Leuven",
+      "crest": "https://media.api-sports.io/football/teams/260.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 261,
+      "name": "KVC Westerlo",
+      "crest": "https://media.api-sports.io/football/teams/261.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 494,
+      "name": "Udinese",
+      "crest": "https://media.api-sports.io/football/teams/494.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 495,
+      "name": "Genoa",
+      "crest": "https://media.api-sports.io/football/teams/495.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 517,
+      "name": "Venezia",
+      "crest": "https://media.api-sports.io/football/teams/517.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 523,
+      "name": "Parma",
+      "crest": "https://media.api-sports.io/football/teams/523.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 566,
+      "name": "Ludogorets",
+      "crest": "https://media.api-sports.io/football/teams/566.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 607,
+      "name": "Konyaspor",
+      "crest": "https://media.api-sports.io/football/teams/607.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 745,
+      "name": "1. FC Kaiserslautern",
+      "crest": "https://media.api-sports.io/football/teams/745.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 942,
+      "name": "Wellington Phoenix",
+      "crest": "https://media.api-sports.io/football/teams/942.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 1004,
+      "name": "Kasimpasa",
+      "crest": "https://media.api-sports.io/football/teams/1004.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 3399,
+      "name": "Enosis",
+      "crest": "https://media.api-sports.io/football/teams/3399.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 3413,
+      "name": "Karmiotissa",
+      "crest": "https://media.api-sports.io/football/teams/3413.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 3416,
+      "name": "Omonia Aradippou",
+      "crest": "https://media.api-sports.io/football/teams/3416.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 4197,
+      "name": "Mura",
+      "crest": "https://media.api-sports.io/football/teams/4197.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 4500,
+      "name": "Hapoel Hadera",
+      "crest": "https://media.api-sports.io/football/teams/4500.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 15130,
+      "name": "Estrela",
+      "crest": "https://media.api-sports.io/football/teams/15130.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 21595,
+      "name": "AVS",
+      "crest": "https://media.api-sports.io/football/teams/21595.png",
+      "totalMatches": 12,
+      "correctPredictions": 7,
+      "accuracy": 58.333333333333336
+    },
+    {
+      "id": 40,
+      "name": "Liverpool",
+      "crest": "https://media.api-sports.io/football/teams/40.png",
+      "totalMatches": 19,
+      "correctPredictions": 11,
+      "accuracy": 57.89473684210527
+    },
+    {
+      "id": 559,
+      "name": "FCSB",
+      "crest": "https://media.api-sports.io/football/teams/559.png",
+      "totalMatches": 19,
+      "correctPredictions": 11,
+      "accuracy": 57.89473684210527
+    },
+    {
+      "id": 57,
+      "name": "Ipswich",
+      "crest": "https://media.api-sports.io/football/teams/57.png",
+      "totalMatches": 14,
+      "correctPredictions": 8,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 157,
+      "name": "Bayern München",
+      "crest": "https://media.api-sports.io/football/teams/157.png",
+      "totalMatches": 21,
+      "correctPredictions": 12,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 224,
+      "name": "Guimaraes",
+      "crest": "https://media.api-sports.io/football/teams/224.png",
+      "totalMatches": 14,
+      "correctPredictions": 8,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 537,
+      "name": "Leganes",
+      "crest": "https://media.api-sports.io/football/teams/537.png",
+      "totalMatches": 14,
+      "correctPredictions": 8,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 599,
+      "name": "Zorya Luhansk",
+      "crest": "https://media.api-sports.io/football/teams/599.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 645,
+      "name": "Galatasaray",
+      "crest": "https://media.api-sports.io/football/teams/645.png",
+      "totalMatches": 14,
+      "correctPredictions": 8,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 677,
+      "name": "Olimpija Ljubljana",
+      "crest": "https://media.api-sports.io/football/teams/677.png",
+      "totalMatches": 14,
+      "correctPredictions": 8,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 741,
+      "name": "Cercle Brugge",
+      "crest": "https://media.api-sports.io/football/teams/741.png",
+      "totalMatches": 14,
+      "correctPredictions": 8,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 834,
+      "name": "Changchun Yatai",
+      "crest": "https://media.api-sports.io/football/teams/834.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 1121,
+      "name": "Vorskla Poltava",
+      "crest": "https://media.api-sports.io/football/teams/1121.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 1609,
+      "name": "New England Revolution",
+      "crest": "https://media.api-sports.io/football/teams/1609.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 3617,
+      "name": "Karpaty",
+      "crest": "https://media.api-sports.io/football/teams/3617.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 6489,
+      "name": "Kryvbas KR",
+      "crest": "https://media.api-sports.io/football/teams/6489.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 9568,
+      "name": "Inter Miami",
+      "crest": "https://media.api-sports.io/football/teams/9568.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 17161,
+      "name": "LNZ Cherkasy",
+      "crest": "https://media.api-sports.io/football/teams/17161.png",
+      "totalMatches": 7,
+      "correctPredictions": 4,
+      "accuracy": 57.14285714285714
+    },
+    {
+      "id": 56,
+      "name": "Bristol City",
+      "crest": "https://media.api-sports.io/football/teams/56.png",
+      "totalMatches": 16,
+      "correctPredictions": 9,
+      "accuracy": 56.25
+    },
+    {
+      "id": 106,
+      "name": "Stade Brestois 29",
+      "crest": "https://media.api-sports.io/football/teams/106.png",
+      "totalMatches": 16,
+      "correctPredictions": 9,
+      "accuracy": 56.25
+    },
+    {
+      "id": 415,
+      "name": "Twente",
+      "crest": "https://media.api-sports.io/football/teams/415.png",
+      "totalMatches": 16,
+      "correctPredictions": 9,
+      "accuracy": 56.25
+    },
+    {
+      "id": 44,
+      "name": "Burnley",
+      "crest": "https://media.api-sports.io/football/teams/44.png",
+      "totalMatches": 18,
+      "correctPredictions": 10,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 168,
+      "name": "Bayer Leverkusen",
+      "crest": "https://media.api-sports.io/football/teams/168.png",
+      "totalMatches": 18,
+      "correctPredictions": 10,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 500,
+      "name": "Bologna",
+      "crest": "https://media.api-sports.io/football/teams/500.png",
+      "totalMatches": 18,
+      "correctPredictions": 10,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 569,
+      "name": "Club Brugge KV",
+      "crest": "https://media.api-sports.io/football/teams/569.png",
+      "totalMatches": 18,
+      "correctPredictions": 10,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 601,
+      "name": "Austria Vienna",
+      "crest": "https://media.api-sports.io/football/teams/601.png",
+      "totalMatches": 9,
+      "correctPredictions": 5,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 1037,
+      "name": "Enppi",
+      "crest": "https://media.api-sports.io/football/teams/1037.png",
+      "totalMatches": 9,
+      "correctPredictions": 5,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 1398,
+      "name": "WSG Wattens",
+      "crest": "https://media.api-sports.io/football/teams/1398.png",
+      "totalMatches": 9,
+      "correctPredictions": 5,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 4256,
+      "name": "Grazer AK",
+      "crest": "https://media.api-sports.io/football/teams/4256.png",
+      "totalMatches": 9,
+      "correctPredictions": 5,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 4660,
+      "name": "Spartak Varna",
+      "crest": "https://media.api-sports.io/football/teams/4660.png",
+      "totalMatches": 9,
+      "correctPredictions": 5,
+      "accuracy": 55.55555555555556
+    },
+    {
+      "id": 530,
+      "name": "Atletico Madrid",
+      "crest": "https://media.api-sports.io/football/teams/530.png",
+      "totalMatches": 20,
+      "correctPredictions": 11,
+      "accuracy": 55.00000000000001
+    },
+    {
+      "id": 193,
+      "name": "PEC Zwolle",
+      "crest": "https://media.api-sports.io/football/teams/193.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 195,
+      "name": "Willem II",
+      "crest": "https://media.api-sports.io/football/teams/195.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 252,
+      "name": "Aberdeen",
+      "crest": "https://media.api-sports.io/football/teams/252.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 571,
+      "name": "Red Bull Salzburg",
+      "crest": "https://media.api-sports.io/football/teams/571.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 573,
+      "name": "FK Partizan",
+      "crest": "https://media.api-sports.io/football/teams/573.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 608,
+      "name": "HNK Hajduk Split",
+      "crest": "https://media.api-sports.io/football/teams/608.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 637,
+      "name": "Sturm Graz",
+      "crest": "https://media.api-sports.io/football/teams/637.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 949,
+      "name": "Panetolikos",
+      "crest": "https://media.api-sports.io/football/teams/949.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 1007,
+      "name": "Rizespor",
+      "crest": "https://media.api-sports.io/football/teams/1007.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 1018,
+      "name": "NK Slaven Belupo",
+      "crest": "https://media.api-sports.io/football/teams/1018.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 1041,
+      "name": "Petrojet",
+      "crest": "https://media.api-sports.io/football/teams/1041.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 1123,
+      "name": "Aris Thessalonikis",
+      "crest": "https://media.api-sports.io/football/teams/1123.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 1572,
+      "name": "Al Ittihad",
+      "crest": "https://media.api-sports.io/football/teams/1572.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 2095,
+      "name": "Kallithea",
+      "crest": "https://media.api-sports.io/football/teams/2095.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 2633,
+      "name": "OFK Beograd",
+      "crest": "https://media.api-sports.io/football/teams/2633.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 2644,
+      "name": "Radnicki 1923",
+      "crest": "https://media.api-sports.io/football/teams/2644.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 3575,
+      "name": "Hatayspor",
+      "crest": "https://media.api-sports.io/football/teams/3575.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 4481,
+      "name": "Bnei Sakhnin",
+      "crest": "https://media.api-sports.io/football/teams/4481.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 17438,
+      "name": "Tekstilac Odžaci",
+      "crest": "https://media.api-sports.io/football/teams/17438.png",
+      "totalMatches": 11,
+      "correctPredictions": 6,
+      "accuracy": 54.54545454545454
+    },
+    {
+      "id": 541,
+      "name": "Real Madrid",
+      "crest": "https://media.api-sports.io/football/teams/541.png",
+      "totalMatches": 24,
+      "correctPredictions": 13,
+      "accuracy": 54.166666666666664
+    },
+    {
+      "id": 186,
+      "name": "FC St. Pauli",
+      "crest": "https://media.api-sports.io/football/teams/186.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 532,
+      "name": "Valencia",
+      "crest": "https://media.api-sports.io/football/teams/532.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 620,
+      "name": "Dinamo Zagreb",
+      "crest": "https://media.api-sports.io/football/teams/620.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 728,
+      "name": "Rayo Vallecano",
+      "crest": "https://media.api-sports.io/football/teams/728.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 955,
+      "name": "Asteras Tripolis",
+      "crest": "https://media.api-sports.io/football/teams/955.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 2253,
+      "name": "Hapoel Haifa",
+      "crest": "https://media.api-sports.io/football/teams/2253.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 2931,
+      "name": "Al-Fateh",
+      "crest": "https://media.api-sports.io/football/teams/2931.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 2944,
+      "name": "Al-Fayha",
+      "crest": "https://media.api-sports.io/football/teams/2944.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 2961,
+      "name": "Al Orubah",
+      "crest": "https://media.api-sports.io/football/teams/2961.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 6886,
+      "name": "Oţelul",
+      "crest": "https://media.api-sports.io/football/teams/6886.png",
+      "totalMatches": 13,
+      "correctPredictions": 7,
+      "accuracy": 53.84615384615385
+    },
+    {
+      "id": 167,
+      "name": "1899 Hoffenheim",
+      "crest": "https://media.api-sports.io/football/teams/167.png",
+      "totalMatches": 15,
+      "correctPredictions": 8,
+      "accuracy": 53.333333333333336
+    },
+    {
+      "id": 619,
+      "name": "PAOK",
+      "crest": "https://media.api-sports.io/football/teams/619.png",
+      "totalMatches": 15,
+      "correctPredictions": 8,
+      "accuracy": 53.333333333333336
+    },
+    {
+      "id": 651,
+      "name": "Ferencvarosi TC",
+      "crest": "https://media.api-sports.io/football/teams/651.png",
+      "totalMatches": 15,
+      "correctPredictions": 8,
+      "accuracy": 53.333333333333336
+    },
+    {
+      "id": 3402,
+      "name": "Omonia Nicosia",
+      "crest": "https://media.api-sports.io/football/teams/3402.png",
+      "totalMatches": 15,
+      "correctPredictions": 8,
+      "accuracy": 53.333333333333336
+    },
+    {
+      "id": 63,
+      "name": "Leeds",
+      "crest": "https://media.api-sports.io/football/teams/63.png",
+      "totalMatches": 17,
+      "correctPredictions": 9,
+      "accuracy": 52.94117647058824
+    },
+    {
+      "id": 172,
+      "name": "VfB Stuttgart",
+      "crest": "https://media.api-sports.io/football/teams/172.png",
+      "totalMatches": 17,
+      "correctPredictions": 9,
+      "accuracy": 52.94117647058824
+    },
+    {
+      "id": 496,
+      "name": "Juventus",
+      "crest": "https://media.api-sports.io/football/teams/496.png",
+      "totalMatches": 17,
+      "correctPredictions": 9,
+      "accuracy": 52.94117647058824
+    },
+    {
+      "id": 489,
+      "name": "AC Milan",
+      "crest": "https://media.api-sports.io/football/teams/489.png",
+      "totalMatches": 19,
+      "correctPredictions": 10,
+      "accuracy": 52.63157894736842
+    },
+    {
+      "id": 35,
+      "name": "Bournemouth",
+      "crest": "https://media.api-sports.io/football/teams/35.png",
+      "totalMatches": 14,
+      "correctPredictions": 7,
+      "accuracy": 50
+    },
+    {
+      "id": 43,
+      "name": "Cardiff",
+      "crest": "https://media.api-sports.io/football/teams/43.png",
+      "totalMatches": 18,
+      "correctPredictions": 9,
+      "accuracy": 50
+    },
+    {
+      "id": 60,
+      "name": "West Brom",
+      "crest": "https://media.api-sports.io/football/teams/60.png",
+      "totalMatches": 16,
+      "correctPredictions": 8,
+      "accuracy": 50
+    },
+    {
+      "id": 84,
+      "name": "Nice",
+      "crest": "https://media.api-sports.io/football/teams/84.png",
+      "totalMatches": 14,
+      "correctPredictions": 7,
+      "accuracy": 50
+    },
+    {
+      "id": 88,
+      "name": "Caen",
+      "crest": "https://media.api-sports.io/football/teams/88.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 90,
+      "name": "Guingamp",
+      "crest": "https://media.api-sports.io/football/teams/90.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 98,
+      "name": "Ajaccio",
+      "crest": "https://media.api-sports.io/football/teams/98.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 111,
+      "name": "LE Havre",
+      "crest": "https://media.api-sports.io/football/teams/111.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 174,
+      "name": "FC Schalke 04",
+      "crest": "https://media.api-sports.io/football/teams/174.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 178,
+      "name": "SpVgg Greuther Fürth",
+      "crest": "https://media.api-sports.io/football/teams/178.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 202,
+      "name": "Groningen",
+      "crest": "https://media.api-sports.io/football/teams/202.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 210,
+      "name": "Heerenveen",
+      "crest": "https://media.api-sports.io/football/teams/210.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 215,
+      "name": "Moreirense",
+      "crest": "https://media.api-sports.io/football/teams/215.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 227,
+      "name": "Santa Clara",
+      "crest": "https://media.api-sports.io/football/teams/227.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 230,
+      "name": "Estoril",
+      "crest": "https://media.api-sports.io/football/teams/230.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 231,
+      "name": "Farense",
+      "crest": "https://media.api-sports.io/football/teams/231.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 250,
+      "name": "Kilmarnock",
+      "crest": "https://media.api-sports.io/football/teams/250.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 256,
+      "name": "Motherwell",
+      "crest": "https://media.api-sports.io/football/teams/256.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 329,
+      "name": "Molde",
+      "crest": "https://media.api-sports.io/football/teams/329.png",
+      "totalMatches": 6,
+      "correctPredictions": 3,
+      "accuracy": 50
+    },
+    {
+      "id": 345,
+      "name": "Zaglebie Lubin",
+      "crest": "https://media.api-sports.io/football/teams/345.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 347,
+      "name": "Lech Poznan",
+      "crest": "https://media.api-sports.io/football/teams/347.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 364,
+      "name": "Djurgardens IF",
+      "crest": "https://media.api-sports.io/football/teams/364.png",
+      "totalMatches": 6,
+      "correctPredictions": 3,
+      "accuracy": 50
+    },
+    {
+      "id": 396,
+      "name": "Sonderjyske",
+      "crest": "https://media.api-sports.io/football/teams/396.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 400,
+      "name": "FC Copenhagen",
+      "crest": "https://media.api-sports.io/football/teams/400.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 492,
+      "name": "Napoli",
+      "crest": "https://media.api-sports.io/football/teams/492.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 547,
+      "name": "Girona",
+      "crest": "https://media.api-sports.io/football/teams/547.png",
+      "totalMatches": 14,
+      "correctPredictions": 7,
+      "accuracy": 50
+    },
+    {
+      "id": 606,
+      "name": "FC Lugano",
+      "crest": "https://media.api-sports.io/football/teams/606.png",
+      "totalMatches": 16,
+      "correctPredictions": 8,
+      "accuracy": 50
+    },
+    {
+      "id": 733,
+      "name": "Standard Liege",
+      "crest": "https://media.api-sports.io/football/teams/733.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 746,
+      "name": "Sunderland",
+      "crest": "https://media.api-sports.io/football/teams/746.png",
+      "totalMatches": 16,
+      "correctPredictions": 8,
+      "accuracy": 50
+    },
+    {
+      "id": 779,
+      "name": "FC Rostov",
+      "crest": "https://media.api-sports.io/football/teams/779.png",
+      "totalMatches": 6,
+      "correctPredictions": 3,
+      "accuracy": 50
+    },
+    {
+      "id": 781,
+      "name": "Rapid Vienna",
+      "crest": "https://media.api-sports.io/football/teams/781.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 782,
+      "name": "Slovan Liberec",
+      "crest": "https://media.api-sports.io/football/teams/782.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 853,
+      "name": "CSKA Sofia",
+      "crest": "https://media.api-sports.io/football/teams/853.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 940,
+      "name": "Perth Glory",
+      "crest": "https://media.api-sports.io/football/teams/940.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 947,
+      "name": "Brisbane Roar",
+      "crest": "https://media.api-sports.io/football/teams/947.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 1011,
+      "name": "FC ST. Gallen",
+      "crest": "https://media.api-sports.io/football/teams/1011.png",
+      "totalMatches": 14,
+      "correctPredictions": 7,
+      "accuracy": 50
+    },
+    {
+      "id": 1083,
+      "name": "Rubin",
+      "crest": "https://media.api-sports.io/football/teams/1083.png",
+      "totalMatches": 6,
+      "correctPredictions": 3,
+      "accuracy": 50
+    },
+    {
+      "id": 1085,
+      "name": "Akhmat",
+      "crest": "https://media.api-sports.io/football/teams/1085.png",
+      "totalMatches": 6,
+      "correctPredictions": 3,
+      "accuracy": 50
+    },
+    {
+      "id": 1301,
+      "name": "Rodez",
+      "crest": "https://media.api-sports.io/football/teams/1301.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 1305,
+      "name": "Bastia",
+      "crest": "https://media.api-sports.io/football/teams/1305.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 1313,
+      "name": "Preußen Münster",
+      "crest": "https://media.api-sports.io/football/teams/1313.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 1338,
+      "name": "Oxford United",
+      "crest": "https://media.api-sports.io/football/teams/1338.png",
+      "totalMatches": 16,
+      "correctPredictions": 8,
+      "accuracy": 50
+    },
+    {
+      "id": 1386,
+      "name": "Dundee Utd",
+      "crest": "https://media.api-sports.io/football/teams/1386.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 1595,
+      "name": "Seattle Sounders",
+      "crest": "https://media.api-sports.io/football/teams/1595.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1602,
+      "name": "New York Red Bulls",
+      "crest": "https://media.api-sports.io/football/teams/1602.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1603,
+      "name": "Vancouver Whitecaps",
+      "crest": "https://media.api-sports.io/football/teams/1603.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1604,
+      "name": "New York City FC",
+      "crest": "https://media.api-sports.io/football/teams/1604.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1611,
+      "name": "Sporting Kansas City",
+      "crest": "https://media.api-sports.io/football/teams/1611.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1612,
+      "name": "Minnesota United FC",
+      "crest": "https://media.api-sports.io/football/teams/1612.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1613,
+      "name": "Columbus Crew",
+      "crest": "https://media.api-sports.io/football/teams/1613.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1615,
+      "name": "DC United",
+      "crest": "https://media.api-sports.io/football/teams/1615.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1617,
+      "name": "Portland Timbers",
+      "crest": "https://media.api-sports.io/football/teams/1617.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 1660,
+      "name": "SV Elversberg",
+      "crest": "https://media.api-sports.io/football/teams/1660.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 2180,
+      "name": "FC Winterthur",
+      "crest": "https://media.api-sports.io/football/teams/2180.png",
+      "totalMatches": 14,
+      "correctPredictions": 7,
+      "accuracy": 50
+    },
+    {
+      "id": 2403,
+      "name": "Nyiregyhaza",
+      "crest": "https://media.api-sports.io/football/teams/2403.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 3200,
+      "name": "Martigues",
+      "crest": "https://media.api-sports.io/football/teams/3200.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 3396,
+      "name": "AEL",
+      "crest": "https://media.api-sports.io/football/teams/3396.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 3412,
+      "name": "Ethnikos Achna",
+      "crest": "https://media.api-sports.io/football/teams/3412.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 3484,
+      "name": "GKS Katowice",
+      "crest": "https://media.api-sports.io/football/teams/3484.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 3490,
+      "name": "Puszcza Niepołomice",
+      "crest": "https://media.api-sports.io/football/teams/3490.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 3502,
+      "name": "Saburtalo",
+      "crest": "https://media.api-sports.io/football/teams/3502.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 3603,
+      "name": "Samsunspor",
+      "crest": "https://media.api-sports.io/football/teams/3603.png",
+      "totalMatches": 12,
+      "correctPredictions": 6,
+      "accuracy": 50
+    },
+    {
+      "id": 3714,
+      "name": "Bohemians 1905",
+      "crest": "https://media.api-sports.io/football/teams/3714.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 3716,
+      "name": "Karviná",
+      "crest": "https://media.api-sports.io/football/teams/3716.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 3723,
+      "name": "Hradec Králové",
+      "crest": "https://media.api-sports.io/football/teams/3723.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 6653,
+      "name": "Yverdon Sport",
+      "crest": "https://media.api-sports.io/football/teams/6653.png",
+      "totalMatches": 14,
+      "correctPredictions": 7,
+      "accuracy": 50
+    },
+    {
+      "id": 6962,
+      "name": "Widzew Łódź",
+      "crest": "https://media.api-sports.io/football/teams/6962.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 14562,
+      "name": "Motor Lublin",
+      "crest": "https://media.api-sports.io/football/teams/14562.png",
+      "totalMatches": 10,
+      "correctPredictions": 5,
+      "accuracy": 50
+    },
+    {
+      "id": 17162,
+      "name": "Livyi Bereh",
+      "crest": "https://media.api-sports.io/football/teams/17162.png",
+      "totalMatches": 6,
+      "correctPredictions": 3,
+      "accuracy": 50
+    },
+    {
+      "id": 17265,
+      "name": "Qingdao Youth Island",
+      "crest": "https://media.api-sports.io/football/teams/17265.png",
+      "totalMatches": 6,
+      "correctPredictions": 3,
+      "accuracy": 50
+    },
+    {
+      "id": 20787,
+      "name": "St. Louis City",
+      "crest": "https://media.api-sports.io/football/teams/20787.png",
+      "totalMatches": 8,
+      "correctPredictions": 4,
+      "accuracy": 50
+    },
+    {
+      "id": 66,
+      "name": "Aston Villa",
+      "crest": "https://media.api-sports.io/football/teams/66.png",
+      "totalMatches": 21,
+      "correctPredictions": 10,
+      "accuracy": 47.61904761904761
+    },
+    {
+      "id": 33,
+      "name": "Manchester United",
+      "crest": "https://media.api-sports.io/football/teams/33.png",
+      "totalMatches": 19,
+      "correctPredictions": 9,
+      "accuracy": 47.368421052631575
+    },
+    {
+      "id": 197,
+      "name": "PSV Eindhoven",
+      "crest": "https://media.api-sports.io/football/teams/197.png",
+      "totalMatches": 19,
+      "correctPredictions": 9,
+      "accuracy": 47.368421052631575
+    },
+    {
+      "id": 201,
+      "name": "AZ Alkmaar",
+      "crest": "https://media.api-sports.io/football/teams/201.png",
+      "totalMatches": 19,
+      "correctPredictions": 9,
+      "accuracy": 47.368421052631575
+    },
+    {
+      "id": 180,
+      "name": "1. FC Heidenheim",
+      "crest": "https://media.api-sports.io/football/teams/180.png",
+      "totalMatches": 15,
+      "correctPredictions": 7,
+      "accuracy": 46.666666666666664
+    },
+    {
+      "id": 565,
+      "name": "BSC Young Boys",
+      "crest": "https://media.api-sports.io/football/teams/565.png",
+      "totalMatches": 15,
+      "correctPredictions": 7,
+      "accuracy": 46.666666666666664
+    },
+    {
+      "id": 2247,
+      "name": "Apoel Nicosia",
+      "crest": "https://media.api-sports.io/football/teams/2247.png",
+      "totalMatches": 15,
+      "correctPredictions": 7,
+      "accuracy": 46.666666666666664
+    },
+    {
+      "id": 4360,
+      "name": "Celje",
+      "crest": "https://media.api-sports.io/football/teams/4360.png",
+      "totalMatches": 15,
+      "correctPredictions": 7,
+      "accuracy": 46.666666666666664
+    },
+    {
+      "id": 192,
+      "name": "1.FC Köln",
+      "crest": "https://media.api-sports.io/football/teams/192.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 207,
+      "name": "Utrecht",
+      "crest": "https://media.api-sports.io/football/teams/207.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 339,
+      "name": "Legia Warszawa",
+      "crest": "https://media.api-sports.io/football/teams/339.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 602,
+      "name": "Apollon Limassol",
+      "crest": "https://media.api-sports.io/football/teams/602.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 614,
+      "name": "AEK Larnaca",
+      "crest": "https://media.api-sports.io/football/teams/614.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 635,
+      "name": "Dinamo Bucuresti",
+      "crest": "https://media.api-sports.io/football/teams/635.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 657,
+      "name": "Beitar Jerusalem",
+      "crest": "https://media.api-sports.io/football/teams/657.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 762,
+      "name": "GIL Vicente",
+      "crest": "https://media.api-sports.io/football/teams/762.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2579,
+      "name": "AFC Hermannstadt",
+      "crest": "https://media.api-sports.io/football/teams/2579.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2583,
+      "name": "Politehnica Iasi",
+      "crest": "https://media.api-sports.io/football/teams/2583.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2589,
+      "name": "Uta Arad",
+      "crest": "https://media.api-sports.io/football/teams/2589.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2596,
+      "name": "Farul Constanta",
+      "crest": "https://media.api-sports.io/football/teams/2596.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2599,
+      "name": "Universitatea Cluj",
+      "crest": "https://media.api-sports.io/football/teams/2599.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2646,
+      "name": "TSC Backa Topola",
+      "crest": "https://media.api-sports.io/football/teams/2646.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2928,
+      "name": "Al Khaleej Saihat",
+      "crest": "https://media.api-sports.io/football/teams/2928.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 2933,
+      "name": "Al-Qadisiyah FC",
+      "crest": "https://media.api-sports.io/football/teams/2933.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 4507,
+      "name": "Ashdod",
+      "crest": "https://media.api-sports.io/football/teams/4507.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 6231,
+      "name": "Rapid",
+      "crest": "https://media.api-sports.io/football/teams/6231.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 6916,
+      "name": "Unirea Slobozia",
+      "crest": "https://media.api-sports.io/football/teams/6916.png",
+      "totalMatches": 13,
+      "correctPredictions": 6,
+      "accuracy": 46.15384615384615
+    },
+    {
+      "id": 48,
+      "name": "West Ham",
+      "crest": "https://media.api-sports.io/football/teams/48.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 533,
+      "name": "Villarreal",
+      "crest": "https://media.api-sports.io/football/teams/533.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 561,
+      "name": "HNK Rijeka",
+      "crest": "https://media.api-sports.io/football/teams/561.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 564,
+      "name": "Istanbul Basaksehir",
+      "crest": "https://media.api-sports.io/football/teams/564.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 702,
+      "name": "Vojvodina",
+      "crest": "https://media.api-sports.io/football/teams/702.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 1017,
+      "name": "NK Lokomotiva Zagreb",
+      "crest": "https://media.api-sports.io/football/teams/1017.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 1475,
+      "name": "Sibenik",
+      "crest": "https://media.api-sports.io/football/teams/1475.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 1576,
+      "name": "Haras El Hodood",
+      "crest": "https://media.api-sports.io/football/teams/1576.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 2110,
+      "name": "Volos NFC",
+      "crest": "https://media.api-sports.io/football/teams/2110.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 2251,
+      "name": "FK Spartak Zdrepceva KRV",
+      "crest": "https://media.api-sports.io/football/teams/2251.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 2254,
+      "name": "Radnicki NIS",
+      "crest": "https://media.api-sports.io/football/teams/2254.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 2643,
+      "name": "Novi Pazar",
+      "crest": "https://media.api-sports.io/football/teams/2643.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 4510,
+      "name": "Ironi Kiryat Shmona",
+      "crest": "https://media.api-sports.io/football/teams/4510.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 12260,
+      "name": "Atromitos",
+      "crest": "https://media.api-sports.io/football/teams/12260.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 12316,
+      "name": "IMT Novi Beograd",
+      "crest": "https://media.api-sports.io/football/teams/12316.png",
+      "totalMatches": 11,
+      "correctPredictions": 5,
+      "accuracy": 45.45454545454545
+    },
+    {
+      "id": 165,
+      "name": "Borussia Dortmund",
+      "crest": "https://media.api-sports.io/football/teams/165.png",
+      "totalMatches": 20,
+      "correctPredictions": 9,
+      "accuracy": 45
+    },
+    {
+      "id": 402,
+      "name": "Aalborg",
+      "crest": "https://media.api-sports.io/football/teams/402.png",
+      "totalMatches": 9,
+      "correctPredictions": 4,
+      "accuracy": 44.44444444444444
+    },
+    {
+      "id": 1072,
+      "name": "TSV Hartberg",
+      "crest": "https://media.api-sports.io/football/teams/1072.png",
+      "totalMatches": 9,
+      "correctPredictions": 4,
+      "accuracy": 44.44444444444444
+    },
+    {
+      "id": 1394,
+      "name": "FC BW Linz",
+      "crest": "https://media.api-sports.io/football/teams/1394.png",
+      "totalMatches": 9,
+      "correctPredictions": 4,
+      "accuracy": 44.44444444444444
+    },
+    {
+      "id": 1430,
+      "name": "Arda Kardzhali",
+      "crest": "https://media.api-sports.io/football/teams/1430.png",
+      "totalMatches": 9,
+      "correctPredictions": 4,
+      "accuracy": 44.44444444444444
+    },
+    {
+      "id": 38,
+      "name": "Watford",
+      "crest": "https://media.api-sports.io/football/teams/38.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 69,
+      "name": "Derby",
+      "crest": "https://media.api-sports.io/football/teams/69.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 70,
+      "name": "Middlesbrough",
+      "crest": "https://media.api-sports.io/football/teams/70.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 71,
+      "name": "Norwich",
+      "crest": "https://media.api-sports.io/football/teams/71.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 74,
+      "name": "Sheffield Wednesday",
+      "crest": "https://media.api-sports.io/football/teams/74.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 212,
+      "name": "FC Porto",
+      "crest": "https://media.api-sports.io/football/teams/212.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 257,
+      "name": "Rangers",
+      "crest": "https://media.api-sports.io/football/teams/257.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 1359,
+      "name": "Luton",
+      "crest": "https://media.api-sports.io/football/teams/1359.png",
+      "totalMatches": 16,
+      "correctPredictions": 7,
+      "accuracy": 43.75
+    },
+    {
+      "id": 36,
+      "name": "Fulham",
+      "crest": "https://media.api-sports.io/football/teams/36.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 65,
+      "name": "Nottingham Forest",
+      "crest": "https://media.api-sports.io/football/teams/65.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 162,
+      "name": "Werder Bremen",
+      "crest": "https://media.api-sports.io/football/teams/162.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 170,
+      "name": "FC Augsburg",
+      "crest": "https://media.api-sports.io/football/teams/170.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 226,
+      "name": "Rio Ave",
+      "crest": "https://media.api-sports.io/football/teams/226.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 410,
+      "name": "GO Ahead Eagles",
+      "crest": "https://media.api-sports.io/football/teams/410.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 630,
+      "name": "FC Sion",
+      "crest": "https://media.api-sports.io/football/teams/630.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 631,
+      "name": "Gent",
+      "crest": "https://media.api-sports.io/football/teams/631.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 837,
+      "name": "Tianjin Teda",
+      "crest": "https://media.api-sports.io/football/teams/837.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 848,
+      "name": "Hangzhou Greentown",
+      "crest": "https://media.api-sports.io/football/teams/848.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 941,
+      "name": "Central Coast Mariners",
+      "crest": "https://media.api-sports.io/football/teams/941.png",
+      "totalMatches": 14,
+      "correctPredictions": 6,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 2553,
+      "name": "Alianza Lima",
+      "crest": "https://media.api-sports.io/football/teams/2553.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 3625,
+      "name": "Inhulets",
+      "crest": "https://media.api-sports.io/football/teams/3625.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 3627,
+      "name": "Kolos Kovalivka",
+      "crest": "https://media.api-sports.io/football/teams/3627.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 3630,
+      "name": "Obolon'-Brovar",
+      "crest": "https://media.api-sports.io/football/teams/3630.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 5648,
+      "name": "Chengdu Better City",
+      "crest": "https://media.api-sports.io/football/teams/5648.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 6496,
+      "name": "Polessya",
+      "crest": "https://media.api-sports.io/football/teams/6496.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 21263,
+      "name": "Dalian Zhixing",
+      "crest": "https://media.api-sports.io/football/teams/21263.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 21265,
+      "name": "Yunnan Yukun",
+      "crest": "https://media.api-sports.io/football/teams/21265.png",
+      "totalMatches": 7,
+      "correctPredictions": 3,
+      "accuracy": 42.857142857142854
+    },
+    {
+      "id": 42,
+      "name": "Arsenal",
+      "crest": "https://media.api-sports.io/football/teams/42.png",
+      "totalMatches": 19,
+      "correctPredictions": 8,
+      "accuracy": 42.10526315789473
+    },
+    {
+      "id": 59,
+      "name": "Preston",
+      "crest": "https://media.api-sports.io/football/teams/59.png",
+      "totalMatches": 19,
+      "correctPredictions": 8,
+      "accuracy": 42.10526315789473
+    },
+    {
+      "id": 87,
+      "name": "Amiens",
+      "crest": "https://media.api-sports.io/football/teams/87.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 93,
+      "name": "Reims",
+      "crest": "https://media.api-sports.io/football/teams/93.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 99,
+      "name": "Clermont Foot",
+      "crest": "https://media.api-sports.io/football/teams/99.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 108,
+      "name": "Auxerre",
+      "crest": "https://media.api-sports.io/football/teams/108.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 175,
+      "name": "Hamburger SV",
+      "crest": "https://media.api-sports.io/football/teams/175.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 179,
+      "name": "1. FC Magdeburg",
+      "crest": "https://media.api-sports.io/football/teams/179.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 181,
+      "name": "SV Darmstadt 98",
+      "crest": "https://media.api-sports.io/football/teams/181.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 191,
+      "name": "Holstein Kiel",
+      "crest": "https://media.api-sports.io/football/teams/191.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 417,
+      "name": "Waalwijk",
+      "crest": "https://media.api-sports.io/football/teams/417.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 503,
+      "name": "Torino",
+      "crest": "https://media.api-sports.io/football/teams/503.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 615,
+      "name": "NK Domzale",
+      "crest": "https://media.api-sports.io/football/teams/615.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 736,
+      "name": "Charleroi",
+      "crest": "https://media.api-sports.io/football/teams/736.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 744,
+      "name": "Eintracht Braunschweig",
+      "crest": "https://media.api-sports.io/football/teams/744.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 798,
+      "name": "Mallorca",
+      "crest": "https://media.api-sports.io/football/teams/798.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 946,
+      "name": "Newcastle Jets",
+      "crest": "https://media.api-sports.io/football/teams/946.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 1005,
+      "name": "Antalyaspor",
+      "crest": "https://media.api-sports.io/football/teams/1005.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 1297,
+      "name": "PAU",
+      "crest": "https://media.api-sports.io/football/teams/1297.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 1574,
+      "name": "El Gouna FC",
+      "crest": "https://media.api-sports.io/football/teams/1574.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 2269,
+      "name": "Anorthosis",
+      "crest": "https://media.api-sports.io/football/teams/2269.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 3012,
+      "name": "Annecy",
+      "crest": "https://media.api-sports.io/football/teams/3012.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 3583,
+      "name": "BB Bodrumspor",
+      "crest": "https://media.api-sports.io/football/teams/3583.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 4376,
+      "name": "Nafta",
+      "crest": "https://media.api-sports.io/football/teams/4376.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 24608,
+      "name": "Auckland",
+      "crest": "https://media.api-sports.io/football/teams/24608.png",
+      "totalMatches": 12,
+      "correctPredictions": 5,
+      "accuracy": 41.66666666666667
+    },
+    {
+      "id": 487,
+      "name": "Lazio",
+      "crest": "https://media.api-sports.io/football/teams/487.png",
+      "totalMatches": 17,
+      "correctPredictions": 7,
+      "accuracy": 41.17647058823529
+    },
+    {
+      "id": 52,
+      "name": "Crystal Palace",
+      "crest": "https://media.api-sports.io/football/teams/52.png",
+      "totalMatches": 15,
+      "correctPredictions": 6,
+      "accuracy": 40
+    },
+    {
+      "id": 337,
+      "name": "Slask Wroclaw",
+      "crest": "https://media.api-sports.io/football/teams/337.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 340,
+      "name": "Gornik Zabrze",
+      "crest": "https://media.api-sports.io/football/teams/340.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 646,
+      "name": "Levski Sofia",
+      "crest": "https://media.api-sports.io/football/teams/646.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 1044,
+      "name": "Smouha SC",
+      "crest": "https://media.api-sports.io/football/teams/1044.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 2255,
+      "name": "Ujpest",
+      "crest": "https://media.api-sports.io/football/teams/2255.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 2319,
+      "name": "Deportes Iquique",
+      "crest": "https://media.api-sports.io/football/teams/2319.png",
+      "totalMatches": 5,
+      "correctPredictions": 2,
+      "accuracy": 40
+    },
+    {
+      "id": 2361,
+      "name": "Boston River",
+      "crest": "https://media.api-sports.io/football/teams/2361.png",
+      "totalMatches": 5,
+      "correctPredictions": 2,
+      "accuracy": 40
+    },
+    {
+      "id": 2391,
+      "name": "Puskas Academy",
+      "crest": "https://media.api-sports.io/football/teams/2391.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 2393,
+      "name": "Diosgyori VTK",
+      "crest": "https://media.api-sports.io/football/teams/2393.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 2396,
+      "name": "MTK Budapest",
+      "crest": "https://media.api-sports.io/football/teams/2396.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 3493,
+      "name": "Stal Mielec",
+      "crest": "https://media.api-sports.io/football/teams/3493.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 4248,
+      "name": "Radomiak Radom",
+      "crest": "https://media.api-sports.io/football/teams/4248.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 15550,
+      "name": "Macarthur",
+      "crest": "https://media.api-sports.io/football/teams/15550.png",
+      "totalMatches": 10,
+      "correctPredictions": 4,
+      "accuracy": 40
+    },
+    {
+      "id": 1357,
+      "name": "Plymouth",
+      "crest": "https://media.api-sports.io/football/teams/1357.png",
+      "totalMatches": 18,
+      "correctPredictions": 7,
+      "accuracy": 38.88888888888889
+    },
+    {
+      "id": 176,
+      "name": "VfL Bochum",
+      "crest": "https://media.api-sports.io/football/teams/176.png",
+      "totalMatches": 13,
+      "correctPredictions": 5,
+      "accuracy": 38.46153846153847
+    },
+    {
+      "id": 549,
+      "name": "Besiktas",
+      "crest": "https://media.api-sports.io/football/teams/549.png",
+      "totalMatches": 13,
+      "correctPredictions": 5,
+      "accuracy": 38.46153846153847
+    },
+    {
+      "id": 2581,
+      "name": "FC Botosani",
+      "crest": "https://media.api-sports.io/football/teams/2581.png",
+      "totalMatches": 13,
+      "correctPredictions": 5,
+      "accuracy": 38.46153846153847
+    },
+    {
+      "id": 2598,
+      "name": "Petrolul Ploiesti",
+      "crest": "https://media.api-sports.io/football/teams/2598.png",
+      "totalMatches": 13,
+      "correctPredictions": 5,
+      "accuracy": 38.46153846153847
+    },
+    {
+      "id": 2934,
+      "name": "Al-Ettifaq",
+      "crest": "https://media.api-sports.io/football/teams/2934.png",
+      "totalMatches": 13,
+      "correctPredictions": 5,
+      "accuracy": 38.46153846153847
+    },
+    {
+      "id": 2977,
+      "name": "Al Akhdoud",
+      "crest": "https://media.api-sports.io/football/teams/2977.png",
+      "totalMatches": 13,
+      "correctPredictions": 5,
+      "accuracy": 38.46153846153847
+    },
+    {
+      "id": 64,
+      "name": "Hull City",
+      "crest": "https://media.api-sports.io/football/teams/64.png",
+      "totalMatches": 16,
+      "correctPredictions": 6,
+      "accuracy": 37.5
+    },
+    {
+      "id": 76,
+      "name": "Swansea",
+      "crest": "https://media.api-sports.io/football/teams/76.png",
+      "totalMatches": 16,
+      "correctPredictions": 6,
+      "accuracy": 37.5
+    },
+    {
+      "id": 406,
+      "name": "Aarhus",
+      "crest": "https://media.api-sports.io/football/teams/406.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 407,
+      "name": "Brondby",
+      "crest": "https://media.api-sports.io/football/teams/407.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 502,
+      "name": "Fiorentina",
+      "crest": "https://media.api-sports.io/football/teams/502.png",
+      "totalMatches": 16,
+      "correctPredictions": 6,
+      "accuracy": 37.5
+    },
+    {
+      "id": 705,
+      "name": "Dinamo Batumi",
+      "crest": "https://media.api-sports.io/football/teams/705.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 1597,
+      "name": "FC Dallas",
+      "crest": "https://media.api-sports.io/football/teams/1597.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 1599,
+      "name": "Philadelphia Union",
+      "crest": "https://media.api-sports.io/football/teams/1599.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 1600,
+      "name": "Houston Dynamo",
+      "crest": "https://media.api-sports.io/football/teams/1600.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 1601,
+      "name": "Toronto FC",
+      "crest": "https://media.api-sports.io/football/teams/1601.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 1605,
+      "name": "Los Angeles Galaxy",
+      "crest": "https://media.api-sports.io/football/teams/1605.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 1610,
+      "name": "Colorado Rapids",
+      "crest": "https://media.api-sports.io/football/teams/1610.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 2070,
+      "name": "Viborg",
+      "crest": "https://media.api-sports.io/football/teams/2070.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 2262,
+      "name": "Dinamo Tbilisi",
+      "crest": "https://media.api-sports.io/football/teams/2262.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 3507,
+      "name": "Kolkheti Poti",
+      "crest": "https://media.api-sports.io/football/teams/3507.png",
+      "totalMatches": 8,
+      "correctPredictions": 3,
+      "accuracy": 37.5
+    },
+    {
+      "id": 55,
+      "name": "Brentford",
+      "crest": "https://media.api-sports.io/football/teams/55.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 203,
+      "name": "NAC Breda",
+      "crest": "https://media.api-sports.io/football/teams/203.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 413,
+      "name": "NEC Nijmegen",
+      "crest": "https://media.api-sports.io/football/teams/413.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 540,
+      "name": "Espanyol",
+      "crest": "https://media.api-sports.io/football/teams/540.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 552,
+      "name": "Maribor",
+      "crest": "https://media.api-sports.io/football/teams/552.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 616,
+      "name": "NK Osijek",
+      "crest": "https://media.api-sports.io/football/teams/616.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 1068,
+      "name": "HNK Gorica",
+      "crest": "https://media.api-sports.io/football/teams/1068.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 1483,
+      "name": "NK Varazdin",
+      "crest": "https://media.api-sports.io/football/teams/1483.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 2655,
+      "name": "Napredak",
+      "crest": "https://media.api-sports.io/football/teams/2655.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 4486,
+      "name": "Hapoel Katamon",
+      "crest": "https://media.api-sports.io/football/teams/4486.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 6181,
+      "name": "Ironi Tiberias",
+      "crest": "https://media.api-sports.io/football/teams/6181.png",
+      "totalMatches": 11,
+      "correctPredictions": 4,
+      "accuracy": 36.36363636363637
+    },
+    {
+      "id": 727,
+      "name": "Osasuna",
+      "crest": "https://media.api-sports.io/football/teams/727.png",
+      "totalMatches": 14,
+      "correctPredictions": 5,
+      "accuracy": 35.714285714285715
+    },
+    {
+      "id": 1014,
+      "name": "Lausanne",
+      "crest": "https://media.api-sports.io/football/teams/1014.png",
+      "totalMatches": 14,
+      "correctPredictions": 5,
+      "accuracy": 35.714285714285715
+    },
+    {
+      "id": 2184,
+      "name": "Servette FC",
+      "crest": "https://media.api-sports.io/football/teams/2184.png",
+      "totalMatches": 14,
+      "correctPredictions": 5,
+      "accuracy": 35.714285714285715
+    },
+    {
+      "id": 499,
+      "name": "Atalanta",
+      "crest": "https://media.api-sports.io/football/teams/499.png",
+      "totalMatches": 17,
+      "correctPredictions": 6,
+      "accuracy": 35.294117647058826
+    },
+    {
+      "id": 67,
+      "name": "Blackburn",
+      "crest": "https://media.api-sports.io/football/teams/67.png",
+      "totalMatches": 18,
+      "correctPredictions": 6,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 96,
+      "name": "Toulouse",
+      "crest": "https://media.api-sports.io/football/teams/96.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 158,
+      "name": "Fortuna Düsseldorf",
+      "crest": "https://media.api-sports.io/football/teams/158.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 163,
+      "name": "Borussia Mönchengladbach",
+      "crest": "https://media.api-sports.io/football/teams/163.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 164,
+      "name": "FSV Mainz 05",
+      "crest": "https://media.api-sports.io/football/teams/164.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 240,
+      "name": "Arouca",
+      "crest": "https://media.api-sports.io/football/teams/240.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 266,
+      "name": "KV Mechelen",
+      "crest": "https://media.api-sports.io/football/teams/266.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 433,
+      "name": "Laval",
+      "crest": "https://media.api-sports.io/football/teams/433.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 536,
+      "name": "Sevilla",
+      "crest": "https://media.api-sports.io/football/teams/536.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 558,
+      "name": "Spartak Moscow",
+      "crest": "https://media.api-sports.io/football/teams/558.png",
+      "totalMatches": 6,
+      "correctPredictions": 2,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 618,
+      "name": "SCR Altach",
+      "crest": "https://media.api-sports.io/football/teams/618.png",
+      "totalMatches": 9,
+      "correctPredictions": 3,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 735,
+      "name": "St. Truiden",
+      "crest": "https://media.api-sports.io/football/teams/735.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 740,
+      "name": "Antwerp",
+      "crest": "https://media.api-sports.io/football/teams/740.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 785,
+      "name": "Karlsruher SC",
+      "crest": "https://media.api-sports.io/football/teams/785.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 840,
+      "name": "Henan Jianye",
+      "crest": "https://media.api-sports.io/football/teams/840.png",
+      "totalMatches": 6,
+      "correctPredictions": 2,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 948,
+      "name": "Adelaide United",
+      "crest": "https://media.api-sports.io/football/teams/948.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 1079,
+      "name": "Krylia Sovetov",
+      "crest": "https://media.api-sports.io/football/teams/1079.png",
+      "totalMatches": 6,
+      "correctPredictions": 2,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 1304,
+      "name": "Dunkerque",
+      "crest": "https://media.api-sports.io/football/teams/1304.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 1355,
+      "name": "Portsmouth",
+      "crest": "https://media.api-sports.io/football/teams/1355.png",
+      "totalMatches": 18,
+      "correctPredictions": 6,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 2011,
+      "name": "Nizhny Novgorod",
+      "crest": "https://media.api-sports.io/football/teams/2011.png",
+      "totalMatches": 6,
+      "correctPredictions": 2,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 2073,
+      "name": "Silkeborg",
+      "crest": "https://media.api-sports.io/football/teams/2073.png",
+      "totalMatches": 9,
+      "correctPredictions": 3,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 4195,
+      "name": "Maccabi Haifa",
+      "crest": "https://media.api-sports.io/football/teams/4195.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 14007,
+      "name": "Primorje",
+      "crest": "https://media.api-sports.io/football/teams/14007.png",
+      "totalMatches": 12,
+      "correctPredictions": 4,
+      "accuracy": 33.33333333333333
+    },
+    {
+      "id": 58,
+      "name": "Millwall",
+      "crest": "https://media.api-sports.io/football/teams/58.png",
+      "totalMatches": 19,
+      "correctPredictions": 6,
+      "accuracy": 31.57894736842105
+    },
+    {
+      "id": 2585,
+      "name": "Sepsi OSK Sfantu Gheorghe",
+      "crest": "https://media.api-sports.io/football/teams/2585.png",
+      "totalMatches": 13,
+      "correctPredictions": 4,
+      "accuracy": 30.76923076923077
+    },
+    {
+      "id": 249,
+      "name": "Hibernian",
+      "crest": "https://media.api-sports.io/football/teams/249.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 251,
+      "name": "ST Mirren",
+      "crest": "https://media.api-sports.io/football/teams/251.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 343,
+      "name": "Lechia Gdansk",
+      "crest": "https://media.api-sports.io/football/teams/343.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 346,
+      "name": "Korona Kielce",
+      "crest": "https://media.api-sports.io/football/teams/346.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 349,
+      "name": "Piast Gliwice",
+      "crest": "https://media.api-sports.io/football/teams/349.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 610,
+      "name": "Fehérvár FC",
+      "crest": "https://media.api-sports.io/football/teams/610.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 858,
+      "name": "Lokomotiv Plovdiv",
+      "crest": "https://media.api-sports.io/football/teams/858.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 1416,
+      "name": "Lokomotiv Sofia",
+      "crest": "https://media.api-sports.io/football/teams/1416.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 2250,
+      "name": "Sigma Olomouc",
+      "crest": "https://media.api-sports.io/football/teams/2250.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 5111,
+      "name": "Kecskeméti TE",
+      "crest": "https://media.api-sports.io/football/teams/5111.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 14651,
+      "name": "Ceramica Cleopatra",
+      "crest": "https://media.api-sports.io/football/teams/14651.png",
+      "totalMatches": 10,
+      "correctPredictions": 3,
+      "accuracy": 30
+    },
+    {
+      "id": 546,
+      "name": "Getafe",
+      "crest": "https://media.api-sports.io/football/teams/546.png",
+      "totalMatches": 14,
+      "correctPredictions": 4,
+      "accuracy": 28.57142857142857
+    },
+    {
+      "id": 1013,
+      "name": "Grasshoppers",
+      "crest": "https://media.api-sports.io/football/teams/1013.png",
+      "totalMatches": 14,
+      "correctPredictions": 4,
+      "accuracy": 28.57142857142857
+    },
+    {
+      "id": 1439,
+      "name": "Meizhou Kejia",
+      "crest": "https://media.api-sports.io/football/teams/1439.png",
+      "totalMatches": 7,
+      "correctPredictions": 2,
+      "accuracy": 28.57142857142857
+    },
+    {
+      "id": 3615,
+      "name": "Chornomorets",
+      "crest": "https://media.api-sports.io/football/teams/3615.png",
+      "totalMatches": 7,
+      "correctPredictions": 2,
+      "accuracy": 28.57142857142857
+    },
+    {
+      "id": 5695,
+      "name": "Wuhan Three Towns",
+      "crest": "https://media.api-sports.io/football/teams/5695.png",
+      "totalMatches": 7,
+      "correctPredictions": 2,
+      "accuracy": 28.57142857142857
+    },
+    {
+      "id": 6501,
+      "name": "Veres Rivne",
+      "crest": "https://media.api-sports.io/football/teams/6501.png",
+      "totalMatches": 7,
+      "correctPredictions": 2,
+      "accuracy": 28.57142857142857
+    },
+    {
+      "id": 83,
+      "name": "Nantes",
+      "crest": "https://media.api-sports.io/football/teams/83.png",
+      "totalMatches": 11,
+      "correctPredictions": 3,
+      "accuracy": 27.27272727272727
+    },
+    {
+      "id": 1016,
+      "name": "Istra 1961",
+      "crest": "https://media.api-sports.io/football/teams/1016.png",
+      "totalMatches": 11,
+      "correctPredictions": 3,
+      "accuracy": 27.27272727272727
+    },
+    {
+      "id": 1030,
+      "name": "Ismaily SC",
+      "crest": "https://media.api-sports.io/football/teams/1030.png",
+      "totalMatches": 11,
+      "correctPredictions": 3,
+      "accuracy": 27.27272727272727
+    },
+    {
+      "id": 2656,
+      "name": "Cukaricki",
+      "crest": "https://media.api-sports.io/football/teams/2656.png",
+      "totalMatches": 11,
+      "correctPredictions": 3,
+      "accuracy": 27.27272727272727
+    },
+    {
+      "id": 7520,
+      "name": "Masr",
+      "crest": "https://media.api-sports.io/football/teams/7520.png",
+      "totalMatches": 11,
+      "correctPredictions": 3,
+      "accuracy": 27.27272727272727
+    },
+    {
+      "id": 16431,
+      "name": "Future FC",
+      "crest": "https://media.api-sports.io/football/teams/16431.png",
+      "totalMatches": 11,
+      "correctPredictions": 3,
+      "accuracy": 27.27272727272727
+    },
+    {
+      "id": 51,
+      "name": "Brighton",
+      "crest": "https://media.api-sports.io/football/teams/51.png",
+      "totalMatches": 15,
+      "correctPredictions": 4,
+      "accuracy": 26.666666666666668
+    },
+    {
+      "id": 206,
+      "name": "Heracles",
+      "crest": "https://media.api-sports.io/football/teams/206.png",
+      "totalMatches": 15,
+      "correctPredictions": 4,
+      "accuracy": 26.666666666666668
+    },
+    {
+      "id": 95,
+      "name": "Strasbourg",
+      "crest": "https://media.api-sports.io/football/teams/95.png",
+      "totalMatches": 12,
+      "correctPredictions": 3,
+      "accuracy": 25
+    },
+    {
+      "id": 159,
+      "name": "Hertha BSC",
+      "crest": "https://media.api-sports.io/football/teams/159.png",
+      "totalMatches": 12,
+      "correctPredictions": 3,
+      "accuracy": 25
+    },
+    {
+      "id": 171,
+      "name": "1. FC Nürnberg",
+      "crest": "https://media.api-sports.io/football/teams/171.png",
+      "totalMatches": 12,
+      "correctPredictions": 3,
+      "accuracy": 25
+    },
+    {
+      "id": 185,
+      "name": "SC Paderborn 07",
+      "crest": "https://media.api-sports.io/football/teams/185.png",
+      "totalMatches": 12,
+      "correctPredictions": 3,
+      "accuracy": 25
+    },
+    {
+      "id": 395,
+      "name": "Vejle",
+      "crest": "https://media.api-sports.io/football/teams/395.png",
+      "totalMatches": 8,
+      "correctPredictions": 2,
+      "accuracy": 25
+    },
+    {
+      "id": 625,
+      "name": "Lyngby",
+      "crest": "https://media.api-sports.io/football/teams/625.png",
+      "totalMatches": 8,
+      "correctPredictions": 2,
+      "accuracy": 25
+    },
+    {
+      "id": 1598,
+      "name": "Orlando City SC",
+      "crest": "https://media.api-sports.io/football/teams/1598.png",
+      "totalMatches": 8,
+      "correctPredictions": 2,
+      "accuracy": 25
+    },
+    {
+      "id": 1607,
+      "name": "Chicago Fire",
+      "crest": "https://media.api-sports.io/football/teams/1607.png",
+      "totalMatches": 8,
+      "correctPredictions": 2,
+      "accuracy": 25
+    },
+    {
+      "id": 3401,
+      "name": "Nea Salamis",
+      "crest": "https://media.api-sports.io/football/teams/3401.png",
+      "totalMatches": 12,
+      "correctPredictions": 3,
+      "accuracy": 25
+    },
+    {
+      "id": 4359,
+      "name": "Bravo",
+      "crest": "https://media.api-sports.io/football/teams/4359.png",
+      "totalMatches": 12,
+      "correctPredictions": 3,
+      "accuracy": 25
+    },
+    {
+      "id": 15736,
+      "name": "Pharco",
+      "crest": "https://media.api-sports.io/football/teams/15736.png",
+      "totalMatches": 12,
+      "correctPredictions": 3,
+      "accuracy": 25
+    },
+    {
+      "id": 25484,
+      "name": "San Diego",
+      "crest": "https://media.api-sports.io/football/teams/25484.png",
+      "totalMatches": 8,
+      "correctPredictions": 2,
+      "accuracy": 25
+    },
+    {
+      "id": 161,
+      "name": "VfL Wolfsburg",
+      "crest": "https://media.api-sports.io/football/teams/161.png",
+      "totalMatches": 13,
+      "correctPredictions": 3,
+      "accuracy": 23.076923076923077
+    },
+    {
+      "id": 182,
+      "name": "Union Berlin",
+      "crest": "https://media.api-sports.io/football/teams/182.png",
+      "totalMatches": 13,
+      "correctPredictions": 3,
+      "accuracy": 23.076923076923077
+    },
+    {
+      "id": 2936,
+      "name": "Al Taawon",
+      "crest": "https://media.api-sports.io/football/teams/2936.png",
+      "totalMatches": 13,
+      "correctPredictions": 3,
+      "accuracy": 23.076923076923077
+    },
+    {
+      "id": 1025,
+      "name": "Wolfsberger AC",
+      "crest": "https://media.api-sports.io/football/teams/1025.png",
+      "totalMatches": 9,
+      "correctPredictions": 2,
+      "accuracy": 22.22222222222222
+    },
+    {
+      "id": 6186,
+      "name": "Maccabi Bnei Raina",
+      "crest": "https://media.api-sports.io/football/teams/6186.png",
+      "totalMatches": 14,
+      "correctPredictions": 3,
+      "accuracy": 21.428571428571427
+    },
+    {
+      "id": 350,
+      "name": "Cracovia Krakow",
+      "crest": "https://media.api-sports.io/football/teams/350.png",
+      "totalMatches": 10,
+      "correctPredictions": 2,
+      "accuracy": 20
+    },
+    {
+      "id": 854,
+      "name": "Slavia Sofia",
+      "crest": "https://media.api-sports.io/football/teams/854.png",
+      "totalMatches": 10,
+      "correctPredictions": 2,
+      "accuracy": 20
+    },
+    {
+      "id": 1039,
+      "name": "El Geish",
+      "crest": "https://media.api-sports.io/football/teams/1039.png",
+      "totalMatches": 10,
+      "correctPredictions": 2,
+      "accuracy": 20
+    },
+    {
+      "id": 2402,
+      "name": "Gyori ETO FC",
+      "crest": "https://media.api-sports.io/football/teams/2402.png",
+      "totalMatches": 10,
+      "correctPredictions": 2,
+      "accuracy": 20
+    },
+    {
+      "id": 943,
+      "name": "Sydney",
+      "crest": "https://media.api-sports.io/football/teams/943.png",
+      "totalMatches": 11,
+      "correctPredictions": 2,
+      "accuracy": 18.181818181818183
+    },
+    {
+      "id": 994,
+      "name": "Goztepe",
+      "crest": "https://media.api-sports.io/football/teams/994.png",
+      "totalMatches": 11,
+      "correctPredictions": 2,
+      "accuracy": 18.181818181818183
+    },
+    {
+      "id": 542,
+      "name": "Alaves",
+      "crest": "https://media.api-sports.io/football/teams/542.png",
+      "totalMatches": 12,
+      "correctPredictions": 2,
+      "accuracy": 16.666666666666664
+    },
+    {
+      "id": 830,
+      "name": "Beijing Guoan",
+      "crest": "https://media.api-sports.io/football/teams/830.png",
+      "totalMatches": 6,
+      "correctPredictions": 1,
+      "accuracy": 16.666666666666664
+    },
+    {
+      "id": 2956,
+      "name": "Damac",
+      "crest": "https://media.api-sports.io/football/teams/2956.png",
+      "totalMatches": 13,
+      "correctPredictions": 2,
+      "accuracy": 15.384615384615385
+    },
+    {
+      "id": 45,
+      "name": "Everton",
+      "crest": "https://media.api-sports.io/football/teams/45.png",
+      "totalMatches": 14,
+      "correctPredictions": 2,
+      "accuracy": 14.285714285714285
+    },
+    {
+      "id": 685,
+      "name": "Torpedo Kutaisi",
+      "crest": "https://media.api-sports.io/football/teams/685.png",
+      "totalMatches": 8,
+      "correctPredictions": 1,
+      "accuracy": 12.5
+    },
+    {
+      "id": 634,
+      "name": "Botev Plovdiv",
+      "crest": "https://media.api-sports.io/football/teams/634.png",
+      "totalMatches": 10,
+      "correctPredictions": 1,
+      "accuracy": 10
+    },
+    {
+      "id": 851,
+      "name": "Cherno More Varna",
+      "crest": "https://media.api-sports.io/football/teams/851.png",
+      "totalMatches": 10,
+      "correctPredictions": 1,
+      "accuracy": 10
+    },
+    {
+      "id": 3715,
+      "name": "Dukla Praha",
+      "crest": "https://media.api-sports.io/football/teams/3715.png",
+      "totalMatches": 10,
+      "correctPredictions": 1,
+      "accuracy": 10
+    },
+    {
+      "id": 166,
+      "name": "Hannover 96",
+      "crest": "https://media.api-sports.io/football/teams/166.png",
+      "totalMatches": 12,
+      "correctPredictions": 1,
+      "accuracy": 8.333333333333332
+    },
+    {
+      "id": 597,
+      "name": "Lokomotiv",
+      "crest": "https://media.api-sports.io/football/teams/597.png",
+      "totalMatches": 6,
+      "correctPredictions": 0,
+      "accuracy": 0
+    }
+  ]
+}
