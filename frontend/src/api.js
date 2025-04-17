@@ -73,72 +73,28 @@ const fetchStatsManifest = async () => {
 };
 
 // Direct fetch from static file with fallback to API
-const fetchStaticFileWithFallback = async (fileUrl, fallbackEndpoint, transformFn = data => data) => {
+const fetchStaticFileWithFallback = async (staticPath, apiPath, transform = data => data) => {
   try {
-    // In development, don't even try to fetch static files if we don't have them
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`Development mode: Skipping static file fetch for ${fileUrl}`);
-      throw new Error('Development mode - skipping static file fetch');
-    }
-    
-    // Try to get cache buster from manifest
-    let cacheBuster = '';
-    try {
-      const manifestResponse = await fetch('/stats/manifest.json');
-      if (manifestResponse.ok) {
-        const manifest = await manifestResponse.json();
-        const fileKey = fileUrl.split('/').pop().split('.')[0].replace(/-/g, '');
-        if (manifest && manifest[fileKey] && manifest[fileKey].lastUpdated) {
-          cacheBuster = `?t=${manifest[fileKey].lastUpdated}`;
-        }
-      }
-    } catch (err) {
-      console.warn('Could not fetch manifest for cache busting', err);
-      cacheBuster = `?t=${Date.now()}`;
-    }
-    
-    // Fetch the static file
-    console.log(`Fetching static file: ${fileUrl}${cacheBuster}`);
-    const response = await fetch(`${fileUrl}${cacheBuster}`, {
+    console.log(`Fetching static file: ${staticPath}`);
+    const response = await fetch(staticPath, {
       headers: {
-        'Accept': 'application/json'
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     });
     
-    if (!response.ok) {
-      console.warn(`Static file fetch returned status ${response.status}`);
+    if (response.ok) {
+      const data = await response.json();
+      return transform(data);
+    } else {
+      console.log(`Static file fetch returned status ${response.status}`);
       throw new Error(`Failed to fetch stats file: ${response.status}`);
     }
-    
-    // Check if content type is actually json
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      console.warn(`Expected JSON but got ${contentType}`);
-      throw new Error('Non-JSON response received');
-    }
-    
-    const data = await response.json();
-    return transformFn(data);
-  } catch (err) {
-    console.warn(`Error fetching static file ${fileUrl}:`, err);
-    console.log(`Falling back to API endpoint: ${fallbackEndpoint}`);
-    
-    // Fallback to API endpoint
-    try {
-      // Check if fallbackEndpoint exists
-      if (!fallbackEndpoint) {
-        console.warn('No fallback endpoint provided');
-        // Return default dummy data
-        return transformFn({});
-      }
-      
-      const apiResponse = await api.get(fallbackEndpoint);
-      return apiResponse.data;
-    } catch (apiErr) {
-      console.error('API fallback also failed:', apiErr);
-      // Don't throw, return default empty data
-      return transformFn({});
-    }
+  } catch (error) {
+    console.error(`Error fetching static file ${staticPath}:`, error);
+    console.log('Falling back to API endpoint:', apiPath);
+    const response = await api.get(apiPath);
+    return transform(response.data);
   }
 };
 

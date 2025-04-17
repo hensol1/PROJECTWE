@@ -6,58 +6,45 @@ import LeagueStats from './LeagueStats';
 import TeamStats from './TeamStats';
 import api from '../api';
 
-// Custom hook to safely fetch data with improved error handling
-const useSafeDataFetch = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  
-  // Fetch data with proper fallback handling
-  const fetchDataSafely = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // First try the API endpoints (more reliable than static files)
-      console.log('Fetching data from API endpoints...');
-      const results = await Promise.allSettled([
-        api.fetchAIHistory(),
-        api.fetchLeagueStats(),
-        api.fetchTeamStats(),
-        api.fetchAllTeams()
-      ]);
-      
-      // Check if any fetches succeeded
-      const anySuccess = results.some(result => result.status === 'fulfilled');
-      
-      if (anySuccess) {
-        console.log('Successfully loaded data from API');
-        setLastUpdated(new Date().toISOString());
-      } else {
-        // All API calls failed, log the errors
-        console.error('All API fetches failed:', 
-          results.map(r => r.status === 'rejected' ? r.reason : null).filter(Boolean));
-        setError('Failed to load AI stats');
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Failed to load AI stats');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  useEffect(() => {
-    fetchDataSafely();
-  }, []);
-  
-  return { isLoading, error, lastUpdated, refetch: fetchDataSafely };
-};
-
 const StatsPage = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overall');
-  const { isLoading, error, lastUpdated, refetch } = useSafeDataFetch();
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Try to fetch data from API endpoints first
+        const results = await Promise.allSettled([
+          api.fetchAIHistory(),
+          api.fetchLeagueStats(),
+          api.fetchTeamStats()
+        ]);
+        
+        // Check if any fetches succeeded
+        const anySuccess = results.some(result => result.status === 'fulfilled');
+        
+        if (anySuccess) {
+          console.log('Successfully loaded data from API');
+          setLastUpdated(new Date().toISOString());
+        } else {
+          setError('Failed to load statistics data. Please try again later.');
+        }
+      } catch (error) {
+        console.error('Error fetching statistics data:', error);
+        setError('Failed to load statistics data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
   
   // Set the active tab based on navigation state
   useEffect(() => {
@@ -79,30 +66,30 @@ const StatsPage = () => {
     </button>
   );
 
-  // Render content based on current state
+  // Render components but hide inactive ones
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-pulse text-gray-500">Loading statistics...</div>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
         </div>
       );
     }
-    
+
     if (error) {
       return (
-        <div className="text-center py-12">
-          <div className="text-red-600 mb-4">{error}</div>
-          <button 
-            onClick={refetch}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+        <div className="text-center p-4">
+          <div className="text-red-600 mb-2">{error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
           >
-            Try Again
+            Retry
           </button>
         </div>
       );
     }
-    
+
     return (
       <div className="relative">
         <div className={activeTab === 'overall' ? 'block' : 'hidden'}>
@@ -131,13 +118,13 @@ const StatsPage = () => {
           </div>
 
           <div className="text-xs text-gray-500 text-right mb-4">
-            Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'N/A'}
+            {lastUpdated && `Last updated: ${new Date(lastUpdated).toLocaleString()}`}
           </div>
 
           <ErrorBoundary 
             fallback={
               <div className="text-red-600 p-4">
-                Error loading statistics. Please refresh the page or try again later.
+                Error loading statistics. Please refresh the page.
               </div>
             }
           >
