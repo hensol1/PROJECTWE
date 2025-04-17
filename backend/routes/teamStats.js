@@ -219,6 +219,28 @@ router.get('/file', (req, res) => {
   }
 });
 
+/**
+ * GET /api/team-stats/all-teams
+ * Retrieves all teams' statistics
+ */
+router.get('/all-teams', withCache('all-teams', 300), async (req, res) => {
+  try {
+    const filePath = path.join(__dirname, '../public/stats/all-teams.json');
+    console.log('Looking for all teams file at:', filePath);
+    
+    if (fs.existsSync(filePath)) {
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const stats = JSON.parse(fileContent);
+      res.json(stats);
+    } else {
+      res.status(404).json({ error: 'Teams data not found' });
+    }
+  } catch (error) {
+    console.error('Error serving all teams data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Helper function to get all teams with their stats from the database
 async function getTeamsWithStats() {
   const Match = require('../models/Match');
